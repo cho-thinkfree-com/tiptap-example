@@ -57,7 +57,7 @@ const MenuButtonCallout: React.FC = () => {
         anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
         transformOrigin={{ vertical: 'top', horizontal: 'left' }}
       >
-        <Box sx={{ display: 'flex', flexDirection: 'column', p: 1 }}>
+        <Box sx={{ display: 'flex', flexDirection: 'row', p: 1 }}>
           <Tooltip title={toolbarStrings.calloutInfo}>
             <IconButton size='small' onClick={() => handleSetCallout('info')}>
               <InfoIcon fontSize='small' />

@@ -120,6 +120,8 @@ body {
   display: flex;
   gap: 0.25rem;
   flex-grow: 1;
+  flex-wrap: nowrap;
+  align-items: center;
 }
 
 .callout-block .callout-delete-button {

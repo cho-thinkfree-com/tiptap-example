@@ -549,9 +549,9 @@ const EditorToolbar = ({
         case 'task-list':
           return chain.toggleTaskList().run()
         case 'indent':
-          return chain.indent().run()
+          return chain.indent?.().run?.() ?? chain.setIndent?.(1).run?.() ?? true
         case 'unindent':
-          return chain.outdent().run()
+          return chain.outdent?.().run?.() ?? chain.setIndent?.(-1).run?.() ?? true
         case 'subscript':
           return chain.toggleSubscript().run()
         case 'superscript':

@@ -30,7 +30,6 @@ import { FontSize, LinkBubbleMenuHandler, ResizableImage, TableImproved } from '
 import type { AppStrings } from '../../lib/i18n'
 import { SlashHeadingExtension } from './slashHeading'
 import { SlashHelpExtension, type SlashHelpOptions } from './slashHelp'
-import { Indent } from './indent'
 
 const lowlight = createLowlight()
 lowlight.register('javascript', javascript)
@@ -156,6 +155,5 @@ export const createBaseExtensions = (strings: AppStrings, options?: BaseExtensio
     LinkBubbleMenuHandler,
     SlashHeadingExtension,
     SlashHelpExtension.configure(options?.slashHelp ?? {}),
-    Indent,
   ] as Extension[]
 }

@@ -22,6 +22,12 @@ export type ToolbarStrings = {
   toggleTableOfContents: string
   showToolbar: string
   hideToolbar: string
+  calloutLabel: string
+  calloutInfo: string
+  calloutWarning: string
+  calloutError: string
+  calloutSuccess: string
+  removeCallout: string
 }
 
 export type ShortcutDefinition = {

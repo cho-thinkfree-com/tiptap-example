@@ -25,7 +25,13 @@
         "hideTableOfContents": "Hide outline",
         "toggleTableOfContents": "Toggle outline panel",
         "showToolbar": "Show toolbar",
-        "hideToolbar": "Hide toolbar"
+        "hideToolbar": "Hide toolbar",
+        "calloutLabel": "Callout",
+        "calloutInfo": "Info callout",
+        "calloutWarning": "Warning callout",
+        "calloutError": "Error callout",
+        "calloutSuccess": "Success callout",
+        "removeCallout": "Remove callout"
       },
       "slashCommands": {
         "heading": {
@@ -355,7 +361,13 @@
         "hideTableOfContents": "목차 패널 닫기",
         "toggleTableOfContents": "목차 패널 토글",
         "showToolbar": "툴바 보기",
-        "hideToolbar": "툴바 숨기기"
+        "hideToolbar": "툴바 숨기기",
+        "calloutLabel": "상자",
+        "calloutInfo": "정보 상자",
+        "calloutWarning": "경고 상자",
+        "calloutError": "오류 상자",
+        "calloutSuccess": "성공 상자",
+        "removeCallout": "상자 제거"
       },
       "slashCommands": {
         "heading": {

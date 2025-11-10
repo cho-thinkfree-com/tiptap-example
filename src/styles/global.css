@@ -93,3 +93,74 @@ body {
   overflow: visible;
 }
 
+/* Callout blocks */
+.callout-block {
+  padding: 1rem;
+  border-left: 4px solid;
+  margin: 1rem 0;
+  border-radius: 4px;
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+}
+
+.callout-block .callout-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  width: 100%;
+}
+
+.callout-block .callout-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.callout-block .callout-type-selector {
+  display: flex;
+  gap: 0.25rem;
+  flex-grow: 1;
+}
+
+.callout-block .callout-delete-button {
+  flex-shrink: 0;
+}
+
+.callout-block .callout-content {
+  flex-grow: 1;
+  min-height: 1em; /* Ensure content area is visible */
+}
+
+/* Callout types */
+.callout-block[data-callout-type="info"], .callout-info {
+  background-color: #f5f5f5; /* Light gray */
+  border-color: #2196f3; /* Blue */
+  color: #2196f3;
+}
+
+.callout-block[data-callout-type="warning"], .callout-warning {
+  background-color: #fff3e0; /* Light orange */
+  border-color: #ff9800; /* Orange */
+  color: #ff9800;
+}
+
+.callout-block[data-callout-type="error"], .callout-error {
+  background-color: #ffe0e0; /* Light red */
+  border-color: #f44336; /* Red */
+  color: #f44336;
+}
+
+.callout-block[data-callout-type="success"], .callout-success {
+  background-color: #e8f5e9; /* Light green */
+  border-color: #4caf50; /* Green */
+  color: #4caf50;
+}
+
+.callout-block .callout-content p {
+  margin: 0;
+  color: inherit; /* Inherit color from parent callout block */
+}
+

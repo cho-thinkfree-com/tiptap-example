@@ -6,7 +6,6 @@ import FormatAlignJustifyIcon from '@mui/icons-material/FormatAlignJustify'
 import FormatAlignLeftIcon from '@mui/icons-material/FormatAlignLeft'
 import FormatAlignRightIcon from '@mui/icons-material/FormatAlignRight'
 import FormatClearIcon from '@mui/icons-material/FormatClear'
-import FormatIndentIncreaseIcon from '@mui/icons-material/FormatIndentIncrease'
 import FormatListBulletedIcon from '@mui/icons-material/FormatListBulleted'
 import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered'
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz'
@@ -32,7 +31,6 @@ import {
   MenuButtonHighlightToggle,
   MenuButtonHorizontalRule,
   MenuButtonImageUpload,
-  MenuButtonIndent,
   MenuButtonItalic,
   MenuButtonOrderedList,
   MenuButtonRedo,
@@ -44,7 +42,6 @@ import {
   MenuButtonTextColor,
   MenuButtonUnderline,
   MenuButtonUndo,
-  MenuButtonUnindent,
   MenuControlsContainer,
   MenuDivider,
   MenuSelectHeading,
@@ -52,6 +49,7 @@ import {
 } from 'mui-tiptap'
 import { filesToImageAttributes } from '../../lib/imageUpload'
 import { useI18n } from '../../lib/i18n'
+import MenuButtonCallout from './MenuButtonCallout'
 
 const COLOR_SWATCHES = ['#000000', '#5f6368', '#1a73e8', '#d93025', '#188038', '#673ab7', '#e37400']
 const HIGHLIGHT_SWATCHES = ['#fff59d', '#fbcfe8', '#bbdefb', '#c8e6c9', '#ffe0b2']
@@ -78,8 +76,7 @@ const BASE_KEYS = [
   'ordered-list',
   'bullet-list',
   'task-list',
-  'indent',
-  'unindent',
+  'callout',
   'divider-4',
   'blockquote',
   'code-block',
@@ -98,7 +95,6 @@ const isDivider = (key: string) => key.startsWith('divider')
 const FALLBACK_DIVIDER_WIDTH = 8
 const ALIGN_GROUP_KEYS = ['align-left', 'align-center', 'align-right', 'align-justify'] as const
 const LIST_GROUP_KEYS = ['ordered-list', 'bullet-list', 'task-list'] as const
-const INDENT_GROUP_KEYS = ['indent', 'unindent'] as const
 const SCRIPT_GROUP_KEYS = ['script-normal', 'subscript', 'superscript'] as const
 const GROUP_KEY = {
   'align-left': 'align-group',
@@ -108,8 +104,6 @@ const GROUP_KEY = {
   'ordered-list': 'list-group',
   'bullet-list': 'list-group',
   'task-list': 'list-group',
-  indent: 'indent-group',
-  unindent: 'indent-group',
   subscript: 'script-group',
   superscript: 'script-group',
 } as const
@@ -144,7 +138,6 @@ const EditorToolbar = ({
   const hasToolbarToggleControl = Boolean(toolbarToggleControl)
   const [alignAnchor, setAlignAnchor] = useState<HTMLElement | null>(null)
   const [listAnchor, setListAnchor] = useState<HTMLElement | null>(null)
-  const [indentAnchor, setIndentAnchor] = useState<HTMLElement | null>(null)
   const [scriptAnchor, setScriptAnchor] = useState<HTMLElement | null>(null)
   const [visibleCount, setVisibleCount] = useState(0)
   const isCompactToolbar = Boolean(showTableOfContentsToggle)
@@ -225,10 +218,8 @@ const EditorToolbar = ({
           return <MenuButtonBulletedList />
         case 'task-list':
           return <MenuButtonTaskList />
-        case 'indent':
-          return <MenuButtonIndent />
-        case 'unindent':
-          return <MenuButtonUnindent />
+        case 'callout':
+          return <MenuButtonCallout />
         case 'blockquote':
           return <MenuButtonBlockquote />
         case 'code-block':
@@ -548,10 +539,6 @@ const EditorToolbar = ({
           return chain.toggleBulletList().run()
         case 'task-list':
           return chain.toggleTaskList().run()
-        case 'indent':
-          return chain.indent?.().run?.() ?? chain.setIndent?.(1).run?.() ?? true
-        case 'unindent':
-          return chain.outdent?.().run?.() ?? chain.setIndent?.(-1).run?.() ?? true
         case 'subscript':
           return chain.toggleSubscript().run()
         case 'superscript':
@@ -565,7 +552,6 @@ const EditorToolbar = ({
 
   const alignGroupDisabled = ALIGN_GROUP_KEYS.every((key) => !isControlEnabled(key))
   const listGroupDisabled = LIST_GROUP_KEYS.every((key) => !isControlEnabled(key))
-  const indentGroupDisabled = !editor
   const scriptToggleAvailable = SCRIPT_GROUP_KEYS.slice(1).some((key) => isControlEnabled(key))
   const canResetScript = Boolean(editor?.can().chain().focus().unsetSubscript().unsetSuperscript().run())
   const scriptGroupDisabled = !scriptToggleAvailable && !canResetScript
@@ -593,18 +579,6 @@ const EditorToolbar = ({
   )
   const handleCloseListGroup = useCallback(() => {
     setListAnchor(null)
-  }, [])
-  const handleOpenIndentGroup = useCallback(
-    (event: React.MouseEvent<HTMLElement>) => {
-      if (indentGroupDisabled) {
-        return
-      }
-      setIndentAnchor(event.currentTarget)
-    },
-    [indentGroupDisabled],
-  )
-  const handleCloseIndentGroup = useCallback(() => {
-    setIndentAnchor(null)
   }, [])
   const handleOpenScriptGroup = useCallback(
     (event: React.MouseEvent<HTMLElement>) => {
@@ -761,28 +735,6 @@ const EditorToolbar = ({
                       transformOrigin={{ vertical: 'top', horizontal: 'left' }}
                     >
                       {renderGroupedMenu(LIST_GROUP_KEYS, handleCloseListGroup)}
-                    </Popover>
-                  </>
-                )
-              }
-              if (key === 'indent-group') {
-                return (
-                  <>
-                    {renderGroupedTrigger(
-                      <FormatIndentIncreaseIcon fontSize='small' />,
-                      toolbarStrings.indentControlsLabel,
-                      handleOpenIndentGroup,
-                      indentGroupDisabled,
-                      false,
-                    )}
-                    <Popover
-                      open={Boolean(indentAnchor)}
-                      anchorEl={indentAnchor}
-                      onClose={handleCloseIndentGroup}
-                      anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
-                      transformOrigin={{ vertical: 'top', horizontal: 'left' }}
-                    >
-                      {renderGroupedMenu(INDENT_GROUP_KEYS, handleCloseIndentGroup)}
                     </Popover>
                   </>
                 )

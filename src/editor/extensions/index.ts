@@ -30,6 +30,9 @@ import { FontSize, LinkBubbleMenuHandler, ResizableImage, TableImproved } from '
 import type { AppStrings } from '../../lib/i18n'
 import { SlashHeadingExtension } from './slashHeading'
 import { SlashHelpExtension, type SlashHelpOptions } from './slashHelp'
+import { CalloutExtension } from './callout'
+import { ReactNodeViewRenderer } from '@tiptap/react'
+import CalloutNodeView from './CalloutNodeView.tsx'
 
 const lowlight = createLowlight()
 lowlight.register('javascript', javascript)
@@ -155,5 +158,8 @@ export const createBaseExtensions = (strings: AppStrings, options?: BaseExtensio
     LinkBubbleMenuHandler,
     SlashHeadingExtension,
     SlashHelpExtension.configure(options?.slashHelp ?? {}),
+    CalloutExtension.configure({
+      addNodeView: () => ReactNodeViewRenderer(CalloutNodeView),
+    }),
   ] as Extension[]
 }

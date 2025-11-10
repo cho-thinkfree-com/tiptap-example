@@ -101,7 +101,13 @@ body {
   border-radius: 4px;
 }
 
-
+.callout-block .callout-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  width: 100%;
+}
 
 .callout-block .callout-icon {
   flex-shrink: 0;
@@ -154,4 +160,3 @@ body {
   margin: 0;
   color: inherit; /* Inherit color from parent callout block */
 }
-

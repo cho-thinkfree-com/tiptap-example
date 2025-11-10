@@ -1,0 +1,668 @@
+{
+  "en-US": {
+    "editor": {
+      "title": {
+        "placeholder": "Untitled",
+        "ariaLabel": "Document title"
+      },
+      "toc": {
+        "emptyPlaceholder": "Add a heading to build an outline."
+      },
+      "content": {
+        "placeholder": "Start writing your document..."
+      },
+      "toolbar": {
+        "moreFormatting": "More formatting",
+        "moreFormattingOptions": "More formatting options",
+        "additionalTools": "Additional tools",
+        "headingLabel": "Heading levels",
+        "textAlignLabel": "Text alignment",
+        "listControlsLabel": "List styles",
+        "scriptControlsLabel": "Script styles",
+        "scriptNormalLabel": "Reset to normal text",
+        "indentControlsLabel": "Indent controls",
+        "showTableOfContents": "Show outline",
+        "hideTableOfContents": "Hide outline",
+        "toggleTableOfContents": "Toggle outline panel",
+        "showToolbar": "Show toolbar",
+        "hideToolbar": "Hide toolbar"
+      },
+      "slashCommands": {
+        "heading": {
+          "titles": {
+            "1": "Heading 1",
+            "2": "Heading 2",
+            "3": "Heading 3",
+            "4": "Heading 4",
+            "5": "Heading 5",
+            "6": "Heading 6"
+          },
+          "descriptions": {
+            "1": "Large section heading",
+            "2": "Section heading",
+            "3": "Subsection heading",
+            "4": "Heading level 4",
+            "5": "Heading level 5",
+            "6": "Smallest heading"
+          },
+          "shortcuts": {
+            "1": [
+              "Ctrl",
+              "Alt",
+              "1"
+            ],
+            "2": [
+              "Ctrl",
+              "Alt",
+              "2"
+            ],
+            "3": [
+              "Ctrl",
+              "Alt",
+              "3"
+            ],
+            "4": [
+              "Ctrl",
+              "Alt",
+              "4"
+            ],
+            "5": [
+              "Ctrl",
+              "Alt",
+              "5"
+            ],
+            "6": [
+              "Ctrl",
+              "Alt",
+              "6"
+            ]
+          }
+        }
+      },
+      "slashHelp": {
+        "title": "Quick help",
+        "description": "Type \"/\" followed by a keyword to insert content or trigger actions.",
+        "commandsTitle": "Commands",
+        "shortcutsTitle": "Popular shortcuts",
+        "searchPlaceholder": "Search commands or shortcuts…",
+        "noResults": "No matches. Try a different search.",
+        "noCommands": "No commands match this search.",
+        "noShortcuts": "No shortcuts match this search.",
+        "close": "Close"
+      },
+      "shortcuts": {
+        "title": "Popular shortcuts",
+        "items": [
+          {
+            "id": "paragraph",
+            "label": "Paragraph",
+            "description": "Switch the current block to a paragraph.",
+            "keys": [
+              "Ctrl",
+              "Alt",
+              "0"
+            ]
+          },
+          {
+            "id": "heading-1",
+            "label": "Heading 1",
+            "description": "Format as heading level 1.",
+            "keys": [
+              "Ctrl",
+              "Alt",
+              "1"
+            ]
+          },
+          {
+            "id": "heading-2",
+            "label": "Heading 2",
+            "description": "Format as heading level 2.",
+            "keys": [
+              "Ctrl",
+              "Alt",
+              "2"
+            ]
+          },
+          {
+            "id": "heading-3",
+            "label": "Heading 3",
+            "description": "Format as heading level 3.",
+            "keys": [
+              "Ctrl",
+              "Alt",
+              "3"
+            ]
+          },
+          {
+            "id": "heading-4",
+            "label": "Heading 4",
+            "description": "Format as heading level 4.",
+            "keys": [
+              "Ctrl",
+              "Alt",
+              "4"
+            ]
+          },
+          {
+            "id": "heading-5",
+            "label": "Heading 5",
+            "description": "Format as heading level 5.",
+            "keys": [
+              "Ctrl",
+              "Alt",
+              "5"
+            ]
+          },
+          {
+            "id": "heading-6",
+            "label": "Heading 6",
+            "description": "Format as heading level 6.",
+            "keys": [
+              "Ctrl",
+              "Alt",
+              "6"
+            ]
+          },
+          {
+            "id": "bold",
+            "label": "Bold",
+            "description": "Toggle bold formatting.",
+            "keys": [
+              "Ctrl",
+              "B"
+            ]
+          },
+          {
+            "id": "italic",
+            "label": "Italic",
+            "description": "Toggle italic formatting.",
+            "keys": [
+              "Ctrl",
+              "I"
+            ]
+          },
+          {
+            "id": "underline",
+            "label": "Underline",
+            "description": "Toggle underline formatting.",
+            "keys": [
+              "Ctrl",
+              "U"
+            ]
+          },
+          {
+            "id": "strikethrough",
+            "label": "Strikethrough",
+            "description": "Toggle strikethrough formatting.",
+            "keys": [
+              "Ctrl",
+              "Shift",
+              "S"
+            ]
+          },
+          {
+            "id": "code",
+            "label": "Code",
+            "description": "Toggle inline code formatting.",
+            "keys": [
+              "Ctrl",
+              "E"
+            ]
+          },
+          {
+            "id": "highlight",
+            "label": "Highlight",
+            "description": "Toggle highlight.",
+            "keys": [
+              "Ctrl",
+              "Shift",
+              "H"
+            ]
+          },
+          {
+            "id": "ordered-list",
+            "label": "Ordered list",
+            "description": "Toggle ordered list.",
+            "keys": [
+              "Ctrl",
+              "Shift",
+              "7"
+            ]
+          },
+          {
+            "id": "bulleted-list",
+            "label": "Bulleted list",
+            "description": "Toggle bulleted list.",
+            "keys": [
+              "Ctrl",
+              "Shift",
+              "8"
+            ]
+          },
+          {
+            "id": "task-list",
+            "label": "Task checklist",
+            "description": "Toggle task checklist.",
+            "keys": [
+              "Ctrl",
+              "Shift",
+              "9"
+            ]
+          },
+          {
+            "id": "blockquote",
+            "label": "Blockquote",
+            "description": "Toggle blockquote.",
+            "keys": [
+              "Ctrl",
+              "Shift",
+              "B"
+            ]
+          },
+          {
+            "id": "code-block",
+            "label": "Code block",
+            "description": "Toggle code block.",
+            "keys": [
+              "Ctrl",
+              "Alt",
+              "C"
+            ]
+          },
+          {
+            "id": "align-left",
+            "label": "Align left",
+            "description": "Align text to the left.",
+            "keys": [
+              "Ctrl",
+              "Shift",
+              "L"
+            ]
+          },
+          {
+            "id": "align-center",
+            "label": "Align center",
+            "description": "Align text to the center.",
+            "keys": [
+              "Ctrl",
+              "Shift",
+              "E"
+            ]
+          },
+          {
+            "id": "align-right",
+            "label": "Align right",
+            "description": "Align text to the right.",
+            "keys": [
+              "Ctrl",
+              "Shift",
+              "R"
+            ]
+          },
+          {
+            "id": "align-justify",
+            "label": "Justify",
+            "description": "Justify text.",
+            "keys": [
+              "Ctrl",
+              "Shift",
+              "J"
+            ]
+          },
+          {
+            "id": "undo",
+            "label": "Undo",
+            "description": "Revert the last change.",
+            "keys": [
+              "Ctrl",
+              "Z"
+            ]
+          },
+          {
+            "id": "redo",
+            "label": "Redo",
+            "description": "Reapply the last change.",
+            "keys": [
+              "Ctrl",
+              "Shift",
+              "Z"
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "ko-KR": {
+    "editor": {
+      "title": {
+        "placeholder": "제목 없음",
+        "ariaLabel": "문서 제목"
+      },
+      "content": {
+        "placeholder": "내용을 입력하세요."
+      },
+      "toolbar": {
+        "moreFormatting": "추가 서식",
+        "moreFormattingOptions": "추가 서식 옵션",
+        "additionalTools": "추가 도구",
+        "headingLabel": "제목 수준",
+        "textAlignLabel": "정렬",
+        "listControlsLabel": "목록 스타일",
+        "scriptControlsLabel": "위·아래 첨자",
+        "scriptNormalLabel": "일반 글자",
+        "indentControlsLabel": "들여쓰기",
+        "showTableOfContents": "목차 패널 열기",
+        "hideTableOfContents": "목차 패널 닫기",
+        "toggleTableOfContents": "목차 패널 토글",
+        "showToolbar": "툴바 보기",
+        "hideToolbar": "툴바 숨기기"
+      },
+      "slashCommands": {
+        "heading": {
+          "titles": {
+            "1": "제목 1",
+            "2": "제목 2",
+            "3": "제목 3",
+            "4": "제목 4",
+            "5": "제목 5",
+            "6": "제목 6"
+          },
+          "descriptions": {
+            "1": "큰 섹션 제목",
+            "2": "섹션 제목",
+            "3": "하위 섹션 제목",
+            "4": "제목 레벨 4",
+            "5": "제목 레벨 5",
+            "6": "가장 작은 제목"
+          },
+          "shortcuts": {
+            "1": [
+              "Ctrl",
+              "Alt",
+              "1"
+            ],
+            "2": [
+              "Ctrl",
+              "Alt",
+              "2"
+            ],
+            "3": [
+              "Ctrl",
+              "Alt",
+              "3"
+            ],
+            "4": [
+              "Ctrl",
+              "Alt",
+              "4"
+            ],
+            "5": [
+              "Ctrl",
+              "Alt",
+              "5"
+            ],
+            "6": [
+              "Ctrl",
+              "Alt",
+              "6"
+            ]
+          }
+        }
+      },
+      "slashHelp": {
+        "title": "빠른 도움말",
+        "description": "`/` 입력 후 키워드를 입력하면 원하는 블록을 빠르게 삽입할 수 있습니다.",
+        "commandsTitle": "명령어",
+        "shortcutsTitle": "자주 쓰는 단축키",
+        "searchPlaceholder": "명령이나 단축키를 검색하세요…",
+        "noResults": "일치하는 항목이 없습니다. 다른 검색어를 시도해 보세요.",
+        "noCommands": "검색어와 일치하는 명령이 없습니다.",
+        "noShortcuts": "검색어와 일치하는 단축키가 없습니다.",
+        "close": "닫기"
+      },
+      "shortcuts": {
+        "title": "자주 쓰는 단축키",
+        "items": [
+          {
+            "id": "paragraph",
+            "label": "본문",
+            "description": "현재 블록을 일반 문단으로 전환합니다.",
+            "keys": [
+              "Ctrl",
+              "Alt",
+              "0"
+            ]
+          },
+          {
+            "id": "heading-1",
+            "label": "제목 1",
+            "description": "제목 레벨 1 형식으로 지정합니다.",
+            "keys": [
+              "Ctrl",
+              "Alt",
+              "1"
+            ]
+          },
+          {
+            "id": "heading-2",
+            "label": "제목 2",
+            "description": "제목 레벨 2 형식으로 지정합니다.",
+            "keys": [
+              "Ctrl",
+              "Alt",
+              "2"
+            ]
+          },
+          {
+            "id": "heading-3",
+            "label": "제목 3",
+            "description": "제목 레벨 3 형식으로 지정합니다.",
+            "keys": [
+              "Ctrl",
+              "Alt",
+              "3"
+            ]
+          },
+          {
+            "id": "heading-4",
+            "label": "제목 4",
+            "description": "제목 레벨 4 형식으로 지정합니다.",
+            "keys": [
+              "Ctrl",
+              "Alt",
+              "4"
+            ]
+          },
+          {
+            "id": "heading-5",
+            "label": "제목 5",
+            "description": "제목 레벨 5 형식으로 지정합니다.",
+            "keys": [
+              "Ctrl",
+              "Alt",
+              "5"
+            ]
+          },
+          {
+            "id": "heading-6",
+            "label": "제목 6",
+            "description": "제목 레벨 6 형식으로 지정합니다.",
+            "keys": [
+              "Ctrl",
+              "Alt",
+              "6"
+            ]
+          },
+          {
+            "id": "bold",
+            "label": "굵게",
+            "description": "굵게 서식을 토글합니다.",
+            "keys": [
+              "Ctrl",
+              "B"
+            ]
+          },
+          {
+            "id": "italic",
+            "label": "기울임꼴",
+            "description": "기울임꼴 서식을 토글합니다.",
+            "keys": [
+              "Ctrl",
+              "I"
+            ]
+          },
+          {
+            "id": "underline",
+            "label": "밑줄",
+            "description": "밑줄 서식을 토글합니다.",
+            "keys": [
+              "Ctrl",
+              "U"
+            ]
+          },
+          {
+            "id": "strikethrough",
+            "label": "취소선",
+            "description": "취소선 서식을 토글합니다.",
+            "keys": [
+              "Ctrl",
+              "Shift",
+              "S"
+            ]
+          },
+          {
+            "id": "code",
+            "label": "인라인 코드",
+            "description": "인라인 코드를 토글합니다.",
+            "keys": [
+              "Ctrl",
+              "E"
+            ]
+          },
+          {
+            "id": "highlight",
+            "label": "형광펜",
+            "description": "형광펜 서식을 토글합니다.",
+            "keys": [
+              "Ctrl",
+              "Shift",
+              "H"
+            ]
+          },
+          {
+            "id": "ordered-list",
+            "label": "번호 목록",
+            "description": "번호 목록을 토글합니다.",
+            "keys": [
+              "Ctrl",
+              "Shift",
+              "7"
+            ]
+          },
+          {
+            "id": "bulleted-list",
+            "label": "글머리표 목록",
+            "description": "글머리표 목록을 토글합니다.",
+            "keys": [
+              "Ctrl",
+              "Shift",
+              "8"
+            ]
+          },
+          {
+            "id": "task-list",
+            "label": "체크리스트",
+            "description": "체크리스트를 토글합니다.",
+            "keys": [
+              "Ctrl",
+              "Shift",
+              "9"
+            ]
+          },
+          {
+            "id": "blockquote",
+            "label": "인용",
+            "description": "인용 블록을 토글합니다.",
+            "keys": [
+              "Ctrl",
+              "Shift",
+              "B"
+            ]
+          },
+          {
+            "id": "code-block",
+            "label": "코드 블록",
+            "description": "코드 블록을 토글합니다.",
+            "keys": [
+              "Ctrl",
+              "Alt",
+              "C"
+            ]
+          },
+          {
+            "id": "align-left",
+            "label": "왼쪽 정렬",
+            "description": "텍스트를 왼쪽으로 정렬합니다.",
+            "keys": [
+              "Ctrl",
+              "Shift",
+              "L"
+            ]
+          },
+          {
+            "id": "align-center",
+            "label": "가운데 정렬",
+            "description": "텍스트를 가운데로 정렬합니다.",
+            "keys": [
+              "Ctrl",
+              "Shift",
+              "E"
+            ]
+          },
+          {
+            "id": "align-right",
+            "label": "오른쪽 정렬",
+            "description": "텍스트를 오른쪽으로 정렬합니다.",
+            "keys": [
+              "Ctrl",
+              "Shift",
+              "R"
+            ]
+          },
+          {
+            "id": "align-justify",
+            "label": "양쪽 정렬",
+            "description": "텍스트를 양쪽 정렬합니다.",
+            "keys": [
+              "Ctrl",
+              "Shift",
+              "J"
+            ]
+          },
+          {
+            "id": "undo",
+            "label": "실행 취소",
+            "description": "마지막 변경 사항을 실행 취소합니다.",
+            "keys": [
+              "Ctrl",
+              "Z"
+            ]
+          },
+          {
+            "id": "redo",
+            "label": "다시 실행",
+            "description": "마지막 변경 사항을 다시 실행합니다.",
+            "keys": [
+              "Ctrl",
+              "Shift",
+              "Z"
+            ]
+          }
+        ]
+      },
+      "toc": {
+        "emptyPlaceholder": "제목을 추가해 목차를 생성하세요."
+      }
+    }
+  }
+}

@@ -1,0 +1,94 @@
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+}
+
+#root {
+  min-height: 100%;
+}
+
+.editor-block-handle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.editor-block-handle__button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: 1px solid rgba(25, 118, 210, 0.08);
+  border-radius: 8px;
+  background-color: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 2px 8px rgba(18, 18, 18, 0.08);
+  color: #5f6368;
+  cursor: grab;
+  z-index: 3;
+  transition:
+    border-color 120ms ease,
+    box-shadow 120ms ease,
+    background-color 120ms ease,
+    color 120ms ease;
+}
+
+.editor-block-handle__button:hover {
+  background-color: rgba(25, 118, 210, 0.08);
+  border-color: rgba(25, 118, 210, 0.24);
+  color: #1976d2;
+}
+
+.editor-block-handle__button:active {
+  cursor: grabbing;
+}
+
+.editor-block-handle__button:focus-visible {
+  outline: 2px solid rgba(25, 118, 210, 0.6);
+  outline-offset: 2px;
+}
+
+.editor-block-handle__icon {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+}
+
+.editor-block-handle-dragging {
+  cursor: grabbing !important;
+  user-select: none;
+}
+
+[data-block-handle-active='true'] {
+  position: relative;
+}
+
+[data-block-handle-active='true']::before {
+  content: '';
+  position: absolute;
+  left: -12px;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: 3px;
+  background-color: rgba(25, 118, 210, 0.6);
+}
+[data-testid='rich-text-editor'] {
+  position: relative;
+}
+
+.tiptap.ProseMirror {
+  padding-left: 48px;
+  box-sizing: border-box;
+}
+
+.MuiTiptap-RichTextField-content,
+.MuiTiptap-RichTextField-paper {
+  position: relative;
+  overflow: visible;
+}

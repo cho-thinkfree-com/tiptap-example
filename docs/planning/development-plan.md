@@ -174,6 +174,10 @@
 
 ## Backend & Sharing Roadmap
 
+- `[ ]` 초기 DB는 서버 없이 SQLite로 구축하고, Prisma 기반 마이그레이션을 PostgreSQL/Supabase로 전환 가능하도록 설계한다.
+- `[ ]` 워크스페이스/사용자/권한/공유 설계 초안은 `docs/planning/workspace-permission-design.md` 문서를 최신 상태로 유지하고, 구현 전 리뷰한다.
+- `[ ]` 백엔드 전 단계는 `docs/planning/workspace-permission-design.md`의 Testing & TDD Requirements에 따라 테스트 선행(TDD) 및 전 시나리오 자동화 케이스를 정의한 뒤 구현한다.
+
 ### 계정/워크스페이스
 - `[ ]` 인증/가입 플로우 구축(이메일/비밀번호 + OAuth 검토) 및 기본 워크스페이스 생성.
 - `[ ]` 일반적인 회원 기능(프로필 편집, 비밀번호 재설정, 이메일 검증, 2FA 옵션) 요구사항을 명세하고 API/UI에 반영.

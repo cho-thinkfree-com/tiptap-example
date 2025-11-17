@@ -22,6 +22,7 @@ components:
         description: { type: string, nullable: true }
         coverImage: { type: string, format: uri, nullable: true }
         defaultLocale: { type: string }
+        defaultTimezone: { type: string }
         visibility: { type: string, enum: [private, listed, public], default: private }
         createdAt: { type: string, format: date-time }
         updatedAt: { type: string, format: date-time }
@@ -40,6 +41,7 @@ paths:
                 description: { type: string, maxLength: 2000 }
                 coverImage: { type: string, format: uri }
                 defaultLocale: { type: string }
+                defaultTimezone: { type: string }
                 visibility: { type: string, enum: [private, listed, public] }
       responses:
         '201':
@@ -71,6 +73,7 @@ paths:
 ## Rules
 - Slug generated from name, unique globally (append random suffix on collisions).
 - Only owner can read/list in B1, so `GET /api/workspaces` uses authenticated account.
+- `defaultLocale` (BCP47) and `defaultTimezone` (IANA/Olson string) stored on workspace; defaults are `en` and `UTC`.
 - Soft delete field exists but delete endpoint deferred to B2.
 
 ## Tests

@@ -21,6 +21,7 @@ Milestone B2 allows owners to edit workspace metadata and soft delete workspaces
 - All fields optional but at least one must be provided.
 - `coverImage` must be HTTPS.
 - `defaultLocale`: BCP47 string (2–10 chars).
+- `defaultTimezone`: IANA/Olson timezone identifier (defaults to `UTC`).
 - Returns updated `WorkspaceResponse`.
 - Errors: `403` not owner, `404` not found, `422` invalid payload.
 
@@ -31,5 +32,6 @@ Milestone B2 allows owners to edit workspace metadata and soft delete workspaces
 ## Tests
 - Patch updates single/multiple fields while preserving others.
 - Invalid cover image (non-HTTPS) fails.
+- Invalid timezone (empty string) fails.
 - Non-owner patch/delete fails.
 - Delete removes workspace from listings and is idempotent.

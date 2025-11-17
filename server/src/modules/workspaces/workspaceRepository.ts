@@ -8,6 +8,7 @@ export interface WorkspaceEntity {
   description?: string | null
   coverImage?: string | null
   defaultLocale: string
+  defaultTimezone: string
   visibility: WorkspaceVisibility
   ownerAccountId: string
   createdAt: Date
@@ -21,6 +22,7 @@ export interface CreateWorkspaceInput {
   description?: string | null
   coverImage?: string | null
   defaultLocale: string
+  defaultTimezone: string
   visibility: WorkspaceVisibility
   ownerAccountId: string
 }
@@ -30,6 +32,7 @@ export interface UpdateWorkspaceInput {
   description?: string | null
   coverImage?: string | null
   defaultLocale?: string
+  defaultTimezone?: string
   visibility?: WorkspaceVisibility
 }
 
@@ -93,6 +96,7 @@ const toEntity = (workspace: {
   description: string | null
   coverImage: string | null
   defaultLocale: string
+  defaultTimezone: string
   visibility: WorkspaceVisibility
   ownerAccountId: string
   createdAt: Date
@@ -105,6 +109,7 @@ const toEntity = (workspace: {
   description: workspace.description,
   coverImage: workspace.coverImage,
   defaultLocale: workspace.defaultLocale,
+  defaultTimezone: workspace.defaultTimezone,
   visibility: workspace.visibility,
   ownerAccountId: workspace.ownerAccountId,
   createdAt: workspace.createdAt,

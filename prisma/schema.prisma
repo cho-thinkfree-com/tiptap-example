@@ -19,6 +19,19 @@ enum WorkspaceVisibility {
   public
 }
 
+enum WorkspaceMembershipRole {
+  owner
+  admin
+  member
+}
+
+enum WorkspaceMembershipStatus {
+  active
+  invited
+  pending
+  removed
+}
+
 model Account {
   id            String        @id @default(uuid())
   email         String        @unique
@@ -27,11 +40,14 @@ model Account {
   legalName     String?       @map("legal_name")
   recoveryEmail String?       @map("recovery_email")
   recoveryPhone String?       @map("recovery_phone")
+  preferredLocale String?     @map("preferred_locale")
+  preferredTimezone String?   @map("preferred_timezone")
   createdAt     DateTime      @default(now()) @map("created_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")
   sessions      Session[]
   passwordResetTokens PasswordResetToken[]
   ownedWorkspaces   Workspace[] @relation("WorkspaceOwner")
+  memberships    WorkspaceMembership[]
 }
 
 model Session {
@@ -64,10 +80,31 @@ model Workspace {
   description    String?
   coverImage     String?             @map("cover_image")
   defaultLocale  String              @map("default_locale") @default("en")
+  defaultTimezone String             @map("default_timezone") @default("UTC")
   visibility     WorkspaceVisibility @default(private)
   ownerAccountId String              @map("owner_account_id")
   owner          Account             @relation("WorkspaceOwner", fields: [ownerAccountId], references: [id], onDelete: Cascade)
   createdAt      DateTime            @default(now()) @map("created_at")
   updatedAt      DateTime            @updatedAt @map("updated_at")
   deletedAt      DateTime?           @map("deleted_at")
+  memberships    WorkspaceMembership[]
+}
+
+model WorkspaceMembership {
+  id          String                   @id @default(uuid())
+  workspace   Workspace                @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId String                   @map("workspace_id")
+  account     Account                  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  accountId   String                   @map("account_id")
+  role        WorkspaceMembershipRole  @default(member)
+  status      WorkspaceMembershipStatus @default(active)
+  displayName String?                  @map("display_name")
+  avatarUrl   String?                  @map("avatar_url")
+  timezone    String?                  @map("timezone")
+  preferredLocale String?              @map("preferred_locale")
+  notifications Json?                  @map("notification_settings")
+  createdAt   DateTime                 @default(now()) @map("created_at")
+  updatedAt   DateTime                 @updatedAt @map("updated_at")
+
+  @@unique([workspaceId, accountId])
 }

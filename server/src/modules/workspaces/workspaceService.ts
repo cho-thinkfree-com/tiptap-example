@@ -18,12 +18,8 @@ const createWorkspaceSchema = z.object({
     .max(2000)
     .optional(),
   coverImage: httpsUrlSchema.optional(),
-  defaultLocale: z
-    .string()
-    .trim()
-    .min(2)
-    .max(10)
-    .default('en'),
+  defaultLocale: z.string().trim().min(2).max(10).default('en'),
+  defaultTimezone: z.string().trim().min(1).max(50).default('UTC'),
   visibility: z.enum(visibilityEnum).default('private'),
 })
 
@@ -36,12 +32,8 @@ const updateWorkspaceSchema = z
       .max(2000)
       .optional(),
     coverImage: httpsUrlSchema.optional(),
-    defaultLocale: z
-      .string()
-      .trim()
-      .min(2)
-      .max(10)
-      .optional(),
+    defaultLocale: z.string().trim().min(2).max(10).optional(),
+    defaultTimezone: z.string().trim().min(1).max(50).optional(),
     visibility: z.enum(visibilityEnum).optional(),
   })
   .refine((value) => Object.keys(value).length > 0, { message: 'At least one field required' })
@@ -58,6 +50,7 @@ export class WorkspaceService {
       description: input.description,
       coverImage: input.coverImage,
       defaultLocale: input.defaultLocale,
+      defaultTimezone: input.defaultTimezone,
       visibility: input.visibility,
       slug,
     })

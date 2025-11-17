@@ -35,6 +35,8 @@ describe('WorkspaceService', () => {
   it('creates a workspace and lists it for the owner', async () => {
     const workspace = await workspaceService.create(ownerId, { name: 'Team Space' })
     expect(workspace.slug).toBe('team-space')
+    expect(workspace.defaultLocale).toBe('en')
+    expect(workspace.defaultTimezone).toBe('UTC')
 
     const list = await workspaceService.listOwned(ownerId)
     expect(list).toHaveLength(1)
@@ -63,9 +65,11 @@ describe('WorkspaceService', () => {
     const updated = await workspaceService.update(ownerId, workspace.id, {
       name: 'Renamed',
       coverImage: 'https://cdn.example.com/img.png',
+      defaultTimezone: 'Asia/Seoul',
     })
     expect(updated.name).toBe('Renamed')
     expect(updated.coverImage).toBe('https://cdn.example.com/img.png')
+    expect(updated.defaultTimezone).toBe('Asia/Seoul')
   })
 
   it('requires at least one field when updating', async () => {
@@ -84,6 +88,12 @@ describe('WorkspaceService', () => {
     await expect(
       workspaceService.update(ownerId, workspace.id, {
         defaultLocale: 'k', // too short
+      }),
+    ).rejects.toBeInstanceOf(z.ZodError)
+
+    await expect(
+      workspaceService.update(ownerId, workspace.id, {
+        defaultTimezone: '', // empty
       }),
     ).rejects.toBeInstanceOf(z.ZodError)
   })

@@ -41,6 +41,17 @@ describe('WorkspaceService', () => {
     expect(list[0].id).toBe(workspace.id)
   })
 
+  it('lists workspaces in creation order and fetches by id', async () => {
+    const first = await workspaceService.create(ownerId, { name: 'First Space' })
+    const second = await workspaceService.create(ownerId, { name: 'Second Space' })
+
+    const list = await workspaceService.listOwned(ownerId)
+    expect(list.map((w) => w.id)).toEqual([first.id, second.id])
+
+    const fetched = await workspaceService.getById(second.id)
+    expect(fetched?.name).toBe('Second Space')
+  })
+
   it('ensures slug uniqueness when names collide', async () => {
     const first = await workspaceService.create(ownerId, { name: 'Duplicate' })
     const second = await workspaceService.create(ownerId, { name: 'Duplicate' })
@@ -94,5 +105,7 @@ describe('WorkspaceService', () => {
     expect(list).toHaveLength(0)
 
     await expect(workspaceService.softDelete(ownerId, workspace.id)).resolves.toBeUndefined()
+    const fetched = await workspaceService.getById(workspace.id)
+    expect(fetched).toBeNull()
   })
 })

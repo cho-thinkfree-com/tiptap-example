@@ -7,5 +7,7 @@
 | `step-S1.md` | Account Storage (persistence layer only) | _TBD_ | Non-HTTP module; document schema + repository behaviors when ready. |
 | `step-S2.md` | Session & Auth API (signup/login/logout/refresh) | Drafted | Covers Milestone A2 endpoints. |
 | `step-S3.md` | Password Reset & Account Deletion | Drafted | Milestone A3: reset tokens + deletion flow. |
+| `step-S4.md` | Workspace Creation Basics | Drafted | Milestone B1: create/list/get workspace metadata. |
+| `step-S5.md` | Workspace Metadata & Delete | Drafted | Milestone B2: patch/delete endpoints. |
 
 새 Step을 추가할 때는 이 표를 업데이트하고 `docs/planning/workspace-permission-design.md`의 매핑도 함께 수정하세요.

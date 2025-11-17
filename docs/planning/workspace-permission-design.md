@@ -176,11 +176,13 @@ Milestones are intentionally small so each can be implemented + tested before mo
 - After A3, auth layer is stable for Workspace milestones.
 
 ### Milestone B1 – Workspace Creation Basics
+- **Status:** ✅ Completed (2025-11-17) – Workspace schema/migrations, slug helper, owner auto-assignment, list/get logic, and Vitest coverage.
 - Scope: Workspace table, create/list/read endpoints, owner auto-assignment (creator becomes owner), SQLite migrations.
 - Tests: workspace create/list for a user, verify owner assigned, enforce owner uniqueness (no duplicate owner rows), soft delete flag prevents accidental purge.
 - Depends on A2 (needs authenticated user). Provides base for metadata/edit flows.
 
 ### Milestone B2 – Workspace Metadata & Delete
+- **Status:** ✅ Completed (2025-11-17) – PATCH/DELETE operations with HTTPS cover validation, required-field checks, idempotent soft delete, and tests.
 - Scope: Update workspace name/description/locale/cover, delete (soft) workspace, ensure owner constraints before deletion.
 - Tests: metadata update permissions (owner/admin), delete fails when non-owner, delete success with confirmation, ensure deleted workspaces hidden from listings.
 - Enables later membership/invite UI to rely on editable workspace info.

@@ -122,6 +122,50 @@
 - **Permission Summary**: toolbar requests `/api/documents/:id/permissions/summary` to show who can view/edit. Must update immediately after ACL changes.
 - FE components should hide or disable features until the corresponding backend milestone ships (feature flags or capability probe endpoint).
 
+### Frontend Implementation Plan (C Milestones)
+- **Members Dashboard**
+  - Workspace detail view gets a “Members” tab listing owner/admin/member sections. Data source: `/api/workspaces/{id}/members`.
+  - Each row shows avatar, display name, role badge, status chip (active/invited/pending), last active timestamp, and contextual actions.
+  - Actions:
+    - Role dropdown (owner rows disabled; admin dropdown disabled for non-admin viewers).
+    - Remove button (hidden/disabled for owner).
+    - Self row displays “Leave workspace”.
+  - Empty state: “No members yet” illustration with CTA to invite.
+  - Mutations call member APIs and refresh the list; optimistic updates show immediate feedback with inline error fallback.
+- **Members Row UX**
+  - Hover state reveals action icons (edit role, remove).
+  - Tooltips explain why actions are disabled (e.g., “Only owners can promote to admin”).
+  - Status indicator colors:
+    - Active: green
+    - Invited: blue
+    - Pending join: orange
+  - Show additional metadata in an expandable panel (e.g., timezone, preferred locale).
+- **Invitations**
+  - Above members table, “Invite Members” form accepts multiple emails with tokenized input and POSTs to `/invitations`.
+  - Pending invitations table displays email, invitedBy, expiry, resend count with “Resend”/“Cancel” controls.
+  - Invitation acceptance page (public route) reads `token`, requires login, then POST `/api/invitations/{token}/accept` and shows success or error state.
+  - Domain allowlist UI (Workspace settings → “Domains”) includes list of current domains, add/remove actions, and descriptive text about auto-join behavior.
+- **Join Requests**
+  - Public landing for listed/public workspaces includes “Request to Join” button opening a modal (optional message). Submits to `/join-requests`.
+  - If server response indicates `autoApproved`, show success dialog and send user directly into the workspace.
+  - Owner/Admin “Join Requests” tab lists pending requests with user info, message, timestamp, and Approve/Deny buttons.
+- **Ownership & Role Settings**
+  - Owners see an “Ownership” panel summarizing current owner and providing “Transfer Ownership” workflow (searchable dropdown + confirmation modal).
+  - Owner leaving workspace triggers warning banner requiring transfer or delete.
+  - Admin-only surfaces highlight available actions so users understand permissions.
+- **Feedback & Permissions**
+  - Toast/snackbar for operations (invites sent, requests approved, role changed, etc.).
+  - Buttons disabled while API calls pending; inline form errors show server messages (e.g., duplicate invitation, domain not allowed).
+  - Determine viewer role up front (session payload or `/members/me`) and hide unauthorized controls; feature-flag components to align with backend rollout.
+
+### UI Style Guidelines
+- Adopt a modern, neutral palette (light/dark) with accent colors for primary actions; rely on semantic tokens (`surface`, `border`, `text`) so themes switch cleanly.
+- Use 8px spacing grid, rounded corners (8–12px), subtle elevation/shadow to separate cards/forms.
+- Typography hierarchy: semi-bold headings, medium-weight body, consistent line heights; use condensed type for metadata to keep rows tidy.
+- Interaction states: clear hover/pressed feedback, skeleton loaders for list placeholders, shimmer on cards while fetching.
+- Responsive behavior: members/invite tables collapse into cards on mobile; modals expand full-screen for narrow viewports; action groups convert to menu sheets.
+- Micro-interactions: fade-in status badges, animated toast queue, progress indicators on async actions to keep UI feeling responsive and contemporary.
+
 ### 5. External Sharing
 - Owner/admin/member (with permission) can generate share links.
 - UI exposes `view/comment/edit`, optional expiration, password.

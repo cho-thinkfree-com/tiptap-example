@@ -1,0 +1,51 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum AccountStatus {
+  ACTIVE
+  SUSPENDED
+  DELETED
+}
+
+model Account {
+  id            String        @id @default(uuid())
+  email         String        @unique
+  passwordHash  String        @map("password_hash")
+  status        AccountStatus @default(ACTIVE)
+  legalName     String?       @map("legal_name")
+  recoveryEmail String?       @map("recovery_email")
+  recoveryPhone String?       @map("recovery_phone")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+  sessions      Session[]
+  passwordResetTokens PasswordResetToken[]
+}
+
+model Session {
+  id               String   @id @default(uuid())
+  accountId        String   @map("account_id")
+  account          Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  refreshTokenHash String   @map("refresh_token_hash") @unique
+  accessToken      String   @map("access_token")
+  accessExpiresAt  DateTime @map("access_expires_at")
+  refreshExpiresAt DateTime @map("refresh_expires_at")
+  createdAt        DateTime @default(now()) @map("created_at")
+  revokedAt        DateTime? @map("revoked_at")
+  revokedReason    String?  @map("revoked_reason")
+}
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  accountId String   @map("account_id")
+  account   Account  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  tokenHash String   @map("token_hash") @unique
+  expiresAt DateTime @map("expires_at")
+  usedAt    DateTime? @map("used_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+}

@@ -158,16 +158,19 @@ Documenting this plan before implementation ensures we can review each relations
 Milestones are intentionally small so each can be implemented + tested before moving on. Every milestone must provide its own automated test suite (unit + integration) and leave the system in a runnable state for the next milestone.
 
 ### Milestone A1 – Account Storage
+- **Status:** ✅ Completed (2025-11-17) – Prisma schema, migrations, repository/service layer, and Vitest coverage for create/find/duplicate paths.
 - Scope: Account table, password hashing, unique email constraint, created/updated timestamps.
 - Tests: account creation success, duplicate email rejection, password hashing correctness, serialization/deserialization in SQLite.
 - Dependency for A2+ because later auth/session logic relies on stored accounts.
 
 ### Milestone A2 – Session & Auth API
+- **Status:** ✅ Completed (2025-11-17) – Signup/login/logout/logout-all/refresh services with session table, hashed refresh tokens, login throttling, and Vitest suites.
 - Scope: Signup/login/logout endpoints, session tokens (refresh + access), brute-force throttling, logout all sessions.
 - Tests: signup validation, login success/fail (bad password, unknown email), session issuance/revocation, throttling triggered after repeated failures.
 - Requires A1 complete; once done, enables QA to manually sign up/login without workspace features.
 
 ### Milestone A3 – Account Deletion & Recovery
+- **Status:** ✅ Completed (2025-11-17) – Password reset tokens + confirmation flow, guarded account deletion, session revocation, and coverage.
 - Scope: Password reset requests, token verification, account deletion workflow (blocked if owning workspace), soft delete flags.
 - Tests: reset token issuance/expiration, password update flow, deletion blocked when owner, successful deletion when not owner, session invalidation post deletion.
 - After A3, auth layer is stable for Workspace milestones.

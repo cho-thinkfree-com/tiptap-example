@@ -44,6 +44,7 @@
 - Fields: `id`, `workspace_id`, `folder_id`, `title`, `slug`, `status (draft|published|archived)`, `visibility (private|workspace|shared|public)`, `owner_membership_id`, timestamps.
 - Content stored separately (`document_revisions` with `editor_state_json`, `version`, `created_by`).
 - `Document 1:N DocumentPermission`.
+- Real-time collaboration (TipTap/Yjs) is **out of scope initially**, but schema must allow future integration (e.g., storing CRDT state, change feeds). Keep revision table flexible so collaborative sessions can append snapshots or checkpoints later.
 
 ### Tag & DocumentTag
 - `Tag`: `id`, `workspace_id`, `name`, `color`, `created_by`, `created_at`.
@@ -112,6 +113,14 @@
 - Search service supports filtering by text (title/content), tag, folder, owner, status, and visibility. Query builders must enforce ACLs before returning results.
 - Indexing strategy: start with relational queries over SQLite/PostgreSQL; later optional full-text search engine can plug in behind a search interface.
 - Tests must cover tag assignment/removal, search filtering, and ACL enforcement (users only see documents they have access to, even if tags match).
+
+### 4c. Frontend Integration Requirements
+- **File Tree Panel**: consumes `/api/workspaces/:id/tree` (folder + document metadata). Response fields: `id`, `type (folder|document)`, `parent_id`, `title`, `visibility`, `order`. Supports drag/drop reorder via `/api/folders/:id/move` and `/api/documents/:id/move`.
+- **Document Detail Pane**: loads `/api/documents/:id` for metadata + editor JSON, plus breadcrumbs assembled from folder ancestors. Needs change tracking to show unsaved state.
+- **Tagging UI**: chip selector fetches workspace tags via `/api/tags`; assign/remove operations call `/api/documents/:id/tags`. FE must gracefully handle permission errors (e.g., member cannot create new tags).
+- **Search Bar**: queries `/api/search` with filters (query text, tag ids, folder id, owner id, status, visibility). Results should include snippet highlights and permission badges so FE can render context.
+- **Permission Summary**: toolbar requests `/api/documents/:id/permissions/summary` to show who can view/edit. Must update immediately after ACL changes.
+- FE components should hide or disable features until the corresponding backend milestone ships (feature flags or capability probe endpoint).
 
 ### 5. External Sharing
 - Owner/admin/member (with permission) can generate share links.
@@ -224,6 +233,43 @@ Milestones are intentionally small so each can be implemented + tested before mo
 - Final milestone ensures operational safety/compliance.
 
 Milestones must be developed sequentially (A1 → F2). Each milestone’s tests double as the regression suite the next milestone will run before adding new ones, guaranteeing we can continue development without regressions.
+
+## API Step Mapping
+Each milestone must link to a concrete step spec under `docs/api/step-S{n}.md`. Draft the spec before coding; include request/response schema, validation, error codes, and acceptance tests.
+
+| Milestone | API Step(s) | Scope |
+|-----------|-------------|-------|
+| A1 – Account Storage | `step-S1.md` | Account repository interface, data model, migrations. |
+| A2 – Session & Auth API | `step-S2.md` | `/api/auth/signup`, `/api/auth/login`, `/api/auth/logout`, session token refresh, throttle strategy. |
+| A3 – Account Deletion & Recovery | `step-S3.md` | `/api/auth/password-reset/request`, `/api/auth/password-reset/confirm`, `/api/auth/delete`. |
+| B1 – Workspace Creation Basics | `step-S4.md` | `/api/workspaces` (create/list), workspace detail GET. |
+| B2 – Workspace Metadata & Delete | `step-S5.md` | `/api/workspaces/:id` PATCH/DELETE, cover upload signed URL endpoints. |
+| C1 – Membership Model | `step-S6.md` | Membership listing endpoints, role policy read. |
+| C2 – Invitations & Join Requests | `step-S7.md` | `/api/workspaces/:id/invitations` CRUD, join request endpoints, domain allowlist management. |
+| C3 – Role Transitions & Ownership Transfer | `step-S8.md` | Role change endpoint, ownership transfer mutation, member removal API. |
+| D1 – Folder & Document Metadata | `step-S9.md` | `/api/workspaces/:id/folders` CRUD, `/api/documents` create/list metadata. |
+| D2 – Document Permissions (Internal) | `step-S10.md` | `/api/documents/:id/permissions`, workspace default access APIs. |
+| D3 – Document Actions & Validation | `step-S11.md` | `/api/documents/:id` GET/PATCH/DELETE, revision history endpoint, optimistic locking error codes. |
+| E1 – Share Links (View/Comment) | `step-S12.md` | `/api/documents/:id/share-links` CRUD, password validation endpoint. |
+| E2 – External Collaborators (Edit) | `step-S13.md` | `/api/share-links/:id/accept`, guest session issuance, revocation endpoints. |
+| F1 – Audit Logging | `step-S14.md` | `/api/audit` query endpoints, event emitter hooks. |
+| F2 – Governance & Rate Limiting | `step-S15.md` | Rate limit config endpoints, workspace delete confirmation workflow, template management APIs. |
+
+When extending scope with new sub-features, append additional step files instead of overloading an existing spec.
+
+> 삼국지: API 구현 시에는 반드시 `docs/api/step-S*.md` 파일을 먼저 채워 요청/응답 필드, 검증 로직, 에러 코드까지 상세히 정의하고 TDD 시나리오를 명시한 뒤 개발에 착수한다. 이렇게 해야 프런트엔드/QA가 참조할 API 문서가 항상 최신 상태로 유지된다.
+
+### API Documentation toolchain
+- Use **OpenAPI 3.1** as the canonical schema format. Each `step-S*.md` should include an embedded YAML snippet or a link to `/docs/api/openapi/step-S*.yaml`.
+- Generate human-readable docs via **Redocly** (Redoc CLI) baked into the repo. The OpenAPI sources will live under `docs/api/openapi/`.
+- Validation libraries in implementation must mirror the OpenAPI schema (e.g., use Zod or Yup to define DTOs, convert them to OpenAPI via generators) so docs and runtime stay in sync.
+- CI should fail if OpenAPI files are outdated. Provide `npm run docs:api` to regenerate Redoc HTML and ensure it matches the spec.
+- **Change control**: If new requirements emerge during implementation, extend the relevant `step-S*.md` (or add a new step file if the change is large). Every change must:
+  1. Update the OpenAPI snippet.
+  2. Describe new validation/error cases.
+  3. List additional tests needed.
+  4. Reference the corresponding milestone/task ID for traceability.
+- Keep step files concise: if a spec grows beyond ~3 endpoints or 2 pages, split it. Organize by domain (Auth, Workspace, Membership, Documents, Sharing, Governance). Maintain an index in `docs/api/README.md` to keep the collection navigable.
 
 ## Testing & TDD Requirements
 - Follow strict TDD: write backend tests (unit + integration) before implementing each phase so DB schemas/services stay verifiable.

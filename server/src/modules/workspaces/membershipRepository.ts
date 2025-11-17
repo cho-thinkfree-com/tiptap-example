@@ -48,12 +48,14 @@ export class MembershipRepository {
   async list(workspaceId: string): Promise<MembershipEntity[]> {
     const members = await this.prisma.workspaceMembership.findMany({
       where: { workspaceId, status: { not: 'removed' } },
-      orderBy: [
-        { role: 'asc' }, // owner -> admin -> member (alphabetical matches enum order)
-        { createdAt: 'asc' },
-      ],
+      orderBy: [{ createdAt: 'asc' }],
     })
-    return members.map(toEntity)
+    const entities = members.map(toEntity)
+    return entities.sort((a, b) => {
+      const diff = roleWeight(a.role) - roleWeight(b.role)
+      if (diff !== 0) return diff
+      return a.createdAt.getTime() - b.createdAt.getTime()
+    })
   }
 
   async create(input: MembershipCreateInput): Promise<MembershipEntity> {
@@ -95,6 +97,23 @@ export class MembershipRepository {
     })
     return toEntity(membership)
   }
+
+  async markRemoved(id: string): Promise<void> {
+    await this.prisma.workspaceMembership.update({
+      where: { id },
+      data: { status: 'removed' },
+    })
+  }
+
+  async findByWorkspaceAndAccountIncludingRemoved(
+    workspaceId: string,
+    accountId: string,
+  ): Promise<MembershipEntity | null> {
+    const membership = await this.prisma.workspaceMembership.findFirst({
+      where: { workspaceId, accountId },
+    })
+    return membership ? toEntity(membership) : null
+  }
 }
 
 const toEntity = (membership: WorkspaceMembership): MembershipEntity => ({
@@ -111,3 +130,14 @@ const toEntity = (membership: WorkspaceMembership): MembershipEntity => ({
   createdAt: membership.createdAt,
   updatedAt: membership.updatedAt,
 })
+
+const roleWeight = (role: WorkspaceMembershipRole) => {
+  switch (role) {
+    case 'owner':
+      return 0
+    case 'admin':
+      return 1
+    default:
+      return 2
+  }
+}

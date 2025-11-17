@@ -11,6 +11,7 @@ export interface WorkspaceEntity {
   defaultTimezone: string
   visibility: WorkspaceVisibility
   ownerAccountId: string
+  allowedDomains: string[]
   createdAt: Date
   updatedAt: Date
   deletedAt?: Date | null
@@ -25,6 +26,7 @@ export interface CreateWorkspaceInput {
   defaultTimezone: string
   visibility: WorkspaceVisibility
   ownerAccountId: string
+  allowedDomains?: string[]
 }
 
 export interface UpdateWorkspaceInput {
@@ -34,6 +36,7 @@ export interface UpdateWorkspaceInput {
   defaultLocale?: string
   defaultTimezone?: string
   visibility?: WorkspaceVisibility
+  allowedDomains?: string[]
 }
 
 export class WorkspaceRepository {
@@ -41,7 +44,10 @@ export class WorkspaceRepository {
 
   async create(input: CreateWorkspaceInput): Promise<WorkspaceEntity> {
     const workspace = await this.prisma.workspace.create({
-      data: input,
+      data: {
+        ...input,
+        allowedDomains: input.allowedDomains ?? [],
+      },
     })
     return toEntity(workspace)
   }
@@ -76,7 +82,10 @@ export class WorkspaceRepository {
   async update(id: string, input: UpdateWorkspaceInput): Promise<WorkspaceEntity> {
     const workspace = await this.prisma.workspace.update({
       where: { id },
-      data: input,
+      data: {
+        ...input,
+        allowedDomains: input.allowedDomains,
+      },
     })
     return toEntity(workspace)
   }
@@ -85,6 +94,21 @@ export class WorkspaceRepository {
     await this.prisma.workspace.update({
       where: { id },
       data: { deletedAt: new Date() },
+    })
+  }
+
+  async updateAllowedDomains(id: string, domains: string[]): Promise<WorkspaceEntity> {
+    const workspace = await this.prisma.workspace.update({
+      where: { id },
+      data: { allowedDomains: domains },
+    })
+    return toEntity(workspace)
+  }
+
+  async updateOwner(id: string, ownerAccountId: string): Promise<void> {
+    await this.prisma.workspace.update({
+      where: { id },
+      data: { ownerAccountId },
     })
   }
 }
@@ -99,6 +123,7 @@ const toEntity = (workspace: {
   defaultTimezone: string
   visibility: WorkspaceVisibility
   ownerAccountId: string
+  allowedDomains: unknown
   createdAt: Date
   updatedAt: Date
   deletedAt: Date | null
@@ -112,6 +137,9 @@ const toEntity = (workspace: {
   defaultTimezone: workspace.defaultTimezone,
   visibility: workspace.visibility,
   ownerAccountId: workspace.ownerAccountId,
+  allowedDomains: Array.isArray(workspace.allowedDomains)
+    ? (workspace.allowedDomains as string[]).map((domain) => domain.toLowerCase())
+    : [],
   createdAt: workspace.createdAt,
   updatedAt: workspace.updatedAt,
   deletedAt: workspace.deletedAt,

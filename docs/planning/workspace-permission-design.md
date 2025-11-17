@@ -188,16 +188,19 @@ Milestones are intentionally small so each can be implemented + tested before mo
 - Enables later membership/invite UI to rely on editable workspace info.
 
 ### Milestone C1 – Membership Model
+- **Status:** ✅ Completed (2025-11-17) – Membership schema, role/status enforcement, locale/timezone preferences, and service tests.
 - Scope: WorkspaceMembership table, role field, workspace-scoped profile, owner/admin/member enums.
 - Tests: adding membership rows, enforcing one owner per workspace, retrieving memberships, preventing duplicate membership entries per account/workspace.
 - Required before invitations/join flows.
 
 ### Milestone C2 – Invitations & Join Requests
+- **Status:** ✅ Completed (2025-11-17) – Invitation tokens, resend/cancel/accept logic, domain allowlist, join request approvals, and full test coverage.
 - Scope: Invitation API (send, accept, decline), join request pending queue, domain allowlist auto-join.
 - Tests: invite flow (token validation, expiry), acceptance sets membership active, decline removes pending invite, domain auto-join bypasses approval, join requests require admin approval.
 - Builds on C1; upon completion, workspace population flows are functional.
 
 ### Milestone C3 – Role Transitions & Ownership Transfer
+- **Status:** ✅ Completed (2025-11-17) – Ownership transfer, role change API, member self-leave, owner leave guard, and accompanying tests.
 - Scope: Promote/demote members, transfer ownership, enforce owner uniqueness, member removal.
 - Tests: role change authorization (only owner can transfer), transfer success path, demote admin to member, removing members updates audit log, owner cannot demote without new owner.
 - Sets stage for document permissions to rely on accurate roles.

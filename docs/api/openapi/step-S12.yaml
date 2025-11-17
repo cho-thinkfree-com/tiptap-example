@@ -1,0 +1,175 @@
+﻿openapi: 3.1.0
+info:
+  title: Step S12 – Share Links
+  version: 1.0.0
+servers:
+  - url: https://api.local
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    DocumentId:
+      name: documentId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ShareLinkId:
+      name: shareLinkId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ShareToken:
+      name: token
+      in: path
+      required: true
+      schema:
+        type: string
+  schemas:
+    ShareLinkAccessLevel:
+      type: string
+      enum: [viewer, commenter]
+    ShareLink:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        documentId:
+          type: string
+          format: uuid
+        accessLevel:
+          $ref: '#/components/schemas/ShareLinkAccessLevel'
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+        passwordProtected:
+          type: boolean
+        revokedAt:
+          type: string
+          format: date-time
+          nullable: true
+        allowExternalEdit:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        createdByMembershipId:
+          type: string
+          format: uuid
+    ShareLinkCreateInput:
+      type: object
+      properties:
+        accessLevel:
+          $ref: '#/components/schemas/ShareLinkAccessLevel'
+        expiresAt:
+          type: string
+          format: date-time
+        password:
+          type: string
+      required: [accessLevel]
+    ShareLinkAccessRequest:
+      type: object
+      properties:
+        password:
+          type: string
+          nullable: true
+    ShareLinkAccessResponse:
+      type: object
+      properties:
+        documentId:
+          type: string
+          format: uuid
+        workspaceId:
+          type: string
+          format: uuid
+        accessLevel:
+          $ref: '#/components/schemas/ShareLinkAccessLevel'
+        token:
+          type: string
+  responses:
+    UnauthorizedShareLink:
+      description: Invalid password or missing
+paths:
+  /api/documents/{documentId}/share-links:
+    get:
+      summary: List share links for a document
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: Share link list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  shareLinks:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ShareLink'
+    post:
+      summary: Create share link
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShareLinkCreateInput'
+      responses:
+        '201':
+          description: Share link created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  shareLink:
+                    $ref: '#/components/schemas/ShareLink'
+                  token:
+                    type: string
+  /api/share-links/{shareLinkId}:
+    delete:
+      summary: Revoke share link
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ShareLinkId'
+      responses:
+        '204':
+          description: Revoked
+  /api/share-links/{token}/access:
+    post:
+      summary: Validate a share link token
+      parameters:
+        - $ref: '#/components/parameters/ShareToken'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShareLinkAccessRequest'
+      responses:
+        '200':
+          description: Access granted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShareLinkAccessResponse'
+        '401':
+          $ref: '#/components/responses/UnauthorizedShareLink'
+        '404':
+          description: Token invalid or expired

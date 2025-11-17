@@ -98,6 +98,13 @@ export class MembershipRepository {
     return toEntity(membership)
   }
 
+  async findById(id: string): Promise<MembershipEntity | null> {
+    const membership = await this.prisma.workspaceMembership.findUnique({
+      where: { id },
+    })
+    return membership ? toEntity(membership) : null
+  }
+
   async markRemoved(id: string): Promise<void> {
     await this.prisma.workspaceMembership.update({
       where: { id },

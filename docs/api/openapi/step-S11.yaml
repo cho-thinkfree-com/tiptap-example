@@ -1,0 +1,198 @@
+﻿openapi: 3.1.0
+info:
+  title: Step S11 – Document Actions & Validation
+  version: 1.0.0
+servers:
+  - url: https://api.local
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    DocumentId:
+      name: documentId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  schemas:
+    DocumentStatus:
+      type: string
+      enum: [draft, published, archived]
+    DocumentVisibility:
+      type: string
+      enum: [private, workspace, shared, public]
+    DocumentWorkspaceAccess:
+      type: string
+      enum: [none, viewer, commenter, editor]
+    Document:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspaceId:
+          type: string
+          format: uuid
+        folderId:
+          type: string
+          format: uuid
+          nullable: true
+        ownerMembershipId:
+          type: string
+          format: uuid
+        title:
+          type: string
+        slug:
+          type: string
+        status:
+          $ref: '#/components/schemas/DocumentStatus'
+        visibility:
+          $ref: '#/components/schemas/DocumentVisibility'
+        summary:
+          type: string
+          nullable: true
+        sortOrder:
+          type: integer
+        workspaceDefaultAccess:
+          $ref: '#/components/schemas/DocumentWorkspaceAccess'
+        workspaceEditorsAdminOnly:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    DocumentRevision:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        documentId:
+          type: string
+          format: uuid
+        version:
+          type: integer
+        content:
+          type: object
+        summary:
+          type: string
+          nullable: true
+        createdByMembershipId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time
+    DocumentView:
+      type: object
+      properties:
+        document:
+          $ref: '#/components/schemas/Document'
+        revision:
+          $ref: '#/components/schemas/DocumentRevision'
+    RevisionList:
+      type: object
+      properties:
+        documentId:
+          type: string
+          format: uuid
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentRevision'
+        limit:
+          type: integer
+  requestBodies:
+    DocumentUpdate:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              title:
+                type: string
+              summary:
+                type: string
+              status:
+                $ref: '#/components/schemas/DocumentStatus'
+              visibility:
+                $ref: '#/components/schemas/DocumentVisibility'
+              folderId:
+                type: string
+                format: uuid
+                nullable: true
+              sortOrder:
+                type: integer
+              expectedUpdatedAt:
+                type: string
+                format: date-time
+            required: [expectedUpdatedAt]
+paths:
+  /api/documents/{documentId}:
+    get:
+      summary: Get document metadata + latest revision
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: Document view
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentView'
+    patch:
+      summary: Update document metadata
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      requestBody:
+        $ref: '#/components/requestBodies/DocumentUpdate'
+      responses:
+        '200':
+          description: Updated document
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  document:
+                    $ref: '#/components/schemas/Document'
+        '409':
+          description: Conflict
+    delete:
+      summary: Delete (soft) document
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '204':
+          description: Deleted
+  /api/documents/{documentId}/revisions:
+    get:
+      summary: List revisions
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 20
+      responses:
+        '200':
+          description: Revision list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RevisionList'

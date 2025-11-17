@@ -250,26 +250,31 @@ Milestones are intentionally small so each can be implemented + tested before mo
 - Sets stage for document permissions to rely on accurate roles.
 
 ### Milestone D1 – Folder & Document Metadata
+- **Status:** ✅ Completed (2025-11-17) – Step-S9 사양 + Prisma 스키마 + 폴더/문서/리비전 서비스/테스트 모두 반영.
 - Scope: Folder tree CRUD, Document table (title, folder, visibility), DocumentRevision table storing editor JSON.
 - Tests: folder nesting, move operations, document create/update metadata, revision append test, retrieving latest revision.
 - Provides persistence base for ACL features.
 
 ### Milestone D2 – Document Permissions (Internal)
+- **Status:** ✅ Completed (2025-11-17) – DocumentPermission 테이블, 기본 접근 정책, 권한 평가 서비스/TDD 완료.
 - Scope: DocumentPermission table, workspace default access flags, permission evaluation service for owner/admin/member.
 - Tests: private/workspace/shared scenarios, ACL overrides for specific members, denial when insufficient role, ensuring default access cascades.
 - After D2, internal editing and viewing is fully governed.
 
 ### Milestone D3 – Document Actions & Validation
+- **Status:** ✅ Completed (2025-11-17) – DocumentActionService, 권한 기반 CRUD/낙관적 잠금/리비전 목록 + 테스트 완료.
 - Scope: API endpoints for create/update/delete documents using permission checks, optimistic locking, plan limit hooks.
 - Tests: create/edit/delete success/failure per role, concurrent edit conflict detection, plan limit enforcement stubs.
 - Prepares for external sharing by ensuring internal actions are stable.
 
 ### Milestone E1 – Share Links (View/Comment)
+- **Status:** ✅ Completed (2025-11-17) – ShareLink 테이블/토큰/비밀번호/만료/리졸브 로직과 테스트 완료.
 - Scope: ShareLink table, generate/revoke links, password + expiration logic, viewer/commenter support for anonymous users.
 - Tests: create share link, password validation, expired link rejection, access log entry on view/comment, revoke hides document immediately.
 - Allows safe public viewing/commenting before edit rights exist.
 
 ### Milestone E2 – External Collaborators (Edit)
+- **Status:** ✅ Completed (2025-11-17) – ExternalCollaborator/guest session/allow_external_edit 로직과 테스트 완료.
 - Scope: ExternalCollaborator profiles, linking to share links, allow_external_edit flag, guest session tokens.
 - Tests: guest signup via link, edit allowed only when flag true, guest audit log entries, revocation invalidates guest sessions.
 - Completes external sharing story.

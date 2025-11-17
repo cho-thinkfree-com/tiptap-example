@@ -1,0 +1,425 @@
+﻿openapi: 3.1.0
+info:
+  title: Step S9 – Folder & Document Metadata
+  version: 1.0.0
+servers:
+  - url: https://api.local
+paths:
+  /api/workspaces/{workspaceId}/folders:
+    get:
+      summary: List workspace folders
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - in: query
+          name: includeDeleted
+          schema:
+            type: boolean
+          description: Include folders with deletedAt
+      responses:
+        '200':
+          description: Folder list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  folders:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Folder'
+    post:
+      summary: Create folder
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFolderInput'
+      responses:
+        '201':
+          description: Folder created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  folder:
+                    $ref: '#/components/schemas/Folder'
+  /api/folders/{folderId}:
+    patch:
+      summary: Update folder metadata
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/FolderId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateFolderInput'
+      responses:
+        '200':
+          description: Updated folder
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  folder:
+                    $ref: '#/components/schemas/Folder'
+    delete:
+      summary: Soft delete folder
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/FolderId'
+      responses:
+        '204':
+          description: Deleted
+  /api/folders/{folderId}/move:
+    post:
+      summary: Move folder
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/FolderId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MoveFolderInput'
+      responses:
+        '200':
+          description: Folder summary
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  folder:
+                    $ref: '#/components/schemas/Folder'
+  /api/workspaces/{workspaceId}/documents:
+    get:
+      summary: List workspace documents
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+        - in: query
+          name: folderId
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: status
+          schema:
+            $ref: '#/components/schemas/DocumentStatus'
+        - in: query
+          name: visibility
+          schema:
+            $ref: '#/components/schemas/DocumentVisibility'
+      responses:
+        '200':
+          description: Document list
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  documents:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Document'
+                  folders:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Folder'
+    post:
+      summary: Create document metadata
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/WorkspaceId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDocumentInput'
+      responses:
+        '201':
+          description: Created document
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  document:
+                    $ref: '#/components/schemas/Document'
+  /api/documents/{documentId}:
+    patch:
+      summary: Update document metadata
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateDocumentInput'
+      responses:
+        '200':
+          description: Updated document
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  document:
+                    $ref: '#/components/schemas/Document'
+  /api/documents/{documentId}/revisions:
+    post:
+      summary: Append revision
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRevisionInput'
+      responses:
+        '201':
+          description: Revision created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  revision:
+                    $ref: '#/components/schemas/DocumentRevision'
+  /api/documents/{documentId}/revisions/latest:
+    get:
+      summary: Fetch latest revision
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: Latest revision and doc metadata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  document:
+                    $ref: '#/components/schemas/Document'
+                  revision:
+                    $ref: '#/components/schemas/DocumentRevision'
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    WorkspaceId:
+      name: workspaceId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    FolderId:
+      name: folderId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    DocumentId:
+      name: documentId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  schemas:
+    Folder:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspaceId:
+          type: string
+          format: uuid
+        parentId:
+          type: string
+          format: uuid
+          nullable: true
+        name:
+          type: string
+        path:
+          type: string
+        sortOrder:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    CreateFolderInput:
+      type: object
+      properties:
+        name:
+          type: string
+        parentId:
+          type: string
+          format: uuid
+          nullable: true
+        sortOrder:
+          type: integer
+      required: [name]
+    UpdateFolderInput:
+      type: object
+      properties:
+        name:
+          type: string
+        sortOrder:
+          type: integer
+      minProperties: 1
+    MoveFolderInput:
+      type: object
+      properties:
+        parentId:
+          type: string
+          format: uuid
+          nullable: true
+        sortOrder:
+          type: integer
+      required: [parentId]
+    DocumentStatus:
+      type: string
+      enum: [draft, published, archived]
+    DocumentVisibility:
+      type: string
+      enum: [private, workspace, shared, public]
+    Document:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        workspaceId:
+          type: string
+          format: uuid
+        folderId:
+          type: string
+          format: uuid
+          nullable: true
+        title:
+          type: string
+        slug:
+          type: string
+        status:
+          $ref: '#/components/schemas/DocumentStatus'
+        visibility:
+          $ref: '#/components/schemas/DocumentVisibility'
+        ownerMembershipId:
+          type: string
+          format: uuid
+        summary:
+          type: string
+          nullable: true
+        sortOrder:
+          type: integer
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    CreateDocumentInput:
+      type: object
+      properties:
+        title:
+          type: string
+        folderId:
+          type: string
+          format: uuid
+          nullable: true
+        slug:
+          type: string
+        visibility:
+          $ref: '#/components/schemas/DocumentVisibility'
+        status:
+          $ref: '#/components/schemas/DocumentStatus'
+        summary:
+          type: string
+        sortOrder:
+          type: integer
+        initialRevision:
+          $ref: '#/components/schemas/CreateRevisionInput'
+      required: [title]
+    UpdateDocumentInput:
+      type: object
+      properties:
+        title:
+          type: string
+        folderId:
+          type: string
+          format: uuid
+          nullable: true
+        slug:
+          type: string
+        visibility:
+          $ref: '#/components/schemas/DocumentVisibility'
+        status:
+          $ref: '#/components/schemas/DocumentStatus'
+        summary:
+          type: string
+        sortOrder:
+          type: integer
+      minProperties: 1
+    CreateRevisionInput:
+      type: object
+      properties:
+        content:
+          type: object
+        summary:
+          type: string
+      required: [content]
+    DocumentRevision:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        documentId:
+          type: string
+          format: uuid
+        version:
+          type: integer
+        content:
+          type: object
+        createdByMembershipId:
+          type: string
+          format: uuid
+        createdAt:
+          type: string
+          format: date-time

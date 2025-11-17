@@ -32,6 +32,49 @@ enum WorkspaceMembershipStatus {
   removed
 }
 
+enum DocumentStatus {
+  draft
+  published
+  archived
+}
+
+enum DocumentVisibility {
+  private
+  workspace
+  shared
+  public
+}
+
+enum DocumentWorkspaceAccess {
+  none
+  viewer
+  commenter
+  editor
+}
+
+enum DocumentPermissionRole {
+  viewer
+  commenter
+  editor
+}
+
+enum DocumentPermissionPrincipalType {
+  workspace
+  membership
+  account
+  share_link
+}
+
+enum DocumentShareLinkAccess {
+  viewer
+  commenter
+}
+
+enum ExternalCollaboratorStatus {
+  active
+  suspended
+}
+
 model Account {
   id            String        @id @default(uuid())
   email         String        @unique
@@ -92,6 +135,8 @@ model Workspace {
   memberships    WorkspaceMembership[]
   invitations    WorkspaceInvitation[]
   joinRequests   WorkspaceJoinRequest[]
+  folders        Folder[]
+  documents      Document[]
 }
 
 model WorkspaceMembership {
@@ -109,6 +154,10 @@ model WorkspaceMembership {
   notifications Json?                  @map("notification_settings")
   createdAt   DateTime                 @default(now()) @map("created_at")
   updatedAt   DateTime                 @updatedAt @map("updated_at")
+  ownedDocuments Document[]            @relation("DocumentOwner")
+  revisionHistory DocumentRevision[]   @relation("RevisionAuthor")
+  documentPermissions DocumentPermission[] @relation("DocumentPermissionMembership")
+  createdShareLinks DocumentShareLink[]
 
   @@unique([workspaceId, accountId])
 }
@@ -137,4 +186,124 @@ model WorkspaceJoinRequest {
   message     String?
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
+}
+
+model Folder {
+  id          String     @id @default(uuid())
+  workspace   Workspace  @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId String     @map("workspace_id")
+  parentId    String?    @map("parent_id")
+  parent      Folder?    @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Folder[]   @relation("FolderHierarchy")
+  name        String
+  pathCache   String     @map("path_cache")
+  sortOrder   Int        @map("sort_order") @default(0)
+  deletedAt   DateTime?  @map("deleted_at")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+  documents   Document[]
+
+  @@index([workspaceId])
+  @@index([workspaceId, parentId])
+}
+
+model Document {
+  id                 String               @id @default(uuid())
+  workspace          Workspace            @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId        String               @map("workspace_id")
+  folder             Folder?              @relation(fields: [folderId], references: [id], onDelete: SetNull)
+  folderId           String?              @map("folder_id")
+  ownerMembership    WorkspaceMembership  @relation("DocumentOwner", fields: [ownerMembershipId], references: [id])
+  ownerMembershipId  String               @map("owner_membership_id")
+  title              String
+  slug               String
+  status             DocumentStatus       @default(draft)
+  visibility         DocumentVisibility   @default(private)
+  summary            String?              @map("summary")
+  sortOrder          Int                  @map("sort_order") @default(0)
+  workspaceDefaultAccess DocumentWorkspaceAccess @map("workspace_default_access") @default(none)
+  workspaceEditorAdminsOnly Boolean @map("workspace_editor_admins_only") @default(false)
+  deletedAt          DateTime?            @map("deleted_at")
+  createdAt          DateTime             @default(now()) @map("created_at")
+  updatedAt          DateTime             @updatedAt @map("updated_at")
+  revisions          DocumentRevision[]
+  permissions        DocumentPermission[]
+  shareLinks         DocumentShareLink[]
+
+  @@unique([workspaceId, slug])
+  @@index([workspaceId, folderId])
+  @@index([ownerMembershipId])
+}
+
+model DocumentRevision {
+  id                    String              @id @default(uuid())
+  document              Document            @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  documentId            String              @map("document_id")
+  version               Int
+  content               Json                @map("content")
+  summary               String?             @map("summary")
+  createdByMembership   WorkspaceMembership @relation("RevisionAuthor", fields: [createdByMembershipId], references: [id])
+  createdByMembershipId String              @map("created_by_membership_id")
+  createdAt             DateTime            @default(now()) @map("created_at")
+
+  @@unique([documentId, version])
+}
+
+model DocumentPermission {
+  id            String                         @id @default(uuid())
+  document      Document                       @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  documentId    String                         @map("document_id")
+  principalType DocumentPermissionPrincipalType @map("principal_type")
+  principalId   String                         @map("principal_id")
+  membershipId  String?                        @map("membership_id")
+  membership    WorkspaceMembership?           @relation("DocumentPermissionMembership", fields: [membershipId], references: [id], onDelete: Cascade)
+  role          DocumentPermissionRole
+  createdAt     DateTime                       @default(now()) @map("created_at")
+  updatedAt     DateTime                       @updatedAt @map("updated_at")
+
+  @@unique([documentId, principalType, principalId])
+  @@index([membershipId])
+}
+
+model DocumentShareLink {
+  id                  String                 @id @default(uuid())
+  document            Document               @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  documentId          String                 @map("document_id")
+  token               String                 @unique
+  accessLevel         DocumentShareLinkAccess @map("access_level")
+  passwordHash        String?                @map("password_hash")
+  expiresAt           DateTime?              @map("expires_at")
+  revokedAt           DateTime?              @map("revoked_at")
+  createdByMembership WorkspaceMembership    @relation(fields: [createdByMembershipId], references: [id], onDelete: Cascade)
+  createdByMembershipId String               @map("created_by_membership_id")
+  allowExternalEdit   Boolean                @map("allow_external_edit") @default(false)
+  sessions            DocumentShareLinkSession[]
+  createdAt           DateTime               @default(now()) @map("created_at")
+
+  @@index([documentId])
+}
+
+model ExternalCollaborator {
+  id           String                      @id @default(uuid())
+  email        String                      @unique
+  displayName  String?                     @map("display_name")
+  status       ExternalCollaboratorStatus  @default(active)
+  createdAt    DateTime                    @default(now()) @map("created_at")
+  updatedAt    DateTime                    @updatedAt @map("updated_at")
+  sessions     DocumentShareLinkSession[]
+}
+
+model DocumentShareLinkSession {
+  id               String             @id @default(uuid())
+  shareLink        DocumentShareLink  @relation(fields: [shareLinkId], references: [id], onDelete: Cascade)
+  shareLinkId      String             @map("share_link_id")
+  collaborator     ExternalCollaborator @relation(fields: [collaboratorId], references: [id], onDelete: Cascade)
+  collaboratorId   String             @map("collaborator_id")
+  tokenHash        String             @map("token_hash") @unique
+  expiresAt        DateTime           @map("expires_at")
+  revokedAt        DateTime?          @map("revoked_at")
+  createdAt        DateTime           @default(now()) @map("created_at")
+
+  @@index([shareLinkId])
+  @@index([collaboratorId])
 }

@@ -1,0 +1,158 @@
+﻿openapi: 3.1.0
+info:
+  title: Step S13 – External Collaborators
+  version: 1.0.0
+servers:
+  - url: https://api.local
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    ShareLinkId:
+      name: shareLinkId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ShareToken:
+      name: token
+      in: path
+      required: true
+      schema:
+        type: string
+  schemas:
+    ShareLink:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        documentId:
+          type: string
+          format: uuid
+        accessLevel:
+          type: string
+          enum: [viewer, commenter]
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+        passwordProtected:
+          type: boolean
+        revokedAt:
+          type: string
+          format: date-time
+          nullable: true
+        allowExternalEdit:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+    ShareLinkUpdateInput:
+      type: object
+      properties:
+        allowExternalEdit:
+          type: boolean
+      required: [allowExternalEdit]
+    ShareLinkAcceptInput:
+      type: object
+      properties:
+        email:
+          type: string
+          format: email
+        displayName:
+          type: string
+        password:
+          type: string
+      required: [email]
+    ShareLinkAcceptResponse:
+      type: object
+      properties:
+        documentId:
+          type: string
+          format: uuid
+        workspaceId:
+          type: string
+          format: uuid
+        accessLevel:
+          type: string
+          enum: [viewer, commenter]
+        sessionToken:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+        collaboratorId:
+          type: string
+          format: uuid
+paths:
+  /api/share-links/{shareLinkId}:
+    patch:
+      summary: Update share link options
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ShareLinkId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShareLinkUpdateInput'
+      responses:
+        '200':
+          description: Updated share link
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  shareLink:
+                    $ref: '#/components/schemas/ShareLink'
+    delete:
+      summary: Revoke share link (existing from S12)
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ShareLinkId'
+      responses:
+        '204':
+          description: Revoked
+  /api/share-links/{shareLinkId}/guest-sessions:
+    delete:
+      summary: Revoke guest sessions for share link
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/ShareLinkId'
+      responses:
+        '204':
+          description: Sessions revoked
+  /api/share-links/{token}/accept:
+    post:
+      summary: Accept share link for editing
+      parameters:
+        - $ref: '#/components/parameters/ShareToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ShareLinkAcceptInput'
+      responses:
+        '200':
+          description: Guest session issued
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ShareLinkAcceptResponse'
+        '401':
+          description: Password required
+        '403':
+          description: External edit not allowed
+        '404':
+          description: Token invalid or expired

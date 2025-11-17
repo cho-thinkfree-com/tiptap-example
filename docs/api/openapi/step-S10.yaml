@@ -1,0 +1,200 @@
+﻿openapi: 3.1.0
+info:
+  title: Step S10 – Document Permissions
+  version: 1.0.0
+servers:
+  - url: https://api.local
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    DocumentId:
+      name: documentId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    PermissionId:
+      name: permissionId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+  schemas:
+    DocumentWorkspaceAccess:
+      type: string
+      enum: [none, viewer, commenter, editor]
+    DocumentPermissionRole:
+      type: string
+      enum: [viewer, commenter, editor]
+    DocumentPermissionPrincipalType:
+      type: string
+      enum: [workspace, membership, account, share_link]
+    DocumentPermission:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        documentId:
+          type: string
+          format: uuid
+        principalType:
+          $ref: '#/components/schemas/DocumentPermissionPrincipalType'
+        principalId:
+          type: string
+        role:
+          $ref: '#/components/schemas/DocumentPermissionRole'
+        membership:
+          type: object
+          nullable: true
+          properties:
+            membershipId:
+              type: string
+              format: uuid
+            displayName:
+              type: string
+              nullable: true
+            role:
+              type: string
+          required: [membershipId, role]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    DocumentPermissionInput:
+      type: object
+      properties:
+        principalType:
+          $ref: '#/components/schemas/DocumentPermissionPrincipalType'
+        principalId:
+          type: string
+        role:
+          $ref: '#/components/schemas/DocumentPermissionRole'
+      required: [principalType, principalId, role]
+    WorkspaceAccessUpdateInput:
+      type: object
+      properties:
+        defaultAccess:
+          $ref: '#/components/schemas/DocumentWorkspaceAccess'
+        editorsAdminOnly:
+          type: boolean
+      minProperties: 1
+    PermissionSummary:
+      type: object
+      properties:
+        documentId:
+          type: string
+          format: uuid
+        workspaceDefaultAccess:
+          $ref: '#/components/schemas/DocumentWorkspaceAccess'
+        workspaceEditorsAdminOnly:
+          type: boolean
+        permissions:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentPermission'
+    Document:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        workspaceDefaultAccess:
+          $ref: '#/components/schemas/DocumentWorkspaceAccess'
+        workspaceEditorsAdminOnly:
+          type: boolean
+paths:
+  /api/documents/{documentId}/permissions:
+    get:
+      summary: List explicit permissions
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: Permission list
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionSummary'
+    post:
+      summary: Upsert document permission
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentPermissionInput'
+      responses:
+        '201':
+          description: Permission created/updated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  permission:
+                    $ref: '#/components/schemas/DocumentPermission'
+  /api/documents/{documentId}/permissions/{permissionId}:
+    delete:
+      summary: Delete document permission
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+        - $ref: '#/components/parameters/PermissionId'
+      responses:
+        '204':
+          description: Deleted
+  /api/documents/{documentId}/workspace-access:
+    patch:
+      summary: Update workspace default access
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/WorkspaceAccessUpdateInput'
+      responses:
+        '200':
+          description: Updated document metadata
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  document:
+                    $ref: '#/components/schemas/Document'
+  /api/documents/{documentId}/permissions/summary:
+    get:
+      summary: View permission summary
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/DocumentId'
+      responses:
+        '200':
+          description: Summary
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PermissionSummary'

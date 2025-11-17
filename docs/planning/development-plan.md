@@ -226,6 +226,24 @@
 10. **B10 – Advanced Productivity & AI**
     - `[ ]` 제안 모드/Track Changes, 고급 버전 히스토리(diff/복원), 첨부/임베드 2차(비디오·다이어그램), 단축키 팔레트/Slash 확장/AI 보조, 공유 링크 고급 ACL(Viewer/Commenter/Editor 구분).
 
+#### 실행 현황 (A–F 세부 단계)
+- `[x]` **A1 – Account Storage**: Prisma 계정 테이블/리포지토리/비밀번호 해시 검증 완료 (2025-11-17).
+- `[x]` **A2 – Session & Auth API**: 로그인/로그아웃/세션 토큰/재발급 흐름과 테스트 완료 (2025-11-17).
+- `[x]` **A3 – Account Deletion & Recovery**: 비밀번호 재설정/계정 삭제/세션 무효화 플로우 완료 (2025-11-17).
+- `[x]` **B1 – Workspace Creation Basics**: 워크스페이스 생성/조회/소유자 자동 지정 구현 및 테스트 (2025-11-17).
+- `[x]` **B2 – Workspace Metadata & Delete**: 메타데이터 수정/삭제(Soft delete) API 및 검증 시나리오 완료 (2025-11-17).
+- `[x]` **C1 – Membership Model**: WorkspaceMembership 스키마, 역할/상태 제약, 목록/추가 테스트 완료 (2025-11-17).
+- `[x]` **C2 – Invitations & Join Requests**: 초대/가입요청/도메인 허용/만료 처리 및 테스트 완료 (2025-11-17).
+- `[x]` **C3 – Role Transitions & Ownership Transfer**: 역할 변경/소유권 이전/탈퇴 제약 테스트 포함 완료 (2025-11-17).
+- `[x]` **D1 – Folder & Document Metadata**: Step-S9 사양 + Prisma 스키마 확장 + 폴더/문서/리비전 서비스/TDD 완료 (2025-11-17).
+- `[x]` **D2 – Document Permissions (Internal)**: DocumentPermission 테이블, 기본 접근 정책, 권한 평가 서비스/TDD 완료 (2025-11-17).
+- `[x]` **D3 – Document Actions & Validation**: 문서 GET/PATCH/DELETE + 리비전 조회, 낙관적 잠금, 플랜 훅/테스트 완료 (2025-11-17).
+- `[x]` **E1 – Share Links (View/Comment)**: 공유 링크 생성/조회/토큰 검증 + 비밀번호/만료/테스트 완료 (2025-11-17).
+- `[x]` **E2 – External Collaborators (Edit)**: 외부 협업자 프로필, 게스트 세션 토큰, allow_external_edit 플로우 및 테스트 완료 (2025-11-17).
+- `[ ]` **F1 – Audit Logging**: 감사 로그 스키마/조회/주요 액션 기록 예정.
+- `[ ]` **F2 – Governance & Rate Limiting**: 거버넌스/레이트 리밋/삭제 안전장치/템플릿 정책 예정.
+
+
 ### Workset Bundles & Dependencies
 | Workset | 포함 기능 | 같이 묶는 이유 | 선행 필요 |
 | --- | --- | --- | --- |

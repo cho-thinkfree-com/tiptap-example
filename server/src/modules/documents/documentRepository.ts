@@ -143,7 +143,6 @@ export class DocumentRepository {
           ? {
               title: {
                 contains: filters.search,
-                mode: 'insensitive',
               },
             }
           : {}),

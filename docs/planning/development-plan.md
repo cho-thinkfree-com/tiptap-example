@@ -316,10 +316,11 @@
 
 > 독립 실행 가능 항목(PDF Export 등)도 앞선 단계가 준비됐다면 별도 티켓으로 뽑을 수 있지만, 기본적으로 표의 순서를 따르는 것이 디버깅과 QA에 유리하다.
 
-### 다음 백엔드 작업
-- **S14 감사 API 연결**: Fastify 라우터에 `/api/workspaces/{workspaceId}/audit`를 등록하여 `WorkspaceAuditService#list`과 `WorkspaceAccessService`를 거쳐 owner/admin 검증 → `querySchema` 기반 쿼리 파싱 → 페이지네이션 응답을 순서대로 처리합니다. OpenAPI/문서(`docs/api/step-S14.md`, `docs/api/openapi/step-S14.yaml`)와 일치하는 응답/오류 스펙을 정리하고 필터·권한·페이지네이션 테스트를 작성하세요.
-- **S15 이후 준비**: Step S15~S27은 검색/필터, Export, Realtime, AI 등 새로운 API를 다루므로, 먼저 `docs/api/step-S{n}.md`에서 요구사항과 검증 시나리오를 정의하고 `tests/checklists/S{n}.md`에 TDD 흐름을 기록한 뒤 실제 구현/테스트로 넘어갑니다. 우선순위 변경 시 해당 문서와 체크리스트를 함께 갱신합니다.
-- **Fastify 공통 레이어 정리**: 인증, 권한, 에러, 로깅, OpenAPI/Swagger 노출, Prisma 트랜잭션 처리를 Fastify 미들웨어 또는 플러그인으로 정리하여 Step 구현을 지원합니다. audit/share link/document permission 같은 서비스가 공통 request context(account/workspace)를 재사용하는지 확인하고, 예외 시나리오(권한 거부, 500)와 관련 테스트를 보강하세요.
+### 순서에 따른 백엔드 계획
+1. **Step 0 – 에디터 안정화**: UI/TOC/툴바를 Fastify + Vite 조합에서 manual/Playwright로 점검하고 TDD 회귀를 마친 뒤 Step 0을 완료로 유지합니다. (현재는 백엔드 통합 우선이므로 에디터 안정화는 이후에 따로 다루고, 핵심 기능 연결을 먼저 진행합니다.)
+2. **Step S1~S14 – 인증/워크스페이스/문서/공유/감사**: 각 Step 문서와 OpenAPI를 기준 삼아 Fastify 핸들러를 붙이고, tests/backend/*과 tests/checklists/S{n}.md에서 권한/예외/페이징 흐름을 검증합니다. 현재 S14 감사 로그 Fastify 연결이 최우선입니다.
+3. **Step S15~S27 – 고급 생산성 기능**: 검색·필터·Export·Realtime·Collab·AI 등 새로운 Step을 순서대로 문서화 및 체크리스트 작성→Fastify/서비스 구현→테스트/QA로 이어가며, 순서 변경 시 문서/체크리스트를 동기화합니다.
+4. **Fastify 공통 레이어 정비**: 인증·권한·에러·로깅, OpenAPI/Swagger 노출, Prisma 트랜잭션, request context(account/workspace) 공유 등을 플러그인/미들웨어로 정리하여 모든 Step 구현을 안정화하고 403·500 예외 흐름을 테스트합니다.
 
 ### 실행 산출물 & 가이드
 - **API 계약서**  

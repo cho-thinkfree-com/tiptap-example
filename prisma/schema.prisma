@@ -75,6 +75,19 @@ enum ExternalCollaboratorStatus {
   suspended
 }
 
+enum AuditActorType {
+  membership
+  external
+}
+
+enum ExportJobStatus {
+  pending
+  processing
+  completed
+  failed
+  cancelled
+}
+
 model Account {
   id            String        @id @default(uuid())
   email         String        @unique
@@ -137,6 +150,8 @@ model Workspace {
   joinRequests   WorkspaceJoinRequest[]
   folders        Folder[]
   documents      Document[]
+  exportJobs     ExportJob[]
+  auditLogs      AuditLog[]
 }
 
 model WorkspaceMembership {
@@ -229,10 +244,27 @@ model Document {
   revisions          DocumentRevision[]
   permissions        DocumentPermission[]
   shareLinks         DocumentShareLink[]
+  exportJobs         ExportJob[]
 
   @@unique([workspaceId, slug])
   @@index([workspaceId, folderId])
   @@index([ownerMembershipId])
+}
+
+model ExportJob {
+  id           String          @id @default(uuid())
+  workspace    Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId  String          @map("workspace_id")
+  document     Document?       @relation(fields: [documentId], references: [id])
+  documentId   String?         @map("document_id")
+  format       String
+  status       ExportJobStatus @default(pending)
+  resultUrl    String?         @map("result_url")
+  errorMessage String?         @map("error_message")
+  createdAt    DateTime        @default(now()) @map("created_at")
+  updatedAt    DateTime        @updatedAt @map("updated_at")
+
+  @@index([workspaceId])
 }
 
 model DocumentRevision {
@@ -306,4 +338,22 @@ model DocumentShareLinkSession {
 
   @@index([shareLinkId])
   @@index([collaboratorId])
+}
+
+model AuditLog {
+  id                 String          @id @default(uuid())
+  workspace          Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  workspaceId        String          @map("workspace_id")
+  actorType          AuditActorType  @map("actor_type")
+  actorMembershipId  String?         @map("actor_membership_id")
+  actorCollaboratorId String?        @map("actor_collaborator_id")
+  action             String
+  entityType         String          @map("entity_type")
+  entityId           String?         @map("entity_id")
+  metadata           Json?           @map("metadata")
+  createdAt          DateTime        @default(now()) @map("created_at")
+
+  @@index([workspaceId, createdAt])
+  @@index([actorMembershipId])
+  @@index([actorCollaboratorId])
 }

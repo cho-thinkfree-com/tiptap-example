@@ -34,6 +34,8 @@ import { ShareLinkService } from './modules/documents/shareLinkService'
 import { DocumentShareLinkRepository } from './modules/documents/documentShareLinkRepository'
 import { DocumentShareLinkSessionRepository } from './modules/documents/documentShareLinkSessionRepository'
 import { ExternalCollaboratorRepository } from './modules/documents/externalCollaboratorRepository'
+import { ExportJobRepository } from './modules/export/exportJobRepository'
+import { ExportJobService } from './modules/export/exportJobService'
 
 export interface ServerOptions {
   prisma?: DatabaseClient
@@ -117,6 +119,14 @@ export const buildServer = ({ prisma, logger = true }: ServerOptions = {}) => {
     auditLogService,
   )
 
+  const exportJobRepository = new ExportJobRepository(db)
+  const exportJobService = new ExportJobService(
+    exportJobRepository,
+    membershipRepository,
+    workspaceAccessService,
+    auditLogService,
+  )
+
   const workspaceAuditService = new WorkspaceAuditService(
     workspaceRepository,
     membershipRepository,
@@ -137,6 +147,7 @@ export const buildServer = ({ prisma, logger = true }: ServerOptions = {}) => {
   })
 
   app.addHook('onClose', async () => {
+    exportJobService.shutdown()
     if (!prisma) {
       await db.$disconnect()
     }
@@ -183,6 +194,8 @@ export const buildServer = ({ prisma, logger = true }: ServerOptions = {}) => {
 
   const documentStatusValues: Set<string> = new Set(Object.values(DocumentStatus))
   const documentVisibilityValues: Set<string> = new Set(Object.values(DocumentVisibility))
+  const documentStatusArray = Object.values(DocumentStatus) as DocumentStatus[]
+  const documentVisibilityArray = Object.values(DocumentVisibility) as DocumentVisibility[]
 
   const parseBoolean = (value?: string) => {
     if (value === undefined) return undefined
@@ -205,6 +218,40 @@ export const buildServer = ({ prisma, logger = true }: ServerOptions = {}) => {
     if (search) filters.search = search
     if (includeDeleted !== undefined) filters.includeDeleted = includeDeleted
     return filters
+  }
+
+  const searchRequestSchema = z.object({
+    workspaceId: z.string().uuid(),
+    folderId: z.string().uuid().nullable().optional(),
+    status: z.enum(documentStatusArray as [DocumentStatus, ...DocumentStatus[]]).optional(),
+    visibility: z.enum(documentVisibilityArray as [DocumentVisibility, ...DocumentVisibility[]]).optional(),
+    search: z.string().trim().optional(),
+    page: z.number().int().min(1).default(1),
+    pageSize: z.number().int().min(1).max(100).default(25),
+  })
+
+  const activityRequestSchema = z.object({
+    workspaceId: z.string().uuid(),
+    page: z.number().int().min(1).default(1),
+    pageSize: z.number().int().min(1).max(100).default(25),
+    from: z.string().datetime().optional(),
+    to: z.string().datetime().optional(),
+    entityType: z.string().optional(),
+    action: z.string().optional(),
+  })
+
+  const exportRequestSchema = z.object({
+    workspaceId: z.string().uuid(),
+    documentId: z.string().uuid().optional(),
+    format: z.enum(['pdf', 'md', 'html'] as const),
+  })
+
+  const parseQueryNumber = (value: unknown, fallback: number) => {
+    const parsed = Number(value)
+    if (Number.isFinite(parsed) && parsed >= 1) {
+      return parsed
+    }
+    return fallback
   }
 
   const loadDocumentWorkspace = async (documentId: string) => {
@@ -614,6 +661,80 @@ export const buildServer = ({ prisma, logger = true }: ServerOptions = {}) => {
     const token = (request.params as { token: string }).token
     const result = await shareLinkService.acceptGuest(token, request.body)
     reply.send(result)
+  })
+
+  app.post('/api/search', { preHandler: authenticate }, async (request, reply) => {
+    const payload = searchRequestSchema.parse(request.body)
+    const accountId = requireAccountId(request)
+    await workspaceAccessService.assertMember(accountId, payload.workspaceId)
+    const filters: DocumentListFilters = {}
+    if (payload.folderId !== undefined) filters.folderId = payload.folderId
+    if (payload.status) filters.status = payload.status
+    if (payload.visibility) filters.visibility = payload.visibility
+    if (payload.search) filters.search = payload.search
+    const { documents } = await documentService.listWorkspaceDocuments(accountId, payload.workspaceId, filters)
+    const page = payload.page
+    const pageSize = payload.pageSize
+    const start = (page - 1) * pageSize
+    const slice = documents.slice(start, start + pageSize)
+    reply.send({
+      documents: slice,
+      page,
+      pageSize,
+      total: documents.length,
+      hasNextPage: start + pageSize < documents.length,
+    })
+  })
+
+  app.get('/api/workspaces/:workspaceId/activity-feed', { preHandler: authenticate }, async (request, reply) => {
+    const accountId = requireAccountId(request)
+    const workspaceId = (request.params as { workspaceId: string }).workspaceId
+    const payload = activityRequestSchema.parse({
+      workspaceId,
+      page: parseQueryNumber(request.query.page, 1),
+      pageSize: parseQueryNumber(request.query.pageSize, 25),
+      from: typeof request.query.from === 'string' ? request.query.from : undefined,
+      to: typeof request.query.to === 'string' ? request.query.to : undefined,
+      entityType: typeof request.query.entityType === 'string' ? request.query.entityType : undefined,
+      action: typeof request.query.action === 'string' ? request.query.action : undefined,
+    })
+    await workspaceAccessService.assertMember(accountId, workspaceId)
+    const query = {
+      workspaceId,
+      page: payload.page,
+      pageSize: payload.pageSize,
+      from: payload.from ? new Date(payload.from) : undefined,
+      to: payload.to ? new Date(payload.to) : undefined,
+      entityTypes: payload.entityType ? payload.entityType.split(',').map((value) => value.trim()).filter(Boolean) : undefined,
+      action: payload.action,
+    }
+    const logs = await auditLogRepository.list(query)
+    reply.send(logs)
+  })
+
+  app.post('/api/export', { preHandler: authenticate }, async (request, reply) => {
+    const accountId = requireAccountId(request)
+    const payload = exportRequestSchema.parse(request.body)
+    const job = await exportJobService.createJob(accountId, payload)
+    reply.status(201).send(job)
+  })
+
+  app.get('/api/export/:jobId', { preHandler: authenticate }, async (request, reply) => {
+    const accountId = requireAccountId(request)
+    const jobId = (request.params as { jobId: string }).jobId
+    const job = await exportJobService.getJob(jobId)
+    if (!job) {
+      throw app.httpErrors.notFound('Export job not found')
+    }
+    await workspaceAccessService.assertMember(accountId, job.workspaceId)
+    reply.send(job)
+  })
+
+  app.post('/api/export/:jobId/cancel', { preHandler: authenticate }, async (request, reply) => {
+    const accountId = requireAccountId(request)
+    const jobId = (request.params as { jobId: string }).jobId
+    await exportJobService.cancelJob(accountId, jobId)
+    reply.send({ ok: true })
   })
 
   app.get('/api/workspaces/:workspaceId/audit', { preHandler: authenticate }, async (request, reply) => {

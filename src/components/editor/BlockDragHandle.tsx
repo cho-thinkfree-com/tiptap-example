@@ -117,8 +117,30 @@ const BlockDragHandle = () => {
             const crossAxisLimit = Math.max(reference.height - HANDLE_SIZE, 0)
             crossAxis = Math.min(Math.max(crossAxis, -crossAxisLimit), crossAxisLimit)
 
-            // Position at the very left edge, aligned with toolbar
-            const mainAxis = HANDLE_SIZE + HANDLE_GAP
+            // Dynamically find the container with padding to center the handle in the "Green Area"
+            let paddingLeft = 0
+            if (container instanceof HTMLElement) {
+              let current: HTMLElement | null = container
+              // Traverse up to find the container with significant padding
+              // We limit the search to avoid going too far up
+              for (let i = 0; i < 5; i++) {
+                if (!current) break
+                const style = window.getComputedStyle(current)
+                const pl = parsePixelValue(style.paddingLeft)
+                if (pl > 10) { // Threshold to ignore small paddings
+                  paddingLeft = pl
+                  break
+                }
+                current = current.parentElement
+              }
+            }
+
+            // If no padding found or it's too small, default to a reasonable offset
+            // But if we found it, center the handle: (Padding - HandleSize) / 2
+            // mainAxis is the gap between reference (paragraph) and handle
+            const mainAxis = paddingLeft > 0
+              ? (paddingLeft - HANDLE_SIZE) / 2
+              : 8 // Default fallback
 
             return {
               mainAxis,

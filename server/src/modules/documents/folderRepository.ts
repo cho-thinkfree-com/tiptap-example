@@ -71,6 +71,28 @@ export class FolderRepository {
     return folder ? toEntity(folder) : null
   }
 
+  async findByIdWithAncestors(id: string): Promise<{ folder: FolderEntity; ancestors: FolderEntity[] } | null> {
+    const folder = await this.findById(id)
+    if (!folder) return null
+
+    const ancestors: FolderEntity[] = []
+    let current = folder
+    console.log(`[findByIdWithAncestors] Starting for folder: ${folder.name} (${folder.id}), parentId: ${folder.parentId}`)
+    while (current.parentId) {
+      console.log(`[findByIdWithAncestors] Fetching parent: ${current.parentId}`)
+      const parent = await this.findById(current.parentId)
+      if (!parent) {
+        console.log(`[findByIdWithAncestors] Parent not found!`)
+        break
+      }
+      console.log(`[findByIdWithAncestors] Found parent: ${parent.name}`)
+      ancestors.unshift(parent)
+      current = parent
+    }
+    console.log(`[findByIdWithAncestors] Final ancestors count: ${ancestors.length}`)
+    return { folder, ancestors }
+  }
+
   async listByWorkspace(workspaceId: string, includeDeleted = false): Promise<FolderEntity[]> {
     const folders = await this.prisma.folder.findMany({
       where: {

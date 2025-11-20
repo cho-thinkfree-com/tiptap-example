@@ -395,7 +395,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
   app.get('/api/workspaces/:workspaceId', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const workspaceId = (request.params as { workspaceId: string }).workspaceId
-    await workspaceAccess.assertOwner(accountId, workspaceId)
+    await workspaceAccess.assertMember(accountId, workspaceId)
     const workspace = await workspaceService.getById(workspaceId)
     if (!workspace) {
       throw createError(404, 'Workspace not found')
@@ -612,12 +612,8 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     const accountId = requireAccountId(request)
     const folderId = (request.params as { folderId: string }).folderId
     const workspaceId = await loadFolderWorkspaceId(folderId)
-    await workspaceAccess.assertMember(accountId, workspaceId)
-    const folder = await folderRepository.findById(folderId)
-    if (!folder) {
-      throw createError(404, 'Folder not found')
-    }
-    reply.send(folder)
+    const result = await folderService.getFolderWithAncestors(accountId, workspaceId, folderId)
+    reply.send(result)
   })
 
   app.get('/api/workspaces/:workspaceId/documents/check-title', { preHandler: authenticate }, async (request, reply) => {

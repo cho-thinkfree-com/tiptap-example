@@ -1,14 +1,17 @@
-import { Alert, Box, Breadcrumbs, Button, CircularProgress, Container, Link, Typography, Menu, MenuItem, IconButton, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip } from '@mui/material';
+import { Alert, Box, Breadcrumbs, Button, CircularProgress, Container, Link, Typography, Menu, MenuItem, IconButton, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, Avatar, Stack, Divider } from '@mui/material';
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import { useParams, useSearchParams, Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { getWorkspaceDocuments, getFolder, createFolder, createDocument, deleteDocument, deleteFolder, renameDocument, renameFolder, type DocumentSummary, type FolderSummary } from '../../lib/api';
+import { getWorkspaceDocuments, getFolder, createFolder, createDocument, deleteDocument, deleteFolder, renameDocument, renameFolder, getWorkspace, getWorkspaceMembers, type DocumentSummary, type FolderSummary, type WorkspaceSummary, type MembershipSummary } from '../../lib/api';
 import { formatRelativeDate } from '../../lib/formatDate';
+import HomeIcon from '@mui/icons-material/Home';
+
 import FolderIcon from '@mui/icons-material/Folder';
 import ArticleIcon from '@mui/icons-material/Article';
 import AddIcon from '@mui/icons-material/Add';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import PersonIcon from '@mui/icons-material/Person';
 import CreateFolderDialog from '../../components/workspace/CreateFolderDialog';
 import RenameDialog from '../../components/workspace/RenameDialog';
 
@@ -17,6 +20,9 @@ const WorkspacePage = () => {
   const [searchParams] = useSearchParams();
   const folderId = searchParams.get('folderId');
   const { tokens } = useAuth();
+  const [workspace, setWorkspace] = useState<WorkspaceSummary | null>(null);
+  const [members, setMembers] = useState<MembershipSummary[]>([]);
+  const [ancestors, setAncestors] = useState<FolderSummary[]>([]);
   const [currentFolder, setCurrentFolder] = useState<FolderSummary | null>(null);
   const [documents, setDocuments] = useState<DocumentSummary[]>([]);
   const [folders, setFolders] = useState<FolderSummary[]>([]);
@@ -37,11 +43,30 @@ const WorkspacePage = () => {
         : Promise.resolve(null);
 
       Promise.all([
+        getWorkspace(workspaceId, tokens.accessToken),
+        getWorkspaceMembers(workspaceId, tokens.accessToken),
         folderDetailsPromise,
         getWorkspaceDocuments(workspaceId, tokens.accessToken, { folderId: folderId ?? undefined }),
       ])
-        .then(([folderDetails, contents]) => {
-          setCurrentFolder(folderDetails);
+        .then(([workspaceData, membersData, folderResponse, contents]) => {
+          setWorkspace(workspaceData);
+          setMembers(membersData.items);
+
+          // Robust handling for folderResponse
+          if (folderResponse) {
+            if ('ancestors' in folderResponse) {
+              setCurrentFolder(folderResponse.folder);
+              setAncestors(folderResponse.ancestors || []);
+            } else {
+              // Fallback if backend returns old structure
+              setCurrentFolder(folderResponse as unknown as FolderSummary);
+              setAncestors([]);
+            }
+          } else {
+            setCurrentFolder(null);
+            setAncestors([]);
+          }
+
           setDocuments(contents.documents);
           setFolders(contents.folders);
         })
@@ -139,17 +164,20 @@ const WorkspacePage = () => {
   };
 
   const breadcrumbPaths = useMemo(() => {
-    const paths = [{ name: 'Workspace Root', path: `/workspace/${workspaceId}` }];
-    if (currentFolder && currentFolder.pathCache) {
-      const segments = currentFolder.pathCache.split('/').filter(Boolean);
-      let currentPath = `/workspace/${workspaceId}`;
-      segments.forEach((segment) => {
-        currentPath += `?folderId=${currentFolder.id}`; // Simplified path logic
-        paths.push({ name: segment, path: currentPath });
+    const paths = [{ name: 'Root', path: `/workspace/${workspaceId}`, icon: <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" /> }];
+
+    if (Array.isArray(ancestors)) {
+      ancestors.forEach((ancestor) => {
+        paths.push({ name: ancestor.name, path: `/workspace/${workspaceId}?folderId=${ancestor.id}`, icon: undefined });
       });
     }
+
+    if (currentFolder) {
+      paths.push({ name: currentFolder.name, path: `/workspace/${workspaceId}?folderId=${currentFolder.id}`, icon: undefined });
+    }
+
     return paths;
-  }, [currentFolder, workspaceId]);
+  }, [ancestors, currentFolder, workspaceId]);
 
   const renderFilesAndFolders = () => {
     if (loading) return <CircularProgress />;
@@ -226,22 +254,59 @@ const WorkspacePage = () => {
     );
   };
 
+  const owner = useMemo(() => {
+    if (!workspace || !members) return null;
+    return members.find(m => m.accountId === workspace.ownerAccountId);
+  }, [workspace, members]);
+
   return (
     <Container maxWidth="xl">
+      {/* Workspace Header Info */}
+      {workspace && (
+        <Box sx={{ mb: 4, p: 3, bgcolor: 'background.paper', borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
+          <Stack spacing={2}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="h4" fontWeight="bold" component="h1">
+                {workspace.name}
+              </Typography>
+              {owner && (
+                <Chip
+                  avatar={<Avatar><PersonIcon /></Avatar>}
+                  label={`Owner: ${owner.displayName || 'Unknown'}`}
+                  variant="outlined"
+                />
+              )}
+            </Box>
+
+            {workspace.description && (
+              <Typography variant="body1" color="text.secondary" sx={{ whiteSpace: 'pre-wrap' }}>
+                {workspace.description}
+              </Typography>
+            )}
+          </Stack>
+        </Box>
+      )}
+
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
-        <Breadcrumbs separator={<NavigateNextIcon fontSize="small" />} aria-label="breadcrumb">
-          {breadcrumbPaths.map((item, index) => (
-            index === breadcrumbPaths.length - 1 ? (
-              <Typography color="text.primary" fontWeight="600" key={item.name}>
+        <Breadcrumbs separator={<NavigateNextIcon fontSize="small" />} aria-label="breadcrumb" maxItems={20}>
+          {breadcrumbPaths.map((item, index) => {
+            const isLast = index === breadcrumbPaths.length - 1;
+            return isLast ? (
+              <Typography color="text.primary" fontWeight="600" key={item.name} sx={{ display: 'flex', alignItems: 'center' }}>
+                {item.icon}
                 {item.name}
               </Typography>
             ) : (
-              <Link component={RouterLink} underline="hover" color="inherit" to={item.path} key={item.name}>
+              <Link component={RouterLink} underline="hover" color="inherit" to={item.path} key={item.name} sx={{ display: 'flex', alignItems: 'center' }}>
+                {item.icon}
                 {item.name}
               </Link>
-            )
-          ))}
+            );
+          })}
         </Breadcrumbs>
+
+        {/* DEBUG: Remove after fixing */}
+        {/* <Box sx={{ display: 'none' }}>Ancestors: {JSON.stringify(ancestors)}</Box> */}
 
         <Box sx={{ display: 'flex', gap: 2 }}>
           <Button variant="outlined" startIcon={<AddIcon />} onClick={() => setCreateFolderDialogOpen(true)}>
@@ -313,7 +378,7 @@ const WorkspacePage = () => {
         initialName={selectedItem?.name || ''}
         itemType={selectedItem?.type || 'document'}
       />
-    </Container>
+    </Container >
   );
 };
 

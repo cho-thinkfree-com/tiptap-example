@@ -35,6 +35,15 @@ export class FolderService {
     return this.folderRepository.listByWorkspace(workspaceId, includeDeleted)
   }
 
+  async getFolderWithAncestors(accountId: string, workspaceId: string, folderId: string) {
+    await this.workspaceAccess.assertMember(accountId, workspaceId)
+    const result = await this.folderRepository.findByIdWithAncestors(folderId)
+    if (!result || result.folder.workspaceId !== workspaceId) {
+      throw new FolderNotFoundError()
+    }
+    return result
+  }
+
   async createFolder(accountId: string, workspaceId: string, rawInput: z.input<typeof createFolderSchema>) {
     await this.workspaceAccess.assertAdminOrOwner(accountId, workspaceId)
     const input = createFolderSchema.parse(rawInput)
@@ -137,8 +146,12 @@ export class FolderService {
     name: string,
     excludeId?: string,
   ) {
-    const exists = await this.folderRepository.isNameTaken(workspaceId, parentId, name, excludeId)
-    if (exists) {
+    const folderExists = await this.folderRepository.isNameTaken(workspaceId, parentId, name, excludeId)
+    if (folderExists) {
+      throw new FolderNameConflictError()
+    }
+    const docExists = await this.documentRepository.titleExists(workspaceId, parentId, name)
+    if (docExists) {
       throw new FolderNameConflictError()
     }
   }

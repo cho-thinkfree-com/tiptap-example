@@ -15,6 +15,11 @@ const ProtectedRoute = () => {
   return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />;
 };
 
+const PublicRoute = () => {
+  const { isAuthenticated } = useAuth();
+  return isAuthenticated ? <Navigate to="/dashboard" replace /> : <Outlet />;
+};
+
 const AppRoutes = () => {
   const { isAuthenticated } = useAuth();
 
@@ -41,8 +46,8 @@ const AppRoutes = () => {
         <Route path="/document/:documentId" element={<EditorPage />} />
       </Route>
 
-      {/* Auth Routes - AuthLayout is now built into the pages themselves */}
-      <Route>
+      {/* Auth Routes - Redirect to dashboard if already logged in */}
+      <Route element={<PublicRoute />}>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
       </Route>

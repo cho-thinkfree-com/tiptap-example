@@ -251,6 +251,26 @@ export class DocumentRepository {
     return Boolean(document)
   }
 
+  async titleExists(
+    workspaceId: string,
+    folderId: string | null,
+    title: string,
+    excludeId?: string,
+  ): Promise<boolean> {
+    const document = await this.prisma.document.findFirst({
+      where: {
+        workspaceId,
+        folderId,
+        deletedAt: null,
+        title: {
+          equals: title,
+        },
+        ...(excludeId ? { id: { not: excludeId } } : {}),
+      },
+    })
+    return Boolean(document)
+  }
+
   async reassignFolder(sourceFolderId: string, targetFolderId: string | null): Promise<void> {
     await this.prisma.document.updateMany({
       where: { folderId: sourceFolderId },

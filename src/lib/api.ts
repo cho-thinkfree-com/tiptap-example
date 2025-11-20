@@ -226,6 +226,9 @@ export const refresh = (input: { refreshToken: string }) => requestJSON<LoginRes
 export const getWorkspaces = (token: string) =>
   requestJSON<{ items: WorkspaceSummary[] }>('/api/workspaces', { token }).then((payload) => payload.items ?? [])
 
+export const getWorkspace = (workspaceId: string, token: string) =>
+  requestJSON<WorkspaceSummary>(`/api/workspaces/${workspaceId}`, { token })
+
 export const getWorkspaceMembers = (workspaceId: string, token: string) =>
   requestJSON<{ items: MembershipSummary[] }>(`/api/workspaces/${workspaceId}/members`, { token })
 
@@ -340,7 +343,7 @@ export const renameFolder = (folderId: string, token: string, body: { name: stri
   requestJSON<FolderSummary>(`/api/folders/${folderId}`, { method: 'PATCH', token, body })
 
 export const getFolder = (folderId: string, token: string) =>
-  requestJSON<FolderSummary>(`/api/folders/${folderId}`, { token })
+  requestJSON<{ folder: FolderSummary; ancestors: FolderSummary[] }>(`/api/folders/${folderId}`, { token })
 
 export const addDocumentTag = (documentId: string, token: string, tag: string) =>
   requestJSON<{ name: string }>(`/api/documents/${documentId}/tags`, { method: 'POST', token, body: { name: tag } })

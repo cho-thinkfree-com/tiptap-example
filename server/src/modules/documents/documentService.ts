@@ -142,17 +142,19 @@ export class DocumentService {
       workspaceId,
       { folderId }
     )
+    const existingFolders = await this.folderRepository.listChildren(workspaceId, folderId)
 
-    const existingTitles = new Set(
-      existingDocs.map(doc => doc.title.toLowerCase())
-    )
+    const existingNames = new Set([
+      ...existingDocs.map(doc => doc.title.toLowerCase()),
+      ...existingFolders.map(folder => folder.name.toLowerCase())
+    ])
 
-    if (!existingTitles.has(baseTitle.toLowerCase())) {
+    if (!existingNames.has(baseTitle.toLowerCase())) {
       return baseTitle
     }
 
     let counter = 1
-    while (existingTitles.has(`${baseTitle} (${counter})`.toLowerCase())) {
+    while (existingNames.has(`${baseTitle} (${counter})`.toLowerCase())) {
       counter++
     }
 
@@ -163,37 +165,28 @@ export class DocumentService {
     accountId: string,
     workspaceId: string,
     documentId: string,
-    rawInput: z.input<typeof updateDocumentSchema>,
-  ) {
-    await this.workspaceAccess.assertMember(accountId, workspaceId)
+    rawInput: z.input<typeof updateDocumentSchema>
+  ): Promise<DocumentEntity> {
     const document = await this.ensureDocument(documentId, workspaceId)
+    await this.workspaceAccess.assertMember(accountId, workspaceId)
+
     const input = updateDocumentSchema.parse(rawInput)
-    let folderId = input.folderId ?? document.folderId ?? null
-    if (input.folderId !== undefined) {
-      const folder = input.folderId ? await this.ensureFolder(workspaceId, input.folderId) : null
-      if (folder?.deletedAt) throw new FolderNotFoundError()
-      folderId = input.folderId
-    }
-    let slug = document.slug
+
     if (input.slug) {
-      slug = await this.resolveSlug(workspaceId, input.slug, { excludeId: document.id, strict: true })
+      await this.resolveSlug(workspaceId, input.slug, { excludeId: documentId, strict: true })
     }
 
-    return this.documentRepository.update(documentId, {
-      title: input.title,
-      folderId,
-      slug,
-      status: input.status,
-      visibility: input.visibility,
-      summary: input.summary,
-      sortOrder: input.sortOrder,
-    })
+    if (input.title && input.title !== document.title) {
+      // Optional: check for title uniqueness if enforced
+    }
+
+    return this.documentRepository.update(documentId, input)
   }
 
   async appendRevision(
     accountId: string,
     documentId: string,
-    rawInput: z.input<typeof revisionSchema>,
+    rawInput: z.input<typeof revisionSchema>
   ): Promise<DocumentRevisionEntity> {
     const document = await this.ensureDocument(documentId)
     await this.workspaceAccess.assertMember(accountId, document.workspaceId)
@@ -202,9 +195,11 @@ export class DocumentService {
       throw new MembershipAccessDeniedError()
     }
     await this.planLimitService.assertDocumentEditAllowed(document.workspaceId)
+
     const input = revisionSchema.parse(rawInput)
     const latest = await this.revisionRepository.findLatest(documentId)
     const nextVersion = (latest?.version ?? 0) + 1
+
     return this.revisionRepository.create({
       documentId,
       version: nextVersion,
@@ -276,6 +271,13 @@ export class DocumentSlugConflictError extends Error {
   constructor() {
     super('Document slug already exists in this workspace')
     this.name = 'DocumentSlugConflictError'
+  }
+}
+
+export class DocumentTitleConflictError extends Error {
+  constructor() {
+    super('A document or folder with this name already exists')
+    this.name = 'DocumentTitleConflictError'
   }
 }
 

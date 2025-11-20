@@ -17,47 +17,92 @@ const AuthLayout = ({ children, title, subtitle }: AuthLayoutProps) => {
                     flex: 1,
                     display: { xs: 'none', md: 'flex' },
                     flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    bgcolor: 'secondary.main',
-                    color: 'white',
-                    p: 6,
+                    justifyContent: 'center',
+                    background: 'linear-gradient(135deg, #312e81 0%, #1e3a8a 100%)', // Deep Indigo to Dark Blue
+                    color: 'common.white',
+                    p: 8,
                     position: 'relative',
                     overflow: 'hidden',
                 }}
             >
-                <Box sx={{ position: 'relative', zIndex: 1 }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 8 }}>
-                        <Box component="img" src="/logo.png" alt="ododocs logo" sx={{ height: 40, width: 'auto' }} />
-                        <Typography variant="h5" fontWeight="bold">
+                <Box sx={{ position: 'relative', zIndex: 1, maxWidth: 600, mx: 'auto' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 6 }}>
+                        <AutoAwesomeIcon sx={{ fontSize: 48, color: 'common.white' }} />
+                        <Typography variant="h4" fontWeight="800" color="inherit" sx={{ letterSpacing: '-0.02em' }}>
                             ododocs
                         </Typography>
                     </Box>
 
-                    <Typography variant="h3" fontWeight="bold" sx={{ mb: 2, maxWidth: '80%' }}>
-                        Craft beautiful documents with ease.
+                    <Typography variant="h2" fontWeight="800" sx={{ mb: 3, lineHeight: 1.1, color: 'common.white' }}>
+                        Write, Collaborate, Publish.
                     </Typography>
-                    <Typography variant="h6" sx={{ opacity: 0.8, maxWidth: '70%', fontWeight: 400 }}>
-                        A modern, block-based editor designed for focus and clarity.
+
+                    <Typography variant="h5" sx={{ mb: 6, opacity: 0.8, fontWeight: 500, lineHeight: 1.6, color: 'common.white' }}>
+                        The all-in-one workspace for your documentation.
+                        Simple enough for notes, powerful enough for knowledge bases.
                     </Typography>
+
+                    <Box sx={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: 3,
+                        p: 4,
+                        borderRadius: 4,
+                        bgcolor: 'rgba(255, 255, 255, 0.05)',
+                        backdropFilter: 'blur(20px)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.2)',
+                    }}>
+                        {[
+                            { title: 'Real-time Collaboration', desc: 'Edit documents together with your team, instantly.' },
+                            { title: 'Block-based Editing', desc: 'Focus on content with a distraction-free, modern editor.' },
+                            { title: 'Smart Organization', desc: 'Keep everything structured with nested workspaces and folders.' }
+                        ].map((feature, index) => (
+                            <Box key={index} sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
+                                <Box
+                                    sx={{
+                                        mt: 0.5,
+                                        width: 24,
+                                        height: 24,
+                                        borderRadius: '50%',
+                                        bgcolor: 'rgba(255,255,255,0.15)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center'
+                                    }}
+                                >
+                                    <AutoAwesomeIcon sx={{ fontSize: 14 }} />
+                                </Box>
+                                <Box>
+                                    <Typography variant="subtitle1" fontWeight="700" sx={{ color: 'common.white', mb: 0.5 }}>
+                                        {feature.title}
+                                    </Typography>
+                                    <Typography variant="body2" sx={{ color: 'common.white', opacity: 0.7, lineHeight: 1.5 }}>
+                                        {feature.desc}
+                                    </Typography>
+                                </Box>
+                            </Box>
+                        ))}
+                    </Box>
                 </Box>
 
-                <Box sx={{ position: 'relative', zIndex: 1 }}>
-                    <Typography variant="body2" sx={{ opacity: 0.6 }}>
+                <Box sx={{ position: 'absolute', bottom: 40, left: 64, zIndex: 1 }}>
+                    <Typography variant="caption" sx={{ opacity: 0.6, color: 'common.white' }}>
                         © 2025 ododocs. All rights reserved.
                     </Typography>
                 </Box>
 
-                {/* Abstract Background Pattern */}
+                {/* Decorative Elements */}
                 <Box
                     sx={{
                         position: 'absolute',
                         top: '-20%',
-                        right: '-20%',
-                        width: '80%',
-                        height: '80%',
-                        background: 'radial-gradient(circle, rgba(99,102,241,0.2) 0%, rgba(30,41,59,0) 70%)',
+                        right: '-10%',
+                        width: '600px',
+                        height: '600px',
+                        background: 'radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%)',
                         borderRadius: '50%',
-                        filter: 'blur(60px)',
+                        filter: 'blur(80px)',
                     }}
                 />
             </Box>

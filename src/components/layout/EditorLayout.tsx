@@ -66,6 +66,14 @@ const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClos
         }
     };
 
+    const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Escape') {
+            // Revert to original title on ESC
+            setLocalTitle(document.title);
+            (e.target as HTMLInputElement).blur();
+        }
+    };
+
     return (
         <RichTextEditorProvider editor={editor}>
             <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
@@ -75,6 +83,8 @@ const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClos
                             value={localTitle}
                             onChange={handleTitleChange}
                             onBlur={handleTitleBlur}
+                            onKeyDown={handleKeyDown}
+                            placeholder={document.title}
                             variant="standard"
                             InputProps={{
                                 disableUnderline: true,
@@ -85,7 +95,20 @@ const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClos
                             }}
                             sx={{ flexGrow: 1 }}
                         />
-                        <Typography variant="body2" sx={{ mr: 1 }}>
+                        {localTitle !== document.title && (
+                            <Typography
+                                variant="caption"
+                                sx={{
+                                    color: 'text.secondary',
+                                    ml: 2,
+                                    fontSize: '0.75rem',
+                                    whiteSpace: 'nowrap'
+                                }}
+                            >
+                                ESC to cancel
+                            </Typography>
+                        )}
+                        <Typography variant="body2" sx={{ mr: 1, ml: 2 }}>
                             {getSaveStatusText()}
                         </Typography>
                         <Button color="primary" variant="contained" onClick={onClose}>

@@ -1,8 +1,8 @@
-import { Alert, Box, Breadcrumbs, Button, CircularProgress, Container, Link, Typography, Menu, MenuItem, IconButton, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, Avatar, Stack } from '@mui/material';
+import { Alert, Box, Breadcrumbs, Button, CircularProgress, Container, Link, Typography, Menu, MenuItem, IconButton, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip } from '@mui/material';
 import { useCallback, useEffect, useState, useMemo } from 'react';
 import { useParams, useSearchParams, Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { getWorkspaceDocuments, getFolder, createFolder, createDocument, deleteDocument, deleteFolder, renameDocument, renameFolder, getWorkspace, getWorkspaceMembers, type DocumentSummary, type FolderSummary, type WorkspaceSummary, type MembershipSummary } from '../../lib/api';
+import { getWorkspaceDocuments, getFolder, createFolder, createDocument, deleteDocument, deleteFolder, renameDocument, renameFolder, getWorkspace, type DocumentSummary, type FolderSummary, type WorkspaceSummary } from '../../lib/api';
 import { formatRelativeDate } from '../../lib/formatDate';
 import HomeIcon from '@mui/icons-material/Home';
 
@@ -11,7 +11,6 @@ import ArticleIcon from '@mui/icons-material/Article';
 import AddIcon from '@mui/icons-material/Add';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
-import PersonIcon from '@mui/icons-material/Person';
 import CreateFolderDialog from '../../components/workspace/CreateFolderDialog';
 import RenameDialog from '../../components/workspace/RenameDialog';
 
@@ -25,7 +24,6 @@ const WorkspacePage = () => {
   const [workspace, setWorkspace] = useState<WorkspaceSummary | null>(null);
 
   usePageTitle(workspace?.name || 'Workspace');
-  const [members, setMembers] = useState<MembershipSummary[]>([]);
   const [ancestors, setAncestors] = useState<FolderSummary[]>([]);
   const [currentFolder, setCurrentFolder] = useState<FolderSummary | null>(null);
   const [documents, setDocuments] = useState<DocumentSummary[]>([]);
@@ -34,6 +32,7 @@ const WorkspacePage = () => {
   const [error, setError] = useState<string | null>(null);
   const [isCreateFolderDialogOpen, setCreateFolderDialogOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [anchorElBreadcrumb, setAnchorElBreadcrumb] = useState<null | HTMLElement>(null);
   const [selectedItem, setSelectedItem] = useState<{ id: string; name: string; type: 'document' | 'folder' } | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
@@ -48,13 +47,11 @@ const WorkspacePage = () => {
 
       Promise.all([
         getWorkspace(workspaceId, tokens.accessToken),
-        getWorkspaceMembers(workspaceId, tokens.accessToken),
         folderDetailsPromise,
         getWorkspaceDocuments(workspaceId, tokens.accessToken, { folderId: folderId ?? undefined }),
       ])
-        .then(([workspaceData, membersData, folderResponse, contents]) => {
+        .then(([workspaceData, folderResponse, contents]) => {
           setWorkspace(workspaceData);
-          setMembers(membersData.items);
 
           // Robust handling for folderResponse
           if (folderResponse) {
@@ -174,7 +171,7 @@ const WorkspacePage = () => {
     return `${name.substring(0, halfLength)}...${name.substring(name.length - halfLength)}`;
   };
 
-  const breadcrumbPaths = useMemo(() => {
+  const { breadcrumbPaths, hiddenBreadcrumbItems } = useMemo(() => {
     const paths: { name: string; fullName: string; path: string; icon?: React.ReactNode }[] = [
       { name: 'Root', fullName: 'Root', path: `/workspace/${workspaceId}`, icon: <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" /> }
     ];
@@ -205,16 +202,22 @@ const WorkspacePage = () => {
       const last = paths[paths.length - 1];
       const secondLast = paths.length > 1 ? paths[paths.length - 2] : null;
 
+      // Store hidden items with depth info
+      const hidden = paths.slice(1, secondLast ? paths.length - 2 : paths.length - 1).map((item, index) => ({
+        ...item,
+        depth: index
+      }));
+
       const collapsed = [first];
       // Add ellipsis indicator
       collapsed.push({ name: '...', fullName: 'Hidden path items', path: '#', icon: null });
       if (secondLast) collapsed.push(secondLast);
       collapsed.push(last);
 
-      return collapsed;
+      return { breadcrumbPaths: collapsed, hiddenBreadcrumbItems: hidden };
     }
 
-    return paths;
+    return { breadcrumbPaths: paths, hiddenBreadcrumbItems: [] };
   }, [ancestors, currentFolder, workspaceId]);
 
   const renderFilesAndFolders = () => {
@@ -292,39 +295,8 @@ const WorkspacePage = () => {
     );
   };
 
-  const owner = useMemo(() => {
-    if (!workspace || !members) return null;
-    return members.find(m => m.accountId === workspace.ownerAccountId);
-  }, [workspace, members]);
-
   return (
     <Container maxWidth="xl">
-      {/* Workspace Header Info */}
-      {workspace && (
-        <Box sx={{ mb: 4, p: 3, bgcolor: 'background.paper', borderRadius: 2, border: '1px solid', borderColor: 'divider' }}>
-          <Stack spacing={2}>
-            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-              <Typography variant="h4" fontWeight="bold" component="h1">
-                {workspace.name}
-              </Typography>
-              {owner && (
-                <Chip
-                  avatar={<Avatar><PersonIcon /></Avatar>}
-                  label={`Owner: ${owner.displayName || 'Unknown'}`}
-                  variant="outlined"
-                />
-              )}
-            </Box>
-
-            {workspace.description && (
-              <Typography variant="body1" color="text.secondary" sx={{ whiteSpace: 'pre-wrap' }}>
-                {workspace.description}
-              </Typography>
-            )}
-          </Stack>
-        </Box>
-      )}
-
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
         <Breadcrumbs separator={<NavigateNextIcon fontSize="small" />} aria-label="breadcrumb" maxItems={20}>
           {breadcrumbPaths.map((item, index) => {
@@ -333,9 +305,28 @@ const WorkspacePage = () => {
 
             if (isEllipsis) {
               return (
-                <Typography key={`ellipsis-${index}`} color="text.secondary" sx={{ display: 'flex', alignItems: 'center' }}>
+                <Box
+                  key={`ellipsis-${index}`}
+                  component="button"
+                  onClick={(e) => setAnchorElBreadcrumb(e.currentTarget)}
+                  sx={{
+                    border: 'none',
+                    background: 'none',
+                    cursor: 'pointer',
+                    color: 'text.secondary',
+                    fontSize: 'inherit',
+                    fontFamily: 'inherit',
+                    padding: 0,
+                    display: 'flex',
+                    alignItems: 'center',
+                    '&:hover': {
+                      color: 'text.primary',
+                      textDecoration: 'underline'
+                    }
+                  }}
+                >
                   ...
-                </Typography>
+                </Box>
               );
             }
 
@@ -352,6 +343,28 @@ const WorkspacePage = () => {
             );
           })}
         </Breadcrumbs>
+
+        {/* Breadcrumb dropdown menu */}
+        <Menu
+          anchorEl={anchorElBreadcrumb}
+          open={Boolean(anchorElBreadcrumb)}
+          onClose={() => setAnchorElBreadcrumb(null)}
+          anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+          transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+        >
+          {hiddenBreadcrumbItems.map((item) => (
+            <MenuItem
+              key={item.path}
+              component={RouterLink}
+              to={item.path}
+              onClick={() => setAnchorElBreadcrumb(null)}
+              sx={{ pl: 2 + (item.depth * 2) }}
+            >
+              <FolderIcon sx={{ mr: 1.5, fontSize: 18, opacity: 0.7 }} />
+              {item.fullName}
+            </MenuItem>
+          ))}
+        </Menu>
 
         {/* DEBUG: Remove after fixing */}
         {/* <Box sx={{ display: 'none' }}>Ancestors: {JSON.stringify(ancestors)}</Box> */}

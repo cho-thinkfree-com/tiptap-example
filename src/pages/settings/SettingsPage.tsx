@@ -124,14 +124,38 @@ const SettingsPage = () => {
                 preferredTimezone
             };
 
-            // Only include email/password if changed/provided
+            // Only include email if changed (though it's disabled now)
             if (email !== user?.email) updates.email = email;
-            if (newPassword) updates.newPassword = newPassword;
-            if (currentPassword) updates.currentPassword = currentPassword;
 
             await updateAccount(tokens.accessToken, updates);
             await refreshProfile(); // Refresh global user data
             setSuccess('Account settings updated successfully.');
+        } catch (err) {
+            setError((err as Error).message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handlePasswordChange = async () => {
+        if (!tokens) return;
+        if (!currentPassword || !newPassword) {
+            setError('Current and new password are required.');
+            return;
+        }
+
+        setLoading(true);
+        setError(null);
+        setSuccess(null);
+
+        try {
+            const updates: any = {
+                currentPassword,
+                newPassword
+            };
+
+            await updateAccount(tokens.accessToken, updates);
+            setSuccess('Password changed successfully.');
             setCurrentPassword('');
             setNewPassword('');
         } catch (err) {
@@ -148,7 +172,7 @@ const SettingsPage = () => {
         setSuccess(null);
 
         try {
-            const updated = await updateWorkspaceMemberProfile(workspaceId, tokens.accessToken, {
+            await updateWorkspaceMemberProfile(workspaceId, tokens.accessToken, {
                 displayName,
                 timezone: workspaceTimezone,
                 preferredLocale: workspaceLocale
@@ -201,7 +225,7 @@ const SettingsPage = () => {
                         </Alert>
                         <Typography variant="h6" gutterBottom>Personal Information</Typography>
                         <Grid container spacing={3}>
-                            <Grid item xs={12}>
+                            <Grid size={12}>
                                 <TextField
                                     label="Legal Name"
                                     fullWidth
@@ -209,7 +233,7 @@ const SettingsPage = () => {
                                     onChange={(e) => setLegalName(e.target.value)}
                                 />
                             </Grid>
-                            <Grid item xs={12}>
+                            <Grid size={12}>
                                 <TextField
                                     label="Email Address"
                                     fullWidth
@@ -218,7 +242,7 @@ const SettingsPage = () => {
                                     helperText="Email cannot be changed"
                                 />
                             </Grid>
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <FormControl fullWidth>
                                     <InputLabel>Preferred Language</InputLabel>
                                     <Select
@@ -231,7 +255,7 @@ const SettingsPage = () => {
                                     </Select>
                                 </FormControl>
                             </Grid>
-                            <Grid item xs={12} sm={6}>
+                            <Grid size={{ xs: 12, sm: 6 }}>
                                 <FormControl fullWidth>
                                     <InputLabel>Timezone</InputLabel>
                                     <Select
@@ -248,11 +272,23 @@ const SettingsPage = () => {
                             </Grid>
                         </Grid>
 
+
+
+                        <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
+                            <Button
+                                variant="contained"
+                                onClick={handleAccountSave}
+                                disabled={loading}
+                            >
+                                {loading ? <CircularProgress size={24} /> : 'Save Personal Info'}
+                            </Button>
+                        </Box>
+
                         <Divider sx={{ my: 4 }} />
 
                         <Typography variant="h6" gutterBottom>Security</Typography>
                         <Grid container spacing={3}>
-                            <Grid item xs={12}>
+                            <Grid size={12}>
                                 <TextField
                                     label="New Password"
                                     type="password"
@@ -262,7 +298,7 @@ const SettingsPage = () => {
                                     helperText="Leave blank to keep current password"
                                 />
                             </Grid>
-                            <Grid item xs={12}>
+                            <Grid size={12}>
                                 <TextField
                                     label="Current Password"
                                     type="password"
@@ -274,14 +310,16 @@ const SettingsPage = () => {
                             </Grid>
                         </Grid>
 
-                        <Box sx={{ mt: 4, display: 'flex', justifyContent: 'flex-end' }}>
+
+
+                        <Box sx={{ mt: 2, display: 'flex', justifyContent: 'flex-end' }}>
                             <Button
                                 variant="contained"
-                                size="large"
-                                onClick={handleAccountSave}
+                                color="error"
+                                onClick={handlePasswordChange}
                                 disabled={loading}
                             >
-                                {loading ? <CircularProgress size={24} /> : 'Save Account Changes'}
+                                {loading ? <CircularProgress size={24} /> : 'Change Password'}
                             </Button>
                         </Box>
                     </TabPanel>
@@ -304,7 +342,7 @@ const SettingsPage = () => {
                                     </Alert>
 
                                     <Grid container spacing={3}>
-                                        <Grid item xs={12}>
+                                        <Grid size={12}>
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 2 }}>
                                                 <Avatar
                                                     sx={{ width: 64, height: 64, bgcolor: 'primary.main', fontSize: '1.5rem' }}
@@ -316,7 +354,7 @@ const SettingsPage = () => {
                                                 </Button>
                                             </Box>
                                         </Grid>
-                                        <Grid item xs={12}>
+                                        <Grid size={12}>
                                             <TextField
                                                 label="Display Name"
                                                 fullWidth
@@ -325,7 +363,7 @@ const SettingsPage = () => {
                                                 helperText="How you appear to others in this workspace"
                                             />
                                         </Grid>
-                                        <Grid item xs={12} sm={6}>
+                                        <Grid size={{ xs: 12, sm: 6 }}>
                                             <FormControl fullWidth>
                                                 <InputLabel>Language</InputLabel>
                                                 <Select
@@ -338,7 +376,7 @@ const SettingsPage = () => {
                                                 </Select>
                                             </FormControl>
                                         </Grid>
-                                        <Grid item xs={12} sm={6}>
+                                        <Grid size={{ xs: 12, sm: 6 }}>
                                             <FormControl fullWidth>
                                                 <InputLabel>Timezone</InputLabel>
                                                 <Select
@@ -370,8 +408,8 @@ const SettingsPage = () => {
                         </TabPanel>
                     )}
                 </Box>
-            </Paper>
-        </Container>
+            </Paper >
+        </Container >
     );
 };
 

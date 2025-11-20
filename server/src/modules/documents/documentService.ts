@@ -99,11 +99,11 @@ export class DocumentService {
     if (folder?.deletedAt) throw new FolderNotFoundError()
     await this.planLimitService.assertDocumentCreateAllowed(workspaceId)
 
-    // Auto-generate title if not provided
-    const title = input.title || await this.generateUniqueTitle(
+    // Ensure title is unique
+    const title = await this.generateUniqueTitle(
       workspaceId,
       input.folderId ?? null,
-      'Untitled'
+      input.title || 'Untitled'
     )
 
     const slug = await this.resolveSlug(workspaceId, input.slug ?? title, {

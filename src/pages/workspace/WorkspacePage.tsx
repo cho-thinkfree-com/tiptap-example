@@ -102,6 +102,7 @@ const WorkspacePage = () => {
         // Title is optional, backend generates "Untitled"
       });
       window.open(`/document/${newDoc.id}`, '_blank');
+      fetchContents();
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -168,12 +169,12 @@ const WorkspacePage = () => {
 
     if (Array.isArray(ancestors)) {
       ancestors.forEach((ancestor) => {
-        paths.push({ name: ancestor.name, path: `/workspace/${workspaceId}?folderId=${ancestor.id}`, icon: undefined });
+        paths.push({ name: ancestor.name, path: `/workspace/${workspaceId}?folderId=${ancestor.id}`, icon: null });
       });
     }
 
     if (currentFolder) {
-      paths.push({ name: currentFolder.name, path: `/workspace/${workspaceId}?folderId=${currentFolder.id}`, icon: undefined });
+      paths.push({ name: currentFolder.name, path: `/workspace/${workspaceId}?folderId=${currentFolder.id}`, icon: null });
     }
 
     return paths;

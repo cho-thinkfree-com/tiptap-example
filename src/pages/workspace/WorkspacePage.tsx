@@ -1,5 +1,5 @@
 import { Alert, Box, Breadcrumbs, Button, CircularProgress, Container, Link, Typography, Menu, MenuItem, IconButton, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip } from '@mui/material';
-import { useCallback, useEffect, useState, useMemo } from 'react';
+import { useCallback, useEffect, useState, useMemo, useRef } from 'react';
 import { useParams, useSearchParams, Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { getWorkspaceDocuments, getFolder, createFolder, createDocument, deleteDocument, deleteFolder, renameDocument, renameFolder, getWorkspace, type DocumentSummary, type FolderSummary, type WorkspaceSummary } from '../../lib/api';
@@ -36,6 +36,9 @@ const WorkspacePage = () => {
   const [selectedItem, setSelectedItem] = useState<{ id: string; name: string; type: 'document' | 'folder' } | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+
+  const breadcrumbContainerRef = useRef<HTMLDivElement>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
 
   const fetchContents = useCallback(() => {
     if (tokens && workspaceId) {
@@ -83,6 +86,21 @@ const WorkspacePage = () => {
   useEffect(() => {
     fetchContents();
   }, [fetchContents]);
+
+  // Track breadcrumb container width
+  useEffect(() => {
+    const container = breadcrumbContainerRef.current;
+    if (!container) return;
+
+    const resizeObserver = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        setContainerWidth(entry.contentRect.width);
+      }
+    });
+
+    resizeObserver.observe(container);
+    return () => resizeObserver.disconnect();
+  }, []);
 
   const handleCreateFolder = async (name: string) => {
     if (!tokens || !workspaceId) {
@@ -196,29 +214,83 @@ const WorkspacePage = () => {
       });
     }
 
-    // Collapse middle items if depth > 5
-    if (paths.length > 5) {
-      const first = paths[0];
-      const last = paths[paths.length - 1];
-      const secondLast = paths.length > 1 ? paths[paths.length - 2] : null;
+    // Width-based collapse logic
+    if (paths.length > 2 && containerWidth > 0) {
+      const BUTTON_RESERVE = 300; // Reserve space for right-side buttons
+      const SEPARATOR_WIDTH = 20; // Approximate width of separator
+      const ELLIPSIS_WIDTH = 40; // Approximate width of "..." button
 
-      // Store hidden items with depth info
-      const hidden = paths.slice(1, secondLast ? paths.length - 2 : paths.length - 1).map((item, index) => ({
-        ...item,
-        depth: index
-      }));
+      const availableWidth = containerWidth - BUTTON_RESERVE;
 
-      const collapsed = [first];
-      // Add ellipsis indicator
-      collapsed.push({ name: '...', fullName: 'Hidden path items', path: '#', icon: null });
-      if (secondLast) collapsed.push(secondLast);
-      collapsed.push(last);
+      // Estimate width for each item (char * 8px + padding/icon)
+      const estimateWidth = (item: typeof paths[0]) => {
+        return item.name.length * 8 + (item.icon ? 50 : 40);
+      };
 
-      return { breadcrumbPaths: collapsed, hiddenBreadcrumbItems: hidden };
+      // Calculate total width if all items were shown
+      const totalWidth = paths.reduce((sum, item, index) => {
+        return sum + estimateWidth(item) + (index > 0 ? SEPARATOR_WIDTH : 0);
+      }, 0);
+
+      // If total width exceeds available space, collapse middle items
+      if (totalWidth > availableWidth) {
+        const first = paths[0];
+        const last = paths[paths.length - 1];
+
+        // Start with first and last items
+        let currentWidth = estimateWidth(first) + SEPARATOR_WIDTH + ELLIPSIS_WIDTH + SEPARATOR_WIDTH + estimateWidth(last);
+
+        // Try to add items from the end (most recent folders)
+        const visibleMiddleItems: typeof paths = [];
+        for (let i = paths.length - 2; i >= 1; i--) {
+          const itemWidth = estimateWidth(paths[i]) + SEPARATOR_WIDTH;
+          if (currentWidth + itemWidth <= availableWidth) {
+            visibleMiddleItems.unshift(paths[i]);
+            currentWidth += itemWidth;
+          } else {
+            break;
+          }
+        }
+
+        // If we can show some middle items
+        if (visibleMiddleItems.length > 0) {
+          const hiddenStartIndex = 1;
+          const hiddenEndIndex = paths.length - 1 - visibleMiddleItems.length;
+
+          const hidden = paths.slice(hiddenStartIndex, hiddenEndIndex).map((item, index) => ({
+            ...item,
+            depth: index
+          }));
+
+          const collapsed = [first];
+          if (hidden.length > 0) {
+            collapsed.push({ name: '...', fullName: 'Hidden path items', path: '#', icon: null });
+          }
+          collapsed.push(...visibleMiddleItems);
+          collapsed.push(last);
+
+          return { breadcrumbPaths: collapsed, hiddenBreadcrumbItems: hidden };
+        } else {
+          // Can't fit any middle items, just show first ... last
+          const hidden = paths.slice(1, paths.length - 1).map((item, index) => ({
+            ...item,
+            depth: index
+          }));
+
+          return {
+            breadcrumbPaths: [
+              first,
+              { name: '...', fullName: 'Hidden path items', path: '#', icon: null },
+              last
+            ],
+            hiddenBreadcrumbItems: hidden
+          };
+        }
+      }
     }
 
     return { breadcrumbPaths: paths, hiddenBreadcrumbItems: [] };
-  }, [ancestors, currentFolder, workspaceId]);
+  }, [ancestors, currentFolder, workspaceId, containerWidth]);
 
   const renderFilesAndFolders = () => {
     if (loading) return <CircularProgress />;
@@ -297,7 +369,7 @@ const WorkspacePage = () => {
 
   return (
     <Container maxWidth="xl">
-      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
+      <Box ref={breadcrumbContainerRef} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
         <Breadcrumbs separator={<NavigateNextIcon fontSize="small" />} aria-label="breadcrumb" maxItems={20}>
           {breadcrumbPaths.map((item, index) => {
             const isLast = index === breadcrumbPaths.length - 1;

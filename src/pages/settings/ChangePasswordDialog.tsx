@@ -8,8 +8,11 @@ import {
     Button,
     Alert,
     CircularProgress,
-    Box
+    Box,
+    InputAdornment,
+    IconButton
 } from '@mui/material';
+import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import { updateAccount } from '../../lib/api';
 
@@ -23,6 +26,12 @@ export const ChangePasswordDialog = ({ open, onClose }: ChangePasswordDialogProp
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
+
+    // Visibility state
+    const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+    const [showNewPassword, setShowNewPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
@@ -32,6 +41,9 @@ export const ChangePasswordDialog = ({ open, onClose }: ChangePasswordDialogProp
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
+        setShowCurrentPassword(false);
+        setShowNewPassword(false);
+        setShowConfirmPassword(false);
         setError(null);
         setSuccess(null);
         onClose();
@@ -76,6 +88,27 @@ export const ChangePasswordDialog = ({ open, onClose }: ChangePasswordDialogProp
         }
     };
 
+    const handleClickShowPassword = (setter: React.Dispatch<React.SetStateAction<boolean>>) => {
+        setter((show) => !show);
+    };
+
+    const handleMouseDownPassword = (event: React.MouseEvent<HTMLButtonElement>) => {
+        event.preventDefault();
+    };
+
+    const getEndAdornment = (show: boolean, setter: React.Dispatch<React.SetStateAction<boolean>>) => (
+        <InputAdornment position="end">
+            <IconButton
+                aria-label="toggle password visibility"
+                onClick={() => handleClickShowPassword(setter)}
+                onMouseDown={handleMouseDownPassword}
+                edge="end"
+            >
+                {show ? <VisibilityOff /> : <Visibility />}
+            </IconButton>
+        </InputAdornment>
+    );
+
     return (
         <Dialog open={open} onClose={loading ? undefined : handleClose} maxWidth="sm" fullWidth>
             <DialogTitle>Change Password</DialogTitle>
@@ -87,31 +120,40 @@ export const ChangePasswordDialog = ({ open, onClose }: ChangePasswordDialogProp
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
                         <TextField
                             label="Current Password"
-                            type="password"
+                            type={showCurrentPassword ? 'text' : 'password'}
                             fullWidth
                             value={currentPassword}
                             onChange={(e) => setCurrentPassword(e.target.value)}
                             disabled={loading || !!success}
                             autoFocus
+                            InputProps={{
+                                endAdornment: getEndAdornment(showCurrentPassword, setShowCurrentPassword)
+                            }}
                         />
                         <TextField
                             label="New Password"
-                            type="password"
+                            type={showNewPassword ? 'text' : 'password'}
                             fullWidth
                             value={newPassword}
                             onChange={(e) => setNewPassword(e.target.value)}
                             disabled={loading || !!success}
                             helperText="Minimum 8 characters"
+                            InputProps={{
+                                endAdornment: getEndAdornment(showNewPassword, setShowNewPassword)
+                            }}
                         />
                         <TextField
                             label="Confirm New Password"
-                            type="password"
+                            type={showConfirmPassword ? 'text' : 'password'}
                             fullWidth
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
                             disabled={loading || !!success}
                             error={confirmPassword.length > 0 && newPassword !== confirmPassword}
                             helperText={confirmPassword.length > 0 && newPassword !== confirmPassword ? "Passwords do not match" : ""}
+                            InputProps={{
+                                endAdornment: getEndAdornment(showConfirmPassword, setShowConfirmPassword)
+                            }}
                         />
                     </Box>
                 </DialogContent>

@@ -168,17 +168,50 @@ const WorkspacePage = () => {
     }
   };
 
+  const truncateName = (name: string, maxLength: number = 17): string => {
+    if (name.length <= maxLength) return name;
+    const halfLength = Math.floor((maxLength - 3) / 2);
+    return `${name.substring(0, halfLength)}...${name.substring(name.length - halfLength)}`;
+  };
+
   const breadcrumbPaths = useMemo(() => {
-    const paths: { name: string; path: string; icon?: React.ReactNode }[] = [{ name: 'Root', path: `/workspace/${workspaceId}`, icon: <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" /> }];
+    const paths: { name: string; fullName: string; path: string; icon?: React.ReactNode }[] = [
+      { name: 'Root', fullName: 'Root', path: `/workspace/${workspaceId}`, icon: <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" /> }
+    ];
 
     if (Array.isArray(ancestors)) {
       ancestors.forEach((ancestor) => {
-        paths.push({ name: ancestor.name, path: `/workspace/${workspaceId}?folderId=${ancestor.id}`, icon: null });
+        paths.push({
+          name: truncateName(ancestor.name),
+          fullName: ancestor.name,
+          path: `/workspace/${workspaceId}?folderId=${ancestor.id}`,
+          icon: null
+        });
       });
     }
 
     if (currentFolder) {
-      paths.push({ name: currentFolder.name, path: `/workspace/${workspaceId}?folderId=${currentFolder.id}`, icon: null });
+      paths.push({
+        name: truncateName(currentFolder.name),
+        fullName: currentFolder.name,
+        path: `/workspace/${workspaceId}?folderId=${currentFolder.id}`,
+        icon: null
+      });
+    }
+
+    // Collapse middle items if depth > 5
+    if (paths.length > 5) {
+      const first = paths[0];
+      const last = paths[paths.length - 1];
+      const secondLast = paths.length > 1 ? paths[paths.length - 2] : null;
+
+      const collapsed = [first];
+      // Add ellipsis indicator
+      collapsed.push({ name: '...', fullName: 'Hidden path items', path: '#', icon: null });
+      if (secondLast) collapsed.push(secondLast);
+      collapsed.push(last);
+
+      return collapsed;
     }
 
     return paths;
@@ -296,13 +329,23 @@ const WorkspacePage = () => {
         <Breadcrumbs separator={<NavigateNextIcon fontSize="small" />} aria-label="breadcrumb" maxItems={20}>
           {breadcrumbPaths.map((item, index) => {
             const isLast = index === breadcrumbPaths.length - 1;
+            const isEllipsis = item.name === '...';
+
+            if (isEllipsis) {
+              return (
+                <Typography key={`ellipsis-${index}`} color="text.secondary" sx={{ display: 'flex', alignItems: 'center' }}>
+                  ...
+                </Typography>
+              );
+            }
+
             return isLast ? (
-              <Typography color="text.primary" fontWeight="600" key={item.name} sx={{ display: 'flex', alignItems: 'center' }}>
+              <Typography color="text.primary" fontWeight="600" key={item.name} sx={{ display: 'flex', alignItems: 'center' }} title={item.fullName}>
                 {item.icon}
                 {item.name}
               </Typography>
             ) : (
-              <Link component={RouterLink} underline="hover" color="inherit" to={item.path} key={item.name} sx={{ display: 'flex', alignItems: 'center' }}>
+              <Link component={RouterLink} underline="hover" color="inherit" to={item.path} key={item.name} sx={{ display: 'flex', alignItems: 'center' }} title={item.fullName}>
                 {item.icon}
                 {item.name}
               </Link>

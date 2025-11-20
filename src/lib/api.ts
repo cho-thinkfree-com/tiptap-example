@@ -60,6 +60,8 @@ interface RequestOptions {
   skipRefresh?: boolean
 }
 
+let refreshPromise: Promise<LoginResult> | null = null
+
 const requestJSON = async <T>(path: string, options: RequestOptions = {}): Promise<T> => {
   const { method = 'GET', token, body, query, skipRefresh } = options
   const url = `${API_BASE_URL}${path}${buildQuery(query)}`
@@ -84,20 +86,33 @@ const requestJSON = async <T>(path: string, options: RequestOptions = {}): Promi
         const { refreshToken } = JSON.parse(stored)
         if (refreshToken) {
           // Try to refresh
-          const refreshResponse = await fetch(`${API_BASE_URL}/api/auth/refresh`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ refreshToken }),
-          })
+          try {
+            if (!refreshPromise) {
+              refreshPromise = fetch(`${API_BASE_URL}/api/auth/refresh`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ refreshToken }),
+              }).then(async (res) => {
+                if (!res.ok) throw new Error('Refresh failed')
+                return res.json() as Promise<LoginResult>
+              })
+            }
 
-          if (refreshResponse.ok) {
-            const newTokens = await refreshResponse.json() as LoginResult
+            const newTokens = await refreshPromise
+
             // Update local storage immediately so subsequent requests use it
+            // Note: Multiple requests might do this redundantly but it's safe
             window.localStorage.setItem('tiptap-example-auth', JSON.stringify(newTokens))
+
             // Notify AuthContext to update state
+            // Dispatching multiple times is also fine, or we could debounce this
             dispatchAuthRefreshed(newTokens)
+
             // Retry original request with new access token
             return requestJSON<T>(path, { ...options, token: newTokens.accessToken, skipRefresh: true })
+          } finally {
+            // Clear promise so next expiration triggers new refresh
+            refreshPromise = null
           }
         }
       }
@@ -216,9 +231,9 @@ export interface ShareLinkResponse {
   token: string
 }
 
-export const login = (input: LoginInput) => requestJSON<LoginResult>('/api/auth/login', { method: 'POST', body: input })
-export const signup = (input: SignupInput) => requestJSON<AccountResponse>('/api/auth/signup', { method: 'POST', body: input })
-export const logout = (token?: string) => requestJSON<{ ok: boolean }>('/api/auth/logout', { method: 'POST', token })
+export const login = (input: LoginInput) => requestJSON<LoginResult>('/api/auth/login', { method: 'POST', body: input, skipRefresh: true })
+export const signup = (input: SignupInput) => requestJSON<AccountResponse>('/api/auth/signup', { method: 'POST', body: input, skipRefresh: true })
+export const logout = (token?: string) => requestJSON<{ ok: boolean }>('/api/auth/logout', { method: 'POST', token, skipRefresh: true })
 export const getMe = (token: string) => requestJSON<AccountResponse>('/api/auth/me', { token })
 export const updateAccount = (token: string, body: { email?: string; legalName?: string; preferredLocale?: string; preferredTimezone?: string; currentPassword?: string; newPassword?: string }) => requestJSON<AccountResponse>('/api/auth/me', { method: 'PATCH', token, body })
 export const refresh = (input: { refreshToken: string }) => requestJSON<LoginResult>('/api/auth/refresh', { method: 'POST', body: input, skipRefresh: true })

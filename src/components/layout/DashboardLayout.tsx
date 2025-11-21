@@ -550,17 +550,14 @@ const DashboardLayout = () => {
                     </FormControl>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => setIsPasswordDialogOpen(true)} variant="outlined">
-                        {strings.settings.global.changePassword}
-                    </Button>
                     <Button onClick={() => setAccountDialogOpen(false)} disabled={accountSaving}>
                         {strings.dashboard.createWorkspaceDialogCancel}
                     </Button>
-                    <Button onClick={() => setIsPasswordDialogOpen(true)} variant="outlined">
-                        {strings.settings.global.changePassword}
-                    </Button>
                     <Button onClick={handleSaveAccount} disabled={accountSaving} variant="contained">
                         {accountSaving ? <CircularProgress size={18} /> : strings.settings.global.saveChanges}
+                    </Button>
+                    <Button onClick={() => setIsPasswordDialogOpen(true)} variant="outlined">
+                        {strings.settings.global.changePassword}
                     </Button>
                 </DialogActions>
             </Dialog>

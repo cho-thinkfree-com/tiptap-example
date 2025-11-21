@@ -24,7 +24,7 @@ const EditorWorkspace = () => {
             typography: 'body1',
             '& .ProseMirror': {
               minHeight: '100%',
-              paddingLeft: '32px',
+              paddingLeft: '48px',
               paddingBottom: '32px',
               boxSizing: 'border-box',
             },
@@ -43,6 +43,13 @@ const EditorWorkspace = () => {
             flexDirection: 'column',
             px: 0,
             py: 0,
+          },
+          '& .MuiTiptap-RichTextField-paper': {
+            px: 0,
+          },
+          '& .MuiTiptap-Editable-root': {
+            paddingLeft: 0,
+            paddingRight: 0,
           },
           '& .MuiTiptap-MenuBar-root': {
             display: 'none',

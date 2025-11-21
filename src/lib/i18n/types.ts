@@ -125,6 +125,28 @@ export type AuthStrings = {
     signupButton: string
     errorFallback: string
   }
+  login: {
+    title: string
+    subtitle: string
+    emailLabel: string
+    passwordLabel: string
+    submitButton: string
+    loadingButton: string
+    noAccount: string
+    signupLink: string
+  }
+  signup: {
+    title: string
+    subtitle: string
+    emailLabel: string
+    passwordLabel: string
+    legalNameLabel: string
+    submitButton: string
+    loadingButton: string
+    hasAccount: string
+    loginLink: string
+  }
+  sessionExpired: string
 }
 
 export type WorkspaceStrings = {

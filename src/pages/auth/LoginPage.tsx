@@ -43,7 +43,7 @@ const LoginPage = () => {
           </Alert>
         ) : logoutMessage ? (
           <Alert severity="info" sx={{ mb: 3 }}>
-            {logoutMessage}
+            {logoutMessage === 'auth.sessionExpired' ? strings.auth.sessionExpired : logoutMessage}
           </Alert>
         ) : null}
 

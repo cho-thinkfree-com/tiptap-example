@@ -379,7 +379,8 @@
         "loadingButton": "Signing up...",
         "hasAccount": "Already have an account?",
         "loginLink": "Login"
-      }
+      },
+      "sessionExpired": "Your session has expired or you have been logged out due to inactivity. Please log in again."
     },
     "workspace": {
       "heroTitle": "Your workspace command center",
@@ -855,7 +856,8 @@
         "loadingButton": "가입 중...",
         "hasAccount": "이미 계정이 있으신가요?",
         "loginLink": "로그인"
-      }
+      },
+      "sessionExpired": "세션이 만료되었거나 오랫동안 사용하지 않아 자동으로 로그아웃되었습니다. 다시 로그인해 주세요."
     },
     "workspace": {
       "heroTitle": "워크스페이스 관리 센터",
@@ -1325,7 +1327,8 @@
         "loadingButton": "登録中...",
         "hasAccount": "すでにアカウントをお持ちですか？",
         "loginLink": "ログイン"
-      }
+      },
+      "sessionExpired": "セッションの有効期限が切れたか、長時間操作がなかったため自動的にログアウトされました。再度ログインしてください。"
     },
     "workspace": {
       "heroTitle": "Your workspace command center",

@@ -120,9 +120,7 @@ const requestJSON = async <T>(path: string, options: RequestOptions = {}): Promi
       // Refresh failed, proceed to logout
     }
 
-    dispatchAuthExpired(
-      '세션이 만료되었거나 오랫동안 사용하지 않아 자동으로 로그아웃되었습니다. 다시 로그인해 주세요.',
-    )
+    dispatchAuthExpired('auth.sessionExpired')
   }
 
   return handleResponse<T>(response)
@@ -234,7 +232,13 @@ export interface ShareLinkResponse {
 
 export const login = (input: LoginInput) => requestJSON<LoginResult>('/api/auth/login', { method: 'POST', body: input, skipRefresh: true })
 export const signup = (input: SignupInput) => requestJSON<AccountResponse>('/api/auth/signup', { method: 'POST', body: input, skipRefresh: true })
-export const logout = (token?: string) => requestJSON<{ ok: boolean }>('/api/auth/logout', { method: 'POST', token, skipRefresh: true })
+export const logout = async (token: string) => {
+  return requestJSON<{ ok: boolean }>('/api/auth/logout', {
+    method: 'POST',
+    token,
+    skipRefresh: true,
+  })
+}
 export const getMe = (token: string) => requestJSON<AccountResponse>('/api/auth/me', { token })
 export const updateAccount = (token: string, body: { email?: string; legalName?: string; preferredLanguage?: string; preferredTimezone?: string; currentPassword?: string; newPassword?: string }) => requestJSON<AccountResponse>('/api/auth/me', { method: 'PATCH', token, body })
 export const refresh = (input: { refreshToken: string }) => requestJSON<LoginResult>('/api/auth/refresh', { method: 'POST', body: input, skipRefresh: true })

@@ -120,7 +120,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     const handleExpired = (event: Event) => {
       const detail = (event as CustomEvent<{ message?: string }>).detail
-      setLogoutMessage(detail?.message ?? '세션이 만료되어 로그아웃되었습니다.')
+      setLogoutMessage(detail?.message ?? 'auth.sessionExpired')
       setTokens(null)
       setUser(null)
     }

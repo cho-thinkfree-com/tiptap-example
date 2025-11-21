@@ -7,7 +7,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useNavigate, useLocation, Outlet, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { getWorkspaces, type WorkspaceSummary } from '../../lib/api';
+import { getWorkspaces, getWorkspaceMemberProfile, type WorkspaceSummary } from '../../lib/api';
 import { useI18n } from '../../lib/i18n';
 import WorkspaceLanguageSync from '../common/WorkspaceLanguageSync';
 
@@ -24,6 +24,7 @@ const DashboardLayout = () => {
     const location = useLocation();
     const { workspaceId } = useParams<{ workspaceId: string }>();
     const [workspaces, setWorkspaces] = useState<WorkspaceSummary[]>([]);
+    const [workspaceDisplayName, setWorkspaceDisplayName] = useState<string | null>(null);
     const { strings } = useI18n();
 
     useEffect(() => {
@@ -31,6 +32,22 @@ const DashboardLayout = () => {
             getWorkspaces(tokens.accessToken).then(setWorkspaces).catch(console.error);
         }
     }, [tokens]);
+
+    useEffect(() => {
+        if (tokens && workspaceId) {
+            getWorkspaceMemberProfile(workspaceId, tokens.accessToken)
+                .then((profile) => setWorkspaceDisplayName(profile.displayName || null))
+                .catch(() => setWorkspaceDisplayName(null));
+        } else {
+            setWorkspaceDisplayName(null);
+        }
+    }, [tokens, workspaceId]);
+
+    const userDisplayName =
+        (user?.legalName && user.legalName.trim().length > 0 && user.legalName.trim()) ||
+        (user?.email ? user.email.split('@')[0] : '');
+    const sidebarDisplayName = workspaceDisplayName?.trim() || userDisplayName;
+    const sidebarAvatar = sidebarDisplayName?.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase();
 
     const currentWorkspace = workspaces.find(w => w.id === workspaceId);
 
@@ -189,11 +206,11 @@ const DashboardLayout = () => {
                 >
                     <ListItemIcon sx={{ minWidth: 40 }}>
                         <Avatar sx={{ width: 24, height: 24, fontSize: 12 }}>
-                            {user?.email?.charAt(0).toUpperCase()}
+                            {sidebarAvatar}
                         </Avatar>
                     </ListItemIcon>
                     <ListItemText
-                        primary={user?.email?.split('@')[0]}
+                        primary={sidebarDisplayName}
                         primaryTypographyProps={{ variant: 'body2', fontWeight: 500, noWrap: true }}
                     />
                 </ListItemButton>

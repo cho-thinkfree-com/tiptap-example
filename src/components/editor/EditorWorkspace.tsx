@@ -37,6 +37,10 @@ const EditorWorkspace = () => {
           position: 'relative',
           overflow: 'hidden',
           px: 0,
+          '& .MuiTiptap-RichTextField-root': {
+            paddingLeft: 0,
+            paddingRight: 0,
+          },
           '& .MuiTiptap-RichTextField-content': {
             flex: 1,
             display: 'flex',

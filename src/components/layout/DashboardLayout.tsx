@@ -35,6 +35,8 @@ const DashboardLayout = () => {
     const [accountError, setAccountError] = useState<string | null>(null);
     const [workspaceNameForm, setWorkspaceNameForm] = useState('');
     const [workspaceDescForm, setWorkspaceDescForm] = useState('');
+    const [workspaceLocaleState, setWorkspaceLocaleState] = useState<Locale>('en-US');
+    const [workspaceTimezoneState, setWorkspaceTimezoneState] = useState('UTC');
     const [workspaceSaving, setWorkspaceSaving] = useState(false);
     const [workspaceError, setWorkspaceError] = useState<string | null>(null);
     const [workspaceLoading, setWorkspaceLoading] = useState(false);
@@ -52,6 +54,8 @@ const DashboardLayout = () => {
                 .then((profile) => {
                     setWorkspaceDisplayName(profile.displayName || null);
                     setWorkspaceMember(profile);
+                    setWorkspaceLocaleState((profile.preferredLocale as Locale) || 'en-US');
+                    setWorkspaceTimezoneState(profile.timezone || 'UTC');
                 })
                 .catch(() => {
                     setWorkspaceDisplayName(null);
@@ -198,8 +202,8 @@ const DashboardLayout = () => {
         try {
             const memberUpdate = updateWorkspaceMemberProfile(workspaceId, tokens.accessToken, {
                 displayName: workspaceDisplayName?.trim() || workspaceMember?.displayName || '',
-                preferredLocale: workspaceLocale,
-                timezone: workspaceTimezone,
+                preferredLocale: workspaceLocaleState,
+                timezone: workspaceTimezoneState,
             });
             const workspaceUpdate = isPrivileged
                 ? updateWorkspace(workspaceId, tokens.accessToken, {
@@ -593,8 +597,8 @@ const DashboardLayout = () => {
                                 <InputLabel shrink>{strings.settings.workspaceProfile.language}</InputLabel>
                                 <Select
                                     native
-                                    value={workspaceMember?.preferredLocale || workspaceLocale}
-                                    onChange={(e) => setWorkspaceMember((prev) => prev ? { ...prev, preferredLocale: e.target.value } : prev)}
+                                    value={workspaceLocaleState}
+                                    onChange={(e) => setWorkspaceLocaleState(e.target.value as Locale)}
                                 >
                                     <option value="en-US">{languageOptions['en-US']}</option>
                                     <option value="ko-KR">{languageOptions['ko-KR']}</option>
@@ -605,8 +609,8 @@ const DashboardLayout = () => {
                                 <InputLabel shrink>{strings.settings.global.timezone}</InputLabel>
                                 <Select
                                     native
-                                    value={workspaceMember?.timezone || workspaceTimezone}
-                                    onChange={(e) => setWorkspaceMember((prev) => prev ? { ...prev, timezone: e.target.value } : prev)}
+                                    value={workspaceTimezoneState}
+                                    onChange={(e) => setWorkspaceTimezoneState(e.target.value)}
                                 >
                                     {timezoneOptionsWithLabel.map((tz) => (
                                         <option key={tz.value} value={tz.value}>

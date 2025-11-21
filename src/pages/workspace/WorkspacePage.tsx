@@ -141,8 +141,8 @@ const WorkspacePage = () => {
     try {
       setLoading(true);
       const newDoc = await createDocument(workspaceId, tokens.accessToken, {
-        folderId: folderId ?? undefined
-        // Title is optional, backend generates "Untitled"
+        folderId: folderId ?? undefined,
+        title: strings.editor.title.placeholder,
       });
       window.open(`/document/${newDoc.id}`, '_blank');
       fetchContents();

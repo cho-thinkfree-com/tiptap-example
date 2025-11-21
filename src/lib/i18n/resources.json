@@ -525,7 +525,21 @@
         "updateSuccess": "Account settings updated successfully.",
         "updateError": "Failed to update account settings.",
         "backToDashboard": "Back to dashboard",
-        "legalNameRequired": "Full name must be at least 1 character."
+        "legalNameRequired": "Full name must be at least 1 character.",
+        "changePasswordDialog": {
+          "title": "Change Password",
+          "currentPassword": "Current Password",
+          "newPassword": "New Password",
+          "confirmPassword": "Confirm New Password",
+          "helperNewPassword": "Minimum 8 characters",
+          "helperConfirmMismatch": "Passwords do not match",
+          "requiredError": "All fields are required.",
+          "mismatchError": "New passwords do not match.",
+          "minLengthError": "Password must be at least 8 characters long.",
+          "success": "Password changed successfully.",
+          "submit": "Change Password",
+          "cancel": "Cancel"
+        }
       },
       "workspaceProfile": {
         "title": "{workspaceName} workspace profile",
@@ -1072,7 +1086,21 @@
         "updateSuccess": "계정 설정이 성공적으로 업데이트되었습니다.",
         "updateError": "계정 설정 업데이트에 실패했습니다.",
         "backToDashboard": "대시보드로 돌아가기",
-        "legalNameRequired": "이름은 공백을 제외하고 1자 이상이어야 합니다."
+        "legalNameRequired": "이름은 공백을 제외하고 1자 이상이어야 합니다.",
+        "changePasswordDialog": {
+          "title": "비밀번호 변경",
+          "currentPassword": "현재 비밀번호",
+          "newPassword": "새 비밀번호",
+          "confirmPassword": "새 비밀번호 확인",
+          "helperNewPassword": "최소 8자",
+          "helperConfirmMismatch": "비밀번호가 일치하지 않습니다",
+          "requiredError": "모든 항목을 입력해 주세요.",
+          "mismatchError": "새 비밀번호가 일치하지 않습니다.",
+          "minLengthError": "비밀번호는 최소 8자 이상이어야 합니다.",
+          "success": "비밀번호가 변경되었습니다.",
+          "submit": "비밀번호 변경",
+          "cancel": "취소"
+        }
       },
       "workspaceProfile": {
         "title": "{workspaceName} 워크스페이스 프로필",
@@ -1625,7 +1653,21 @@
         "updateSuccess": "アカウント設定が正常に更新されました。",
         "updateError": "アカウント設定の更新に失敗しました。",
         "backToDashboard": "ダッシュボードに戻る",
-        "legalNameRequired": "氏名は1文字以上で入力してください。"
+        "legalNameRequired": "氏名は1文字以上で入力してください。",
+        "changePasswordDialog": {
+          "title": "パスワード変更",
+          "currentPassword": "現在のパスワード",
+          "newPassword": "新しいパスワード",
+          "confirmPassword": "新しいパスワード（確認）",
+          "helperNewPassword": "8文字以上",
+          "helperConfirmMismatch": "パスワードが一致しません",
+          "requiredError": "すべての項目を入力してください。",
+          "mismatchError": "新しいパスワードが一致しません。",
+          "minLengthError": "パスワードは8文字以上で入力してください。",
+          "success": "パスワードを変更しました。",
+          "submit": "パスワードを変更",
+          "cancel": "キャンセル"
+        }
       },
       "workspaceProfile": {
         "title": "{workspaceName} のワークスペースプロフィール",

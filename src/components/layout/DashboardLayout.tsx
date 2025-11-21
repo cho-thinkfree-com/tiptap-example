@@ -42,7 +42,7 @@ const DashboardLayout = () => {
     const [workspaceError, setWorkspaceError] = useState<string | null>(null);
     const [workspaceLoading, setWorkspaceLoading] = useState(false);
     const [isPasswordDialogOpen, setIsPasswordDialogOpen] = useState(false);
-    const { strings } = useI18n();
+    const { strings, locale, setLocale } = useI18n();
 
     useEffect(() => {
         if (tokens) {
@@ -58,6 +58,9 @@ const DashboardLayout = () => {
                     setWorkspaceMember(profile);
                     setWorkspaceLocaleState((profile.preferredLocale as Locale) || 'en-US');
                     setWorkspaceTimezoneState(profile.timezone || 'UTC');
+                    if (profile.preferredLocale && profile.preferredLocale !== locale) {
+                        setLocale(profile.preferredLocale as Locale);
+                    }
                 })
                 .catch(() => {
                     setWorkspaceDisplayName(null);
@@ -67,7 +70,7 @@ const DashboardLayout = () => {
             setWorkspaceDisplayName(null);
             setWorkspaceMember(null);
         }
-    }, [tokens, workspaceId]);
+    }, [tokens, workspaceId, locale, setLocale]);
 
     const languageOptions = strings.settings.languageOptions ?? {
         'en-US': 'English (English)',
@@ -76,7 +79,7 @@ const DashboardLayout = () => {
     };
     const accountLanguageLabelId = 'account-language-label';
     const accountTimezoneLabelId = 'account-timezone-label';
-    const timezoneOptions = [
+    const defaultTimezoneOptions = [
         'UTC',
         'Asia/Seoul',
         'Asia/Tokyo',
@@ -115,7 +118,11 @@ const DashboardLayout = () => {
         'Australia/Sydney',
         'Australia/Melbourne',
         'Pacific/Auckland',
-      ];
+    ];
+    const timezoneOptions =
+        typeof (Intl as any).supportedValuesOf === 'function'
+            ? ((Intl as any).supportedValuesOf('timeZone') as string[])
+            : defaultTimezoneOptions;
     const formatTzLabel = (tz: string) => {
         try {
             const parts = new Intl.DateTimeFormat('en-US', {
@@ -128,9 +135,30 @@ const DashboardLayout = () => {
             return tz;
         }
     };
+    const getOffsetMinutes = (tz: string) => {
+        try {
+            const parts = new Intl.DateTimeFormat('en-US', {
+                timeZone: tz,
+                timeZoneName: 'shortOffset',
+            }).formatToParts(new Date());
+            const offsetRaw = parts.find((p) => p.type === 'timeZoneName')?.value ?? 'GMT+0';
+            const match = offsetRaw.match(/GMT([+-])(\d{1,2})(?::?(\d{2}))?/);
+            if (!match) return 0;
+            const sign = match[1] === '-' ? -1 : 1;
+            const hours = parseInt(match[2], 10);
+            const minutes = match[3] ? parseInt(match[3], 10) : 0;
+            return sign * (hours * 60 + minutes);
+        } catch {
+            return 0;
+        }
+    };
     const timezoneOptionsWithLabel = timezoneOptions
-        .map((tz) => ({ value: tz, label: formatTzLabel(tz) }))
-        .sort((a, b) => a.label.localeCompare(b.label));
+        .map((tz) => ({
+            value: tz,
+            label: formatTzLabel(tz),
+            offsetMinutes: getOffsetMinutes(tz),
+        }))
+        .sort((a, b) => a.offsetMinutes - b.offsetMinutes || a.label.localeCompare(b.label));
 
     const userDisplayName =
         (user?.legalName && user.legalName.trim().length > 0 && user.legalName.trim()) ||
@@ -219,6 +247,9 @@ const DashboardLayout = () => {
                 })
                 : Promise.resolve();
             await Promise.all([memberUpdate, workspaceUpdate]);
+            if (workspaceLocaleState && workspaceLocaleState !== locale) {
+                setLocale(workspaceLocaleState);
+            }
             setWorkspaceDialogOpen(false);
             getWorkspaces(tokens.accessToken).then(setWorkspaces).catch(console.error);
         } catch (err) {
@@ -548,6 +579,14 @@ const DashboardLayout = () => {
                             ))}
                         </Select>
                     </FormControl>
+                    <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1 }}>
+                        <Typography variant="subtitle2" color="text.secondary">
+                            {strings.settings.global.security}
+                        </Typography>
+                        <Button onClick={() => setIsPasswordDialogOpen(true)} variant="outlined" size="small">
+                            {strings.settings.global.changePassword}
+                        </Button>
+                    </Box>
                 </DialogContent>
                 <DialogActions>
                     <Button onClick={() => setAccountDialogOpen(false)} disabled={accountSaving}>
@@ -555,9 +594,6 @@ const DashboardLayout = () => {
                     </Button>
                     <Button onClick={handleSaveAccount} disabled={accountSaving} variant="contained">
                         {accountSaving ? <CircularProgress size={18} /> : strings.settings.global.saveChanges}
-                    </Button>
-                    <Button onClick={() => setIsPasswordDialogOpen(true)} variant="outlined">
-                        {strings.settings.global.changePassword}
                     </Button>
                 </DialogActions>
             </Dialog>

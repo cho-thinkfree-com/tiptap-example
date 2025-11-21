@@ -15,6 +15,7 @@ import {
 import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import { updateAccount } from '../../lib/api';
+import { useI18n } from '../../lib/i18n';
 
 interface ChangePasswordDialogProps {
     open: boolean;
@@ -23,6 +24,8 @@ interface ChangePasswordDialogProps {
 
 export const ChangePasswordDialog = ({ open, onClose }: ChangePasswordDialogProps) => {
     const { tokens } = useAuth();
+    const { strings } = useI18n();
+    const t = strings.settings.global.changePasswordDialog;
     const [currentPassword, setCurrentPassword] = useState('');
     const [newPassword, setNewPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -54,17 +57,17 @@ export const ChangePasswordDialog = ({ open, onClose }: ChangePasswordDialogProp
         if (!tokens) return;
 
         if (!currentPassword || !newPassword || !confirmPassword) {
-            setError('All fields are required.');
+            setError(t.requiredError);
             return;
         }
 
         if (newPassword !== confirmPassword) {
-            setError('New passwords do not match.');
+            setError(t.mismatchError);
             return;
         }
 
         if (newPassword.length < 8) {
-            setError('Password must be at least 8 characters long.');
+            setError(t.minLengthError);
             return;
         }
 
@@ -77,7 +80,7 @@ export const ChangePasswordDialog = ({ open, onClose }: ChangePasswordDialogProp
                 currentPassword,
                 newPassword
             });
-            setSuccess('Password changed successfully.');
+            setSuccess(t.success);
             setTimeout(() => {
                 handleClose();
             }, 1500);
@@ -111,7 +114,7 @@ export const ChangePasswordDialog = ({ open, onClose }: ChangePasswordDialogProp
 
     return (
         <Dialog open={open} onClose={loading ? undefined : handleClose} maxWidth="sm" fullWidth>
-            <DialogTitle>Change Password</DialogTitle>
+            <DialogTitle>{t.title}</DialogTitle>
             <form onSubmit={handleSubmit}>
                 <DialogContent>
                     {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
@@ -119,7 +122,7 @@ export const ChangePasswordDialog = ({ open, onClose }: ChangePasswordDialogProp
 
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 1 }}>
                         <TextField
-                            label="Current Password"
+                            label={t.currentPassword}
                             type={showCurrentPassword ? 'text' : 'password'}
                             fullWidth
                             value={currentPassword}
@@ -131,26 +134,26 @@ export const ChangePasswordDialog = ({ open, onClose }: ChangePasswordDialogProp
                             }}
                         />
                         <TextField
-                            label="New Password"
+                            label={t.newPassword}
                             type={showNewPassword ? 'text' : 'password'}
                             fullWidth
                             value={newPassword}
                             onChange={(e) => setNewPassword(e.target.value)}
                             disabled={loading || !!success}
-                            helperText="Minimum 8 characters"
+                            helperText={t.helperNewPassword}
                             InputProps={{
                                 endAdornment: getEndAdornment(showNewPassword, setShowNewPassword)
                             }}
                         />
                         <TextField
-                            label="Confirm New Password"
+                            label={t.confirmPassword}
                             type={showConfirmPassword ? 'text' : 'password'}
                             fullWidth
                             value={confirmPassword}
                             onChange={(e) => setConfirmPassword(e.target.value)}
                             disabled={loading || !!success}
                             error={confirmPassword.length > 0 && newPassword !== confirmPassword}
-                            helperText={confirmPassword.length > 0 && newPassword !== confirmPassword ? "Passwords do not match" : ""}
+                            helperText={confirmPassword.length > 0 && newPassword !== confirmPassword ? t.helperConfirmMismatch : ""}
                             InputProps={{
                                 endAdornment: getEndAdornment(showConfirmPassword, setShowConfirmPassword)
                             }}
@@ -159,7 +162,7 @@ export const ChangePasswordDialog = ({ open, onClose }: ChangePasswordDialogProp
                 </DialogContent>
                 <DialogActions sx={{ p: 3 }}>
                     <Button onClick={handleClose} disabled={loading}>
-                        Cancel
+                        {t.cancel}
                     </Button>
                     <Button
                         type="submit"
@@ -167,7 +170,7 @@ export const ChangePasswordDialog = ({ open, onClose }: ChangePasswordDialogProp
                         color="primary"
                         disabled={loading || !!success}
                     >
-                        {loading ? <CircularProgress size={24} /> : 'Change Password'}
+                        {loading ? <CircularProgress size={24} /> : t.submit}
                     </Button>
                 </DialogActions>
             </form>

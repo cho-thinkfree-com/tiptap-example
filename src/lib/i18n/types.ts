@@ -115,13 +115,27 @@ export type SettingsStrings = {
     legalNameRequired: string
     email: string
     preferredLanguage: string
-    timezone: string
-    password: string
-    changePassword: string
-    saveChanges: string
-    updateSuccess: string
-    updateError: string
-    backToDashboard: string
+  timezone: string
+  password: string
+  changePassword: string
+  changePasswordDialog: {
+    title: string
+    currentPassword: string
+    newPassword: string
+    confirmPassword: string
+    helperNewPassword: string
+    helperConfirmMismatch: string
+    requiredError: string
+    mismatchError: string
+    minLengthError: string
+    success: string
+    submit: string
+    cancel: string
+  }
+  saveChanges: string
+  updateSuccess: string
+  updateError: string
+  backToDashboard: string
   }
   workspaceProfile: {
     title: string

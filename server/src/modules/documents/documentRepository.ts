@@ -302,7 +302,10 @@ const toEntity = (document: DocumentModel & { revisions?: ({ createdByMembership
   status: document.status,
   visibility: document.visibility,
   summary: document.summary,
-  contentSize: (document as any).contentSize ?? 0,
+  contentSize: (document as any).contentSize
+    ?? ((document as any).revisions?.[0]?.content
+      ? Buffer.byteLength(JSON.stringify((document as any).revisions?.[0]?.content), 'utf8')
+      : 0),
   sortOrder: document.sortOrder,
   workspaceDefaultAccess: document.workspaceDefaultAccess,
   workspaceEditorAdminsOnly: document.workspaceEditorAdminsOnly,

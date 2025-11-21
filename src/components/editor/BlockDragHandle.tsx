@@ -139,8 +139,8 @@ const BlockDragHandle = () => {
             // mainAxis is the gap between reference (paragraph) and handle.
             // Move into the left padding area; push further left if padding is wide.
             const mainAxis = paddingLeft > 0
-              ? -((paddingLeft - HANDLE_SIZE) / 2 + HANDLE_GAP)
-              : -12 // Default fallback
+              ? -((paddingLeft - HANDLE_SIZE) / 2 + HANDLE_GAP + 40)
+              : -40 // Default fallback
 
             return {
               mainAxis,

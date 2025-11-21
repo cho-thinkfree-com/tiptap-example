@@ -2,7 +2,7 @@ import { DragHandle } from '@tiptap/extension-drag-handle-react'
 import { offset, shift } from '@floating-ui/dom'
 import { useRichTextEditorContext } from 'mui-tiptap'
 
-const HANDLE_SIZE = 56
+const HANDLE_SIZE = 100
 const HANDLE_OFFSET_X = 0
 const HANDLE_GAP = 8
 const LINE_HEIGHT_FALLBACK_RATIO = 1.2

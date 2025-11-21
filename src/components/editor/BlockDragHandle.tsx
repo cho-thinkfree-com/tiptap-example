@@ -136,11 +136,11 @@ const BlockDragHandle = () => {
             }
 
             // If no padding found or it's too small, default to a reasonable offset
-            // But if we found it, center the handle: (Padding - HandleSize) / 2
-            // mainAxis is the gap between reference (paragraph) and handle
+            // mainAxis is the gap between reference (paragraph) and handle.
+            // Move into the left padding area; push further left if padding is wide.
             const mainAxis = paddingLeft > 0
-              ? (paddingLeft - HANDLE_SIZE) / 2
-              : 8 // Default fallback
+              ? -((paddingLeft - HANDLE_SIZE) / 2 + HANDLE_GAP)
+              : -12 // Default fallback
 
             return {
               mainAxis,

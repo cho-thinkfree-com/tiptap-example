@@ -8,6 +8,8 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useNavigate, useLocation, Outlet, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { getWorkspaces, type WorkspaceSummary } from '../../lib/api';
+import { useI18n } from '../../lib/i18n';
+import WorkspaceLanguageSync from '../common/WorkspaceLanguageSync';
 
 const DRAWER_WIDTH = 260;
 
@@ -22,6 +24,7 @@ const DashboardLayout = () => {
     const location = useLocation();
     const { workspaceId } = useParams<{ workspaceId: string }>();
     const [workspaces, setWorkspaces] = useState<WorkspaceSummary[]>([]);
+    const { strings } = useI18n();
 
     useEffect(() => {
         if (tokens) {
@@ -89,7 +92,7 @@ const DashboardLayout = () => {
                                     {currentWorkspace.name}
                                 </Typography>
                                 <Typography variant="caption" color="text.secondary" display="block" noWrap>
-                                    Workspace
+                                    {strings.layout.dashboard.workspace}
                                 </Typography>
                             </Box>
                             <ExpandMoreIcon color="action" />
@@ -103,7 +106,7 @@ const DashboardLayout = () => {
                     >
                         <MenuItem onClick={() => { navigate('/dashboard'); handleWorkspaceMenuClose(); }}>
                             <ListItemIcon><DashboardIcon fontSize="small" /></ListItemIcon>
-                            <ListItemText primary="All Workspaces" />
+                            <ListItemText primary={strings.layout.dashboard.allWorkspaces} />
                         </MenuItem>
                         <Divider />
                         {workspaces.map(ws => (
@@ -131,7 +134,7 @@ const DashboardLayout = () => {
                 >
                     <Box component="img" src="/logo.png" alt="ododocs logo" sx={{ height: 32, width: 'auto' }} />
                     <Typography variant="h6" fontWeight="bold">
-                        ododocs
+                        {strings.layout.dashboard.ododocs}
                     </Typography>
                 </Box>
             )}
@@ -212,13 +215,13 @@ const DashboardLayout = () => {
                         <ListItemIcon>
                             <SettingsIcon fontSize="small" />
                         </ListItemIcon>
-                        Settings
+                        {strings.layout.dashboard.settings}
                     </MenuItem>
                     <MenuItem onClick={handleLogout}>
                         <ListItemIcon>
                             <LogoutIcon fontSize="small" />
                         </ListItemIcon>
-                        Logout
+                        {strings.layout.dashboard.logout}
                     </MenuItem>
                 </Menu>
             </Box>
@@ -227,6 +230,7 @@ const DashboardLayout = () => {
 
     return (
         <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
+            <WorkspaceLanguageSync />
             <AppBar
                 position="fixed"
                 sx={{
@@ -259,7 +263,7 @@ const DashboardLayout = () => {
                         }}
                         onClick={() => !currentWorkspace && navigate('/dashboard')}
                     >
-                        {currentWorkspace ? currentWorkspace.name : 'ododocs'}
+                        {currentWorkspace ? currentWorkspace.name : strings.layout.dashboard.ododocs}
                     </Typography>
                 </Toolbar>
             </AppBar>

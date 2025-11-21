@@ -135,6 +135,7 @@ export interface LoginInput {
 
 export interface SignupInput extends LoginInput {
   legalName?: string
+  preferredLocale?: string
 }
 
 export interface LoginResult {
@@ -235,7 +236,7 @@ export const login = (input: LoginInput) => requestJSON<LoginResult>('/api/auth/
 export const signup = (input: SignupInput) => requestJSON<AccountResponse>('/api/auth/signup', { method: 'POST', body: input, skipRefresh: true })
 export const logout = (token?: string) => requestJSON<{ ok: boolean }>('/api/auth/logout', { method: 'POST', token, skipRefresh: true })
 export const getMe = (token: string) => requestJSON<AccountResponse>('/api/auth/me', { token })
-export const updateAccount = (token: string, body: { email?: string; legalName?: string; preferredLocale?: string; preferredTimezone?: string; currentPassword?: string; newPassword?: string }) => requestJSON<AccountResponse>('/api/auth/me', { method: 'PATCH', token, body })
+export const updateAccount = (token: string, body: { email?: string; legalName?: string; preferredLanguage?: string; preferredTimezone?: string; currentPassword?: string; newPassword?: string }) => requestJSON<AccountResponse>('/api/auth/me', { method: 'PATCH', token, body })
 export const refresh = (input: { refreshToken: string }) => requestJSON<LoginResult>('/api/auth/refresh', { method: 'POST', body: input, skipRefresh: true })
 
 export const getWorkspaces = (token: string) =>

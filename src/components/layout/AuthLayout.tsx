@@ -1,6 +1,7 @@
 import { Box, Typography, Container } from '@mui/material';
 import type { ReactNode } from 'react';
 import AutoAwesomeIcon from '@mui/icons-material/AutoAwesome';
+import LanguageSelector from '../common/LanguageSelector';
 
 interface AuthLayoutProps {
     children: ReactNode;
@@ -117,8 +118,12 @@ const AuthLayout = ({ children, title, subtitle }: AuthLayoutProps) => {
                     alignItems: 'center',
                     bgcolor: 'background.default',
                     p: 4,
+                    position: 'relative',
                 }}
             >
+                <Box sx={{ position: 'absolute', top: 24, right: 24 }}>
+                    <LanguageSelector />
+                </Box>
                 <Container maxWidth="xs">
                     <Box sx={{ mb: 4, textAlign: 'center' }}>
                         <Box sx={{ display: { xs: 'flex', md: 'none' }, justifyContent: 'center', mb: 2, color: 'primary.main' }}>

@@ -3,6 +3,7 @@ import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import AuthLayout from '../../components/layout/AuthLayout';
+import { useI18n } from '../../lib/i18n';
 
 import { usePageTitle } from '../../hooks/usePageTitle';
 
@@ -14,6 +15,7 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const { login, logoutMessage } = useAuth();
   const navigate = useNavigate();
+  const { strings } = useI18n();
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -31,8 +33,8 @@ const LoginPage = () => {
 
   return (
     <AuthLayout
-      title="Welcome back"
-      subtitle="Enter your credentials to access your workspace."
+      title={strings.auth.login.title}
+      subtitle={strings.auth.login.subtitle}
     >
       <Box component="form" onSubmit={handleSubmit} noValidate sx={{ width: '100%' }}>
         {error ? (
@@ -50,7 +52,7 @@ const LoginPage = () => {
           required
           fullWidth
           id="email"
-          label="Email Address"
+          label={strings.auth.login.emailLabel}
           name="email"
           autoComplete="email"
           autoFocus
@@ -64,7 +66,7 @@ const LoginPage = () => {
           required
           fullWidth
           name="password"
-          label="Password"
+          label={strings.auth.login.passwordLabel}
           type="password"
           id="password"
           autoComplete="current-password"
@@ -82,14 +84,14 @@ const LoginPage = () => {
           disabled={loading}
           sx={{ mb: 3, height: 48 }}
         >
-          {loading ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}
+          {loading ? <CircularProgress size={24} color="inherit" /> : strings.auth.login.submitButton}
         </Button>
 
         <Box sx={{ textAlign: 'center' }}>
           <Typography variant="body2" color="text.secondary">
-            Don't have an account?{' '}
+            {strings.auth.login.noAccount}{' '}
             <Link component={RouterLink} to="/signup" fontWeight="600" underline="hover">
-              Sign up
+              {strings.auth.login.signupLink}
             </Link>
           </Typography>
         </Box>

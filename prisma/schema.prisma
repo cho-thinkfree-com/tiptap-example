@@ -96,8 +96,8 @@ model Account {
   legalName     String?       @map("legal_name")
   recoveryEmail String?       @map("recovery_email")
   recoveryPhone String?       @map("recovery_phone")
-  preferredLocale String?     @map("preferred_locale")
   preferredTimezone String?   @map("preferred_timezone")
+  preferredLocale String?     @map("preferred_locale")
   createdAt     DateTime      @default(now()) @map("created_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")
   sessions      Session[]

@@ -9,12 +9,14 @@ import ArticleIcon from '@mui/icons-material/Article';
 import WorkspacesIcon from '@mui/icons-material/Workspaces';
 import CreateWorkspaceDialog from '../../components/workspace/CreateWorkspaceDialog';
 import { formatRelativeDate } from '../../lib/formatDate';
+import { useI18n } from '../../lib/i18n';
 
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { useSyncChannel } from '../../hooks/useSyncChannel';
 
 const WorkspaceDashboardPage = () => {
-  usePageTitle('Dashboard');
+  const { strings } = useI18n();
+  usePageTitle(strings.dashboard.title);
   const { tokens } = useAuth();
   const [workspaces, setWorkspaces] = useState<WorkspaceSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,12 +86,12 @@ const WorkspaceDashboardPage = () => {
     if (workspaces.length === 0) {
       return (
         <Paper sx={{ p: 4, textAlign: 'center', borderStyle: 'dashed' }}>
-          <Typography variant="h6" gutterBottom>No workspaces found</Typography>
+          <Typography variant="h6" gutterBottom>{strings.dashboard.noWorkspacesFound}</Typography>
           <Typography color="text.secondary" sx={{ mb: 2 }}>
-            Get started by creating your first workspace to organize your documents.
+            {strings.dashboard.manageDocuments}
           </Typography>
           <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateDialogOpen(true)}>
-            Create Workspace
+            {strings.dashboard.createWorkspace}
           </Button>
         </Paper>
       );
@@ -120,7 +122,7 @@ const WorkspaceDashboardPage = () => {
           <Card sx={{ height: '100%', borderStyle: 'dashed', bgcolor: 'transparent' }}>
             <CardActionArea onClick={() => setCreateDialogOpen(true)} sx={{ height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center', minHeight: 160 }}>
               <AddIcon color="action" sx={{ fontSize: 40, mb: 1 }} />
-              <Typography variant="h6" color="text.secondary">Create Workspace</Typography>
+              <Typography variant="h6" color="text.secondary">{strings.dashboard.createWorkspace}</Typography>
             </CardActionArea>
           </Card>
         </Box>
@@ -131,17 +133,17 @@ const WorkspaceDashboardPage = () => {
   const renderRecentDocuments = () => {
     if (recentDocumentsLoading) return <CircularProgress />;
     if (recentDocumentsError) return <Alert severity="error">{recentDocumentsError}</Alert>;
-    if (recentDocuments.length === 0) return <Typography color="text.secondary">No recent documents found.</Typography>;
+    if (recentDocuments.length === 0) return <Typography color="text.secondary">{strings.dashboard.noRecentDocuments}</Typography>;
 
     return (
       <TableContainer component={Paper} variant="outlined" sx={{ border: 'none' }}>
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell width="40%">Name</TableCell>
-              <TableCell width="20%">Workspace</TableCell>
-              <TableCell width="25%">Last Modified</TableCell>
-              <TableCell align="right" width="15%">Actions</TableCell>
+              <TableCell width="40%">{strings.dashboard.name}</TableCell>
+              <TableCell width="20%">{strings.dashboard.workspace}</TableCell>
+              <TableCell width="25%">{strings.dashboard.lastModified}</TableCell>
+              <TableCell align="right" width="15%">{strings.dashboard.actions}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -165,7 +167,7 @@ const WorkspaceDashboardPage = () => {
                   </TableCell>
                   <TableCell align="right">
                     <Button size="small" component={RouterLink} to={`/document/${doc.id}`} target="_blank">
-                      Open
+                      {strings.dashboard.open}
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -180,13 +182,13 @@ const WorkspaceDashboardPage = () => {
   return (
     <Container maxWidth="xl">
       <Box sx={{ mb: 5 }}>
-        <Typography variant="h4" fontWeight="bold" gutterBottom>Dashboard</Typography>
-        <Typography variant="body1" color="text.secondary">Manage your workspaces and documents.</Typography>
+        <Typography variant="h4" fontWeight="bold" gutterBottom>{strings.dashboard.title}</Typography>
+        <Typography variant="body1" color="text.secondary">{strings.dashboard.manageDocuments}</Typography>
       </Box>
 
       <TextField
         fullWidth
-        placeholder="Search documents..."
+        placeholder={strings.dashboard.searchDocuments}
         InputProps={{
           startAdornment: (
             <InputAdornment position="start">
@@ -198,12 +200,12 @@ const WorkspaceDashboardPage = () => {
       />
 
       <Box sx={{ mb: 6 }}>
-        <Typography variant="h5" fontWeight="bold" sx={{ mb: 3 }}>Workspaces</Typography>
+        <Typography variant="h5" fontWeight="bold" sx={{ mb: 3 }}>{strings.dashboard.workspaces}</Typography>
         {renderWorkspaces()}
       </Box>
 
       <Box>
-        <Typography variant="h5" fontWeight="bold" sx={{ mb: 3 }}>Recent Documents</Typography>
+        <Typography variant="h5" fontWeight="bold" sx={{ mb: 3 }}>{strings.dashboard.recentDocuments}</Typography>
         {renderRecentDocuments()}
       </Box>
 

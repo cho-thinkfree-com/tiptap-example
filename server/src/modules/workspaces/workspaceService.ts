@@ -4,6 +4,7 @@ import { WorkspaceRepository, type WorkspaceEntity } from './workspaceRepository
 import { MembershipRepository } from './membershipRepository.js'
 import { ensureUniqueSlug } from '../../lib/slug.js'
 import { WorkspaceAccessService } from './workspaceAccess.js'
+import { AccountRepository } from '../accounts/accountRepository.js'
 
 const visibilityEnum: [WorkspaceVisibility, ...WorkspaceVisibility[]] = ['private', 'listed', 'public']
 
@@ -45,11 +46,18 @@ export class WorkspaceService {
     private readonly repository: WorkspaceRepository,
     private readonly membershipRepository: MembershipRepository,
     private readonly workspaceAccess: WorkspaceAccessService,
+    private readonly accountRepository: AccountRepository,
   ) { }
 
   async create(ownerAccountId: string, rawInput: z.input<typeof createWorkspaceSchema>): Promise<WorkspaceEntity> {
     const input = createWorkspaceSchema.parse(rawInput)
     const slug = await ensureUniqueSlug(input.name, (candidate: string) => this.repository.slugExists(candidate))
+
+    const owner = await this.accountRepository.findById(ownerAccountId)
+    if (!owner) {
+      throw new Error('Owner account not found')
+    }
+
     const workspace = await this.repository.create({
       ownerAccountId,
       name: input.name,
@@ -66,6 +74,7 @@ export class WorkspaceService {
       accountId: ownerAccountId,
       role: 'owner',
       status: 'active',
+      preferredLocale: owner.preferredLocale,
     })
 
     return workspace

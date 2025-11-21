@@ -1,5 +1,5 @@
 export type HeadingLevel = 1 | 2 | 3 | 4 | 5 | 6
-export type Locale = 'en-US' | 'ko-KR'
+export type Locale = 'en-US' | 'ko-KR' | 'ja-JP'
 
 export type HeadingStrings = {
   titles: Record<HeadingLevel, string>
@@ -73,10 +73,38 @@ export type EditorStrings = {
   shortcuts: ShortcutsStrings
 }
 
+export type DashboardStrings = {
+  title: string
+  workspaces: string
+  recentDocuments: string
+  files: string
+  createWorkspace: string
+  newFolder: string
+  newDocument: string
+  rename: string
+  delete: string
+  open: string
+  name: string
+  workspace: string
+  lastModified: string
+  modifiedBy: string
+  actions: string
+  searchDocuments: string
+  confirmDeletion: string
+  areYouSure: string
+  cancel: string
+  noWorkspacesFound: string
+  noRecentDocuments: string
+  folderEmpty: string
+  createFirstDocument: string
+  manageDocuments: string
+}
+
 export type AppStrings = {
   editor: EditorStrings
   auth: AuthStrings
   workspace: WorkspaceStrings
+  dashboard: DashboardStrings
 }
 
 export type AuthStrings = {

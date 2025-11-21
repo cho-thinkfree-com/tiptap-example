@@ -9,6 +9,7 @@ export interface CreateAccountInput {
   recoveryEmail?: string
   recoveryPhone?: string
   status?: AccountStatus
+  preferredLocale?: string
 }
 
 export interface AccountEntity {
@@ -20,6 +21,7 @@ export interface AccountEntity {
   recoveryPhone?: string | null
   createdAt: Date
   updatedAt: Date
+  preferredLocale?: string | null
 }
 
 export interface AccountWithPassword extends AccountEntity {
@@ -50,6 +52,7 @@ export class PrismaAccountRepository implements AccountRepository {
           recoveryEmail: data.recoveryEmail,
           recoveryPhone: data.recoveryPhone,
           status: data.status,
+          preferredLocale: data.preferredLocale,
         },
       })
       return toEntity(account)
@@ -136,6 +139,7 @@ const toEntity = (account: AccountModel): AccountEntity => ({
   recoveryPhone: account.recoveryPhone,
   createdAt: account.createdAt,
   updatedAt: account.updatedAt,
+  preferredLocale: account.preferredLocale,
 })
 
 const isUniqueEmailError = (error: unknown): boolean => {

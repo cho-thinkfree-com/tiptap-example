@@ -3,6 +3,7 @@ import { Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import AuthLayout from '../../components/layout/AuthLayout';
+import { useI18n } from '../../lib/i18n';
 
 import { usePageTitle } from '../../hooks/usePageTitle';
 
@@ -15,13 +16,14 @@ const SignupPage = () => {
   const [loading, setLoading] = useState(false);
   const { signup } = useAuth();
   const navigate = useNavigate();
+  const { strings, locale } = useI18n();
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
     setLoading(true);
     try {
-      await signup({ email, password, legalName });
+      await signup({ email, password, legalName, preferredLocale: locale });
       navigate('/dashboard');
     } catch (err) {
       setError((err as Error).message);
@@ -32,8 +34,8 @@ const SignupPage = () => {
 
   return (
     <AuthLayout
-      title="Create an account"
-      subtitle="Join us to start creating amazing documents."
+      title={strings.auth.signup.title}
+      subtitle={strings.auth.signup.subtitle}
     >
       <Box component="form" onSubmit={handleSubmit} noValidate sx={{ width: '100%' }}>
         {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
@@ -42,7 +44,7 @@ const SignupPage = () => {
           required
           fullWidth
           id="email"
-          label="Email Address"
+          label={strings.auth.signup.emailLabel}
           name="email"
           autoComplete="email"
           value={email}
@@ -54,7 +56,7 @@ const SignupPage = () => {
           required
           fullWidth
           name="password"
-          label="Password"
+          label={strings.auth.signup.passwordLabel}
           type="password"
           id="password"
           autoComplete="new-password"
@@ -67,7 +69,7 @@ const SignupPage = () => {
         <TextField
           fullWidth
           id="legalName"
-          label="Legal Name (Optional)"
+          label={strings.auth.signup.legalNameLabel}
           name="legalName"
           autoComplete="name"
           value={legalName}
@@ -84,14 +86,14 @@ const SignupPage = () => {
           disabled={loading}
           sx={{ mb: 3, height: 48 }}
         >
-          {loading ? <CircularProgress size={24} color="inherit" /> : 'Sign Up'}
+          {loading ? <CircularProgress size={24} color="inherit" /> : strings.auth.signup.submitButton}
         </Button>
 
         <Box sx={{ textAlign: 'center' }}>
           <Typography variant="body2" color="text.secondary">
-            Already have an account?{' '}
+            {strings.auth.signup.hasAccount}{' '}
             <Link component={RouterLink} to="/login" fontWeight="600" underline="hover">
-              Sign in
+              {strings.auth.signup.loginLink}
             </Link>
           </Typography>
         </Box>

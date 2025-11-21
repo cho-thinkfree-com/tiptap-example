@@ -18,6 +18,10 @@ const normalizeLocale = (locale?: string): Locale => {
     return 'ko-KR'
   }
 
+  if (lower.startsWith('ja')) {
+    return 'ja-JP'
+  }
+
   return fallbackLocale
 }
 
@@ -44,7 +48,7 @@ const I18nContext = createContext<I18nContextValue>({
   locale: fallbackLocale,
   strings: resources[fallbackLocale],
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  setLocale: () => {},
+  setLocale: () => { },
 })
 
 export const I18nProvider = ({ children, initialLocale }: { children: ReactNode; initialLocale?: Locale }) => {

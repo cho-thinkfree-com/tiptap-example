@@ -10,6 +10,7 @@ const registerAccountSchema = z.object({
     .trim()
     .max(200)
     .optional(),
+  preferredLocale: z.string().optional(),
 })
 
 export type RegisterAccountInput = z.infer<typeof registerAccountSchema>
@@ -28,6 +29,7 @@ export class AccountService {
       email: normalizedEmail,
       passwordHash,
       legalName: parsed.legalName,
+      preferredLocale: parsed.preferredLocale,
     })
   }
 

@@ -80,7 +80,7 @@ const SettingsPage = () => {
         if (user) {
             setEmail(user.email);
             setLegalName(user.legalName || '');
-            setPreferredLocale(user.preferredLocale || 'en');
+            setPreferredLocale(user.preferredLocale || 'en-US');
             setPreferredTimezone(user.preferredTimezone || 'UTC');
         }
     }, [user]);
@@ -95,7 +95,7 @@ const SettingsPage = () => {
                 .then(([profile, workspace]) => {
                     setDisplayName(profile.displayName || '');
                     setWorkspaceTimezone(profile.timezone || 'UTC');
-                    setWorkspaceLocale(profile.preferredLocale || 'en');
+                    setWorkspaceLocale(profile.preferredLocale || 'en-US');
                     setWorkspaceName(workspace.name);
                 })
                 .catch(err => {
@@ -222,8 +222,9 @@ const SettingsPage = () => {
                                         label="Preferred Language"
                                         onChange={(e) => setPreferredLocale(e.target.value)}
                                     >
-                                        <MenuItem value="en">English</MenuItem>
-                                        <MenuItem value="ko">Korean</MenuItem>
+                                        <MenuItem value="en-US">English</MenuItem>
+                                        <MenuItem value="ko-KR">Korean</MenuItem>
+                                        <MenuItem value="ja-JP">Japanese</MenuItem>
                                     </Select>
                                 </FormControl>
                             </Grid>
@@ -320,8 +321,9 @@ const SettingsPage = () => {
                                                     label="Language"
                                                     onChange={(e) => setWorkspaceLocale(e.target.value)}
                                                 >
-                                                    <MenuItem value="en">English</MenuItem>
-                                                    <MenuItem value="ko">Korean</MenuItem>
+                                                    <MenuItem value="en-US">English</MenuItem>
+                                                    <MenuItem value="ko-KR">Korean</MenuItem>
+                                                    <MenuItem value="ja-JP">Japanese</MenuItem>
                                                 </Select>
                                             </FormControl>
                                         </Grid>

@@ -32,6 +32,7 @@ const signupSchema = z.object({
     .trim()
     .max(200)
     .optional(),
+  preferredLocale: z.string().optional(),
 })
 
 const refreshSchema = z.object({

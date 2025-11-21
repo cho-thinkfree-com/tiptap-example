@@ -93,10 +93,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     async (input: SignupInput) => {
       await signupRequest(input)
       const result = await login({ email: input.email, password: input.password })
+      // Force profile refresh to ensure preferredLanguage is loaded
+      await refreshProfile()
       setLogoutMessage(null)
       return result
     },
-    [login],
+    [login, refreshProfile],
   )
 
   const accessToken = tokens?.accessToken

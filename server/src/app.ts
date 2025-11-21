@@ -87,7 +87,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
   const workspaceRepository = new WorkspaceRepository(db)
   const membershipRepository = new MembershipRepository(db)
   const workspaceAccess = new WorkspaceAccessService(workspaceRepository, membershipRepository)
-  const workspaceService = new WorkspaceService(workspaceRepository, membershipRepository, workspaceAccess)
+  const workspaceService = new WorkspaceService(workspaceRepository, membershipRepository, workspaceAccess, accountRepository)
   const membershipService = new MembershipService(membershipRepository, workspaceRepository, auditLogService)
   const invitationService = new WorkspaceInvitationService(
     new InvitationRepository(db),

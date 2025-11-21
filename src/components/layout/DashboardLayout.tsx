@@ -548,6 +548,9 @@ const DashboardLayout = () => {
                     </FormControl>
                 </DialogContent>
                 <DialogActions>
+                    <Button onClick={() => setIsPasswordDialogOpen(true)} variant="outlined">
+                        {strings.settings.global.changePassword}
+                    </Button>
                     <Button onClick={() => setAccountDialogOpen(false)} disabled={accountSaving}>
                         {strings.dashboard.createWorkspaceDialogCancel}
                     </Button>

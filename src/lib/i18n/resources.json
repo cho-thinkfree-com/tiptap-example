@@ -474,7 +474,7 @@
         "settings": "Settings",
         "logout": "Log out",
         "ododocs": "OdoDocs",
-        "accountSettingsLabel": "Account settings",
+        "accountSettingsLabel": "Login account settings",
         "workspaceSettingsLabel": "Workspace settings"
       }
     },
@@ -1021,7 +1021,7 @@
         "settings": "설정",
         "logout": "로그아웃",
         "ododocs": "OdoDocs",
-        "accountSettingsLabel": "계정 설정",
+        "accountSettingsLabel": "로그인 계정 설정",
         "workspaceSettingsLabel": "워크스페이스 설정"
       }
     },
@@ -1574,7 +1574,7 @@
         "settings": "設定",
         "logout": "ログアウト",
         "ododocs": "オドドックス",
-        "accountSettingsLabel": "アカウント設定",
+        "accountSettingsLabel": "ログインアカウント設定",
         "workspaceSettingsLabel": "ワークスペース設定"
       }
     },

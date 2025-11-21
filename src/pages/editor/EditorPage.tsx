@@ -1,4 +1,4 @@
-import { Alert, CircularProgress, Container } from '@mui/material';
+import { Alert, Box, CircularProgress } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -13,6 +13,21 @@ const EditorPage = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Lock outer page scroll while editor is mounted so only editor scrolls
+  useEffect(() => {
+    if (typeof document === 'undefined' || !document?.documentElement || !document?.body) return undefined;
+    const html = document.documentElement;
+    const body = document.body;
+    const prevHtmlOverflow = html.style.overflow;
+    const prevBodyOverflow = body.style.overflow;
+    html.style.overflow = 'hidden';
+    body.style.overflow = 'hidden';
+
+    return () => {
+      html.style.overflow = prevHtmlOverflow;
+      body.style.overflow = prevBodyOverflow;
+    };
+  }, []);
   useEffect(() => {
     if (tokens && documentId) {
       setLoading(true);
@@ -35,37 +50,31 @@ const EditorPage = () => {
 
 
 
+  const fullPageBox = (child: React.ReactNode) => (
+    <Box sx={{ height: '100dvh', minHeight: '100dvh', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      {child}
+    </Box>
+  );
+
   if (loading) {
-    return (
-      <Container sx={{ mt: 4, textAlign: 'center' }}>
-        <CircularProgress />
-      </Container>
-    );
+    return fullPageBox(<CircularProgress />);
   }
 
   if (error) {
-    return (
-      <Container sx={{ mt: 4 }}>
-        <Alert severity="error">{error}</Alert>
-      </Container>
-    );
+    return fullPageBox(<Alert severity="error">{error}</Alert>);
   }
 
   if (!document) {
-    return (
-      <Container sx={{ mt: 4 }}>
-        <Alert severity="warning">Document not found.</Alert>
-      </Container>
-    );
+    return fullPageBox(<Alert severity="warning">Document not found.</Alert>);
   }
 
   return (
-    <Container maxWidth="lg" sx={{ mt: 4, mb: 4, height: 'calc(100vh - 64px)', display: 'flex', flexDirection: 'column' }}>
+    <Box sx={{ height: '100dvh', minHeight: '100dvh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       <ConnectedEditor
         document={document}
         initialRevision={revision}
       />
-    </Container>
+    </Box>
   );
 };
 

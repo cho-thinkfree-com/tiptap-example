@@ -10,9 +10,12 @@ const EditorWorkspace = () => {
         flex: 1,
         minWidth: 0,
         minHeight: 0,
+        height: '100%',
         display: 'flex',
         flexDirection: 'column',
-        gap: 2.5,
+        gap: 0,
+        overflow: 'hidden',
+        position: 'relative',
       }}
     >
       <RichTextField
@@ -21,17 +24,22 @@ const EditorWorkspace = () => {
           sx: {
             flex: 1,
             minHeight: 0,
+            height: '100%',
+            overflowY: 'auto',
             typography: 'body1',
             '& .ProseMirror': {
               minHeight: '100%',
               paddingLeft: '48px',
-              paddingBottom: '32px',
+              paddingBottom: '24px',
+              paddingRight: '16px',
               boxSizing: 'border-box',
             },
           },
         }}
         sx={{
           flex: 1,
+          minHeight: 0,
+          height: '100%',
           display: 'flex',
           flexDirection: 'column',
           position: 'relative',
@@ -41,6 +49,9 @@ const EditorWorkspace = () => {
             flex: 1,
             display: 'flex',
             flexDirection: 'column',
+            minHeight: 0,
+            height: '100%',
+            overflowY: 'auto',
             px: 0,
             py: 0,
           },

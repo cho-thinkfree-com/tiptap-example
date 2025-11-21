@@ -76,7 +76,7 @@ const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClos
 
     return (
         <RichTextEditorProvider editor={editor}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, overflow: 'hidden' }}>
                 <AppBar position="static" color="default" elevation={1}>
                     <Toolbar sx={{ px: { xs: 2, sm: 4, lg: 6 } }}>
                         <TextField
@@ -121,17 +121,31 @@ const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClos
                     tableOfContentsOpen={tocOpen}
                     onToggleTableOfContents={() => setTocOpen(!tocOpen)}
                 />
-                <Box sx={{ display: 'flex', flexGrow: 1, overflow: 'hidden' }}>
+                <Box sx={{ display: 'flex', flexGrow: 1, minHeight: 0, overflow: 'hidden' }}>
                     <Box sx={{
                         width: tocOpen ? 280 : 0,
                         overflowY: 'auto',
                         overflowX: 'hidden',
+                        height: '100%',
+                        minHeight: 0,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        flexShrink: 0,
                         transition: 'width 0.3s ease',
                         p: tocOpen ? 2 : 0,
                     }}>
                         {tocOpen && <EditorTableOfContents />}
                     </Box>
-                    <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 3, px: { xs: 2, sm: 4, lg: 6 } }}>
+                    <Box sx={{
+                        flexGrow: 1,
+                        minWidth: 0,
+                        minHeight: 0,
+                        display: 'flex',
+                        flexDirection: 'column',
+                        overflow: 'hidden',
+                        p: 3,
+                        px: { xs: 2, sm: 4, lg: 6 },
+                    }}>
                         <EditorWorkspace />
                     </Box>
                 </Box>

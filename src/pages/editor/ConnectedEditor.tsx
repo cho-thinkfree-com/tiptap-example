@@ -39,6 +39,15 @@ const ConnectedEditor = ({ document, initialRevision }: ConnectedEditorProps) =>
 
             setSaveStatus('saved');
             setSnackbarOpen(true);
+
+            // Broadcast document update so lists (size/modified) refresh
+            broadcastSync({
+                type: 'document-updated',
+                workspaceId: currentDocument.workspaceId,
+                folderId: currentDocument.folderId,
+                documentId: currentDocument.id,
+                data: { source: 'content-save' }
+            });
         } catch (err) {
             console.error(err);
             setSaveStatus('unsaved');

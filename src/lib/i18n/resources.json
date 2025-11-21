@@ -339,9 +339,9 @@
     },
     "auth": {
       "landing": {
-        "heroTitle": "Write, Collaborate, Publish.",
-        "heroDescription": "The all-in-one workspace for your documentation. Simple enough for notes, powerful enough for knowledge bases.",
-        "featureIntro": "Get started with these capabilities.",
+        "heroTitle": "Ideas snap into place. Crisp. Clean. OdoDocs.",
+        "heroDescription": "Documentation that feels satisfying to create. Every click, every edit—just right.",
+        "featureIntro": "Experience the crunch.",
         "features": [
           {
             "title": "Real-time Collaboration",
@@ -825,9 +825,9 @@
     },
     "auth": {
       "landing": {
-        "heroTitle": "작성하고, 협업하고, 게시하세요.",
-        "heroDescription": "문서화를 위한 올인원 워크스페이스. 메모장처럼 간편하지만, 지식 베이스 구축에는 강력합니다.",
-        "featureIntro": "다음 기능들로 시작해보세요.",
+        "heroTitle": "오도독, 생각이 딱딱 정리되는 손맛.",
+        "heroDescription": "복잡한 문서도 경쾌하게. 클릭 한 번, 타이핑 한 줄이 기분 좋게 맞아떨어집니다.",
+        "featureIntro": "이 손맛, 직접 느껴보세요.",
         "features": [
           {
             "title": "실시간 협업",
@@ -1305,9 +1305,9 @@
     },
     "auth": {
       "landing": {
-        "heroTitle": "チームのためのワークスペース級ライティング",
-        "heroDescription": "ドキュメント、エクスポート、アクティビティをすべてのワークスペースで一元管理。",
-        "featureIntro": "Get started with these capabilities.",
+        "heroTitle": "サクサク整う、気持ちいい文書作成。",
+        "heroDescription": "複雑な思考も、心地よくまとまる。クリック一つ、入力一行が、ぴたりと決まります。",
+        "featureIntro": "この心地よさ、体験してください。",
         "features": [
           {
             "title": "リアルタイムコラボレーション",

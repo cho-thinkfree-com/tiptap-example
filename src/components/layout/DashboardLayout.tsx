@@ -599,9 +599,11 @@ const DashboardLayout = () => {
                                 margin="dense"
                             />
                             <FormControl fullWidth margin="dense" variant="outlined" size="small">
-                                <InputLabel shrink>{strings.settings.workspaceProfile.language}</InputLabel>
+                                <InputLabel id="workspace-language">{strings.settings.workspaceProfile.language}</InputLabel>
                                 <Select
                                     native
+                                    labelId="workspace-language"
+                                    label={strings.settings.workspaceProfile.language}
                                     value={workspaceLocaleState}
                                     onChange={(e) => setWorkspaceLocaleState(e.target.value as Locale)}
                                 >
@@ -611,9 +613,11 @@ const DashboardLayout = () => {
                                 </Select>
                             </FormControl>
                             <FormControl fullWidth margin="dense" variant="outlined" size="small">
-                                <InputLabel shrink>{strings.settings.global.timezone}</InputLabel>
+                                <InputLabel id="workspace-timezone">{strings.settings.global.timezone}</InputLabel>
                                 <Select
                                     native
+                                    labelId="workspace-timezone"
+                                    label={strings.settings.global.timezone}
                                     value={workspaceTimezoneState}
                                     onChange={(e) => setWorkspaceTimezoneState(e.target.value)}
                                 >

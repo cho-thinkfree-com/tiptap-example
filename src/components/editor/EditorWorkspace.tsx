@@ -24,6 +24,7 @@ const EditorWorkspace = () => {
             typography: 'body1',
             '& .ProseMirror': {
               minHeight: '100%',
+              paddingLeft: '48px',
               paddingBottom: '32px',
               boxSizing: 'border-box',
             },

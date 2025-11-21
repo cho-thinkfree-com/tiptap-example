@@ -81,6 +81,12 @@ export type DashboardStrings = {
   createWorkspace: string
   newFolder: string
   newDocument: string
+  noRecentDocumentsNoWorkspace: string
+  createWorkspaceDialogTitle: string
+  createWorkspaceDialogDescription: string
+  createWorkspaceDialogNameLabel: string
+  createWorkspaceDialogCreate: string
+  createWorkspaceDialogCancel: string
   rename: string
   delete: string
   open: string
@@ -106,6 +112,7 @@ export type SettingsStrings = {
     personalInfo: string
     security: string
     legalName: string
+    legalNameRequired: string
     email: string
     preferredLanguage: string
     timezone: string
@@ -114,6 +121,7 @@ export type SettingsStrings = {
     saveChanges: string
     updateSuccess: string
     updateError: string
+    backToDashboard: string
   }
   workspaceProfile: {
     title: string
@@ -125,6 +133,7 @@ export type SettingsStrings = {
     profileInfo: string
     displayName: string
     displayNameHelper: string
+    displayNameRequired: string
     language: string
     changeAvatar: string
     saveProfile: string
@@ -132,6 +141,7 @@ export type SettingsStrings = {
     updateError: string
     loadError: string
   }
+  languageOptions: Record<Locale, string>
 }
 
 export type AppStrings = {
@@ -179,6 +189,7 @@ export type AuthStrings = {
     emailLabel: string
     passwordLabel: string
     legalNameLabel: string
+    legalNameRequired: string
     submitButton: string
     loadingButton: string
     hasAccount: string
@@ -244,4 +255,21 @@ export type WorkspaceStrings = {
   profileSubtitle: string
   profileEditLabel: string
   selectWorkspaceMessage: string
+  backToFiles: string
+  settingsAccessRestricted: string
+  settingsAccessRestrictedDetail: string
+  filesTitle: string
+  nameColumn: string
+  lastModifiedColumn: string
+  modifiedByColumn: string
+  actionsColumn: string
+  newFolder: string
+  newDocument: string
+  emptyFolder: string
+  createFirstDocument: string
+  confirmDeletionTitle: string
+  confirmDeletionBody: string
+  cancel: string
+  delete: string
+  rename: string
 }

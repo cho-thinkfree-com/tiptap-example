@@ -1,5 +1,6 @@
 import { Button, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, TextField } from '@mui/material';
 import { useState, useEffect, useRef } from 'react';
+import { useI18n } from '../../lib/i18n';
 
 interface CreateWorkspaceDialogProps {
   open: boolean;
@@ -8,18 +9,18 @@ interface CreateWorkspaceDialogProps {
 }
 
 const CreateWorkspaceDialog = ({ open, onClose, onCreate }: CreateWorkspaceDialogProps) => {
+  const { strings } = useI18n();
   const [name, setName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const focusInput = () => {
+    inputRef.current?.focus({ preventScroll: true });
+  };
+
   useEffect(() => {
-    if (open && inputRef.current) {
-      // Ensure focus after dialog animation
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 100);
-    }
+    if (open) focusInput();
   }, [open]);
 
   const handleCreate = async () => {
@@ -48,11 +49,16 @@ const CreateWorkspaceDialog = ({ open, onClose, onCreate }: CreateWorkspaceDialo
   };
 
   return (
-    <Dialog open={open} onClose={handleClose}>
-      <DialogTitle>Create a new workspace</DialogTitle>
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      TransitionProps={{ onEntered: focusInput }}
+      PaperProps={{ component: 'form', onSubmit: (e) => { e.preventDefault(); void handleCreate(); } }}
+    >
+      <DialogTitle>{strings.dashboard.createWorkspaceDialogTitle}</DialogTitle>
       <DialogContent>
         <DialogContentText>
-          Give your new workspace a name. You can change this later.
+          {strings.dashboard.createWorkspaceDialogDescription}
         </DialogContentText>
         {error && <p style={{ color: 'red' }}>{error}</p>}
         <TextField
@@ -60,7 +66,7 @@ const CreateWorkspaceDialog = ({ open, onClose, onCreate }: CreateWorkspaceDialo
           autoFocus
           margin="dense"
           id="name"
-          label="Workspace Name"
+          label={strings.dashboard.createWorkspaceDialogNameLabel}
           type="text"
           fullWidth
           variant="standard"
@@ -70,9 +76,9 @@ const CreateWorkspaceDialog = ({ open, onClose, onCreate }: CreateWorkspaceDialo
         />
       </DialogContent>
       <DialogActions>
-        <Button onClick={handleClose} disabled={loading}>Cancel</Button>
-        <Button onClick={handleCreate} disabled={loading}>
-          {loading ? 'Creating...' : 'Create'}
+        <Button onClick={handleClose} disabled={loading}>{strings.dashboard.createWorkspaceDialogCancel}</Button>
+        <Button type="submit" onClick={handleCreate} disabled={loading} variant="contained" color="primary">
+          {loading ? strings.dashboard.createWorkspaceDialogCreate : strings.dashboard.createWorkspaceDialogCreate}
         </Button>
       </DialogActions>
     </Dialog>

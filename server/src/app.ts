@@ -320,7 +320,13 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
 
   app.post('/api/auth/signup', async (request, reply) => {
     const account = await authService.signup(request.body as any)
-    reply.status(201).send({ id: account.id, email: account.email, status: account.status })
+    reply.status(201).send({
+      id: account.id,
+      email: account.email,
+      status: account.status,
+      preferredLocale: account.preferredLocale,
+      preferredTimezone: account.preferredTimezone,
+    })
   })
 
   app.post('/api/auth/login', async (request, reply) => {
@@ -334,7 +340,10 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     if (!account) {
       throw createError(404, 'Account not found')
     }
-    reply.send(account)
+    reply.send({
+      ...account,
+      preferredTimezone: account.preferredTimezone ?? 'UTC',
+    })
   })
 
   app.patch('/api/auth/me', { preHandler: authenticate }, async (request, reply) => {

@@ -22,7 +22,7 @@ const createWorkspaceSchema = z.object({
     .optional(),
   coverImage: httpsUrlSchema.optional(),
   defaultLocale: z.string().trim().min(2).max(10).default('en'),
-  defaultTimezone: z.string().trim().min(1).max(50).default('UTC'),
+  defaultTimezone: z.string().trim().min(1).max(50).optional(),
   visibility: z.enum(visibilityEnum).default('private'),
 })
 
@@ -58,16 +58,20 @@ export class WorkspaceService {
       throw new Error('Owner account not found')
     }
 
+    const effectiveTimezone = rawInput.defaultTimezone ?? owner.preferredTimezone ?? 'UTC'
+
     const workspace = await this.repository.create({
       ownerAccountId,
       name: input.name,
       description: input.description,
       coverImage: input.coverImage,
       defaultLocale: input.defaultLocale,
-      defaultTimezone: input.defaultTimezone,
+      defaultTimezone: effectiveTimezone,
       visibility: input.visibility,
       slug,
     })
+
+    const ownerDisplayName = owner.legalName?.trim() && owner.legalName.trim().length > 0 ? owner.legalName.trim() : owner.email.split('@')[0]
 
     await this.membershipRepository.create({
       workspaceId: workspace.id,
@@ -75,6 +79,8 @@ export class WorkspaceService {
       role: 'owner',
       status: 'active',
       preferredLocale: owner.preferredLocale,
+      displayName: ownerDisplayName,
+      timezone: owner.preferredTimezone ?? effectiveTimezone,
     })
 
     return workspace

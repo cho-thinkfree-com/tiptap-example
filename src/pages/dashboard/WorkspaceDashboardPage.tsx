@@ -133,7 +133,22 @@ const WorkspaceDashboardPage = () => {
   const renderRecentDocuments = () => {
     if (recentDocumentsLoading) return <CircularProgress />;
     if (recentDocumentsError) return <Alert severity="error">{recentDocumentsError}</Alert>;
-    if (recentDocuments.length === 0) return <Typography color="text.secondary">{strings.dashboard.noRecentDocuments}</Typography>;
+    if (recentDocuments.length === 0) {
+      const message =
+        workspaces.length === 0
+          ? strings.dashboard.noRecentDocumentsNoWorkspace
+          : strings.dashboard.noRecentDocuments;
+      return (
+        <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+          <Typography color="text.secondary">{message}</Typography>
+          {workspaces.length === 0 && (
+            <Button variant="contained" startIcon={<AddIcon />} onClick={() => setCreateDialogOpen(true)}>
+              {strings.dashboard.createWorkspace}
+            </Button>
+          )}
+        </Box>
+      );
+    }
 
     return (
       <TableContainer component={Paper} variant="outlined" sx={{ border: 'none' }}>

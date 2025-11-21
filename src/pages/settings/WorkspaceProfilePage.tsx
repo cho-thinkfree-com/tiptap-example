@@ -16,20 +16,21 @@ import {
     Grid,
     Link
 } from '@mui/material';
-import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useAuth } from '../../context/AuthContext';
-import { useI18n } from '../../lib/i18n';
+import { useI18n, type Locale } from '../../lib/i18n';
 import { getWorkspaceMemberProfile, updateWorkspaceMemberProfile, getWorkspace } from '../../lib/api';
 
 const WorkspaceProfilePage = () => {
     const { user, tokens } = useAuth();
     const { workspaceId } = useParams<{ workspaceId: string }>();
     const navigate = useNavigate();
-    const { strings, locale } = useI18n();
+    const { strings, locale, setLocale } = useI18n();
 
     // Workspace Profile State
     const [workspaceName, setWorkspaceName] = useState('');
     const [displayName, setDisplayName] = useState('');
+    const [displayNameError, setDisplayNameError] = useState<string | null>(null);
     const [workspaceTimezone, setWorkspaceTimezone] = useState('UTC');
     const [workspaceLocale, setWorkspaceLocale] = useState('en-US');
 
@@ -65,13 +66,22 @@ const WorkspaceProfilePage = () => {
         setLoading(true);
         setError(null);
         setSuccess(null);
+        setDisplayNameError(null);
 
         try {
+            if (!displayName.trim()) {
+                setDisplayNameError(strings.settings.workspaceProfile.displayNameRequired);
+                setLoading(false);
+                return;
+            }
             await updateWorkspaceMemberProfile(workspaceId, tokens.accessToken, {
-                displayName,
+                displayName: displayName.trim(),
                 timezone: workspaceTimezone,
                 preferredLocale: workspaceLocale
             });
+
+            // Apply the new locale immediately after saving so the UI mirrors the selection
+            setLocale(workspaceLocale as Locale);
 
             setSuccess(strings.settings.workspaceProfile.updateSuccess);
         } catch (err) {
@@ -97,40 +107,111 @@ const WorkspaceProfilePage = () => {
         );
     }
 
+    const subtitle = strings.settings.workspaceProfile.subtitle.replace('{workspaceName}', workspaceName)
+
+    const languageOptions = strings.settings.languageOptions ?? {
+        'en-US': 'English (English)',
+        'ko-KR': '한국어 (한국어)',
+        'ja-JP': '日本語 (日本語)',
+    };
+    const timezoneOptions = [
+        'UTC',
+        // Asia
+        'Asia/Seoul',
+        'Asia/Tokyo',
+        'Asia/Shanghai',
+        'Asia/Hong_Kong',
+        'Asia/Taipei',
+        'Asia/Singapore',
+        'Asia/Bangkok',
+        'Asia/Kolkata',
+        'Asia/Dubai',
+        'Asia/Kuala_Lumpur',
+        'Asia/Jakarta',
+        'Asia/Manila',
+        // Europe
+        'Europe/London',
+        'Europe/Paris',
+        'Europe/Berlin',
+        'Europe/Madrid',
+        'Europe/Rome',
+        'Europe/Amsterdam',
+        'Europe/Stockholm',
+        'Europe/Istanbul',
+        'Europe/Moscow',
+        'Europe/Warsaw',
+        'Europe/Zurich',
+        // Americas
+        'America/New_York',
+        'America/Chicago',
+        'America/Denver',
+        'America/Los_Angeles',
+        'America/Toronto',
+        'America/Vancouver',
+        'America/Mexico_City',
+        'America/Bogota',
+        'America/Lima',
+        'America/Sao_Paulo',
+        'America/Argentina/Buenos_Aires',
+        // Oceania
+        'Australia/Sydney',
+        'Australia/Melbourne',
+        'Pacific/Auckland',
+    ];
+    const formatTzLabel = (tz: string) => {
+        try {
+            const parts = new Intl.DateTimeFormat('en-US', {
+                timeZone: tz,
+                timeZoneName: 'shortOffset',
+            }).formatToParts(new Date());
+            const offset = parts.find((p) => p.type === 'timeZoneName')?.value ?? 'UTC';
+            return `${tz} (${offset})`;
+        } catch {
+            return tz;
+        }
+    };
+    const timezoneOptionsWithLabel = timezoneOptions
+        .map((tz) => ({ value: tz, label: formatTzLabel(tz) }))
+        .sort((a, b) => a.label.localeCompare(b.label));
+
     return (
         <Container maxWidth="md">
-            <Typography variant="h4" fontWeight="bold" gutterBottom>
-                {strings.settings.workspaceProfile.title}
-            </Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-                {strings.settings.workspaceProfile.subtitle.replace('{workspaceName}', workspaceName)}
-            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 2, mb: 2, flexWrap: 'wrap' }}>
+                <Typography variant="h4" fontWeight="bold">
+                    {strings.settings.workspaceProfile.title.replace('{workspaceName}', workspaceName)}
+                </Typography>
+                {workspaceId && (
+                    <Button
+                        variant="outlined"
+                        startIcon={<ArrowBackIcon />}
+                        onClick={() => navigate(`/workspace/${workspaceId}`)}
+                    >
+                        {strings.workspace.backToFiles}
+                    </Button>
+                )}
+            </Box>
+            {subtitle.trim() && (
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                    {subtitle}
+                </Typography>
+            )}
 
             <Paper sx={{ p: 3 }}>
                 {error && <Alert severity="error" sx={{ mb: 3 }}>{error}</Alert>}
                 {success && <Alert severity="success" sx={{ mb: 3 }}>{success}</Alert>}
 
                 <Alert severity="info" sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
-                    <Box>
-                        <strong>{strings.settings.workspaceProfile.workspaceSpecific}</strong>
-                        <br />
-                        {strings.settings.workspaceProfile.workspaceSpecificDesc.replace('{workspaceName}', workspaceName)}
-                        <br />
-                        <Box sx={{ mt: 1, display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <InfoOutlinedIcon fontSize="small" />
-                            <Typography variant="body2">
-                                {strings.settings.workspaceProfile.emailPasswordHint}{' '}
-                                <Link
-                                    component="button"
-                                    variant="body2"
-                                    onClick={() => navigate('/settings')}
-                                    sx={{ cursor: 'pointer', fontWeight: 'bold' }}
-                                >
-                                    {strings.settings.workspaceProfile.globalAccountSettings}
-                                </Link>
-                            </Typography>
-                        </Box>
-                    </Box>
+                    <Typography variant="body2">
+                        {strings.settings.workspaceProfile.workspaceSpecific}{' '}
+                        <Link
+                            component="button"
+                            variant="body2"
+                            onClick={() => navigate('/settings')}
+                            sx={{ cursor: 'pointer', fontWeight: 'bold' }}
+                        >
+                            {strings.settings.workspaceProfile.globalAccountSettings}
+                        </Link>
+                    </Typography>
                 </Alert>
 
                 <Typography variant="h6" gutterBottom>{strings.settings.workspaceProfile.profileInfo}</Typography>
@@ -153,8 +234,9 @@ const WorkspaceProfilePage = () => {
                             label={strings.settings.workspaceProfile.displayName}
                             fullWidth
                             value={displayName}
-                            onChange={(e) => setDisplayName(e.target.value)}
-                            helperText={strings.settings.workspaceProfile.displayNameHelper}
+                            onChange={(e) => { setDisplayName(e.target.value); setDisplayNameError(null); }}
+                            helperText={displayNameError ?? strings.settings.workspaceProfile.displayNameHelper}
+                            error={Boolean(displayNameError)}
                         />
                     </Grid>
                     <Grid size={{ xs: 12, sm: 6 }}>
@@ -166,9 +248,9 @@ const WorkspaceProfilePage = () => {
                                 label={strings.settings.workspaceProfile.language}
                                 onChange={(e) => setWorkspaceLocale(e.target.value)}
                             >
-                                <option value="en-US">English</option>
-                                <option value="ko-KR">Korean</option>
-                                <option value="ja-JP">Japanese</option>
+                                <option value="en-US">{languageOptions['en-US']}</option>
+                                <option value="ko-KR">{languageOptions['ko-KR']}</option>
+                                <option value="ja-JP">{languageOptions['ja-JP']}</option>
                             </Select>
                         </FormControl>
                     </Grid>
@@ -181,10 +263,11 @@ const WorkspaceProfilePage = () => {
                                 label={strings.settings.global.timezone}
                                 onChange={(e) => setWorkspaceTimezone(e.target.value)}
                             >
-                                <option value="UTC">UTC</option>
-                                <option value="Asia/Seoul">Seoul</option>
-                                <option value="America/New_York">New York</option>
-                                <option value="Europe/London">London</option>
+                                {timezoneOptionsWithLabel.map((tz) => (
+                                    <option key={tz.value} value={tz.value}>
+                                        {tz.label}
+                                    </option>
+                                ))}
                             </Select>
                         </FormControl>
                     </Grid>

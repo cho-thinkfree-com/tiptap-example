@@ -17,6 +17,7 @@ import RenameDialog from '../../components/workspace/RenameDialog';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { broadcastSync } from '../../lib/syncEvents';
 import { useSyncChannel } from '../../hooks/useSyncChannel';
+import { useI18n } from '../../lib/i18n';
 
 const WorkspacePage = () => {
   const { workspaceId } = useParams<{ workspaceId: string }>();
@@ -24,6 +25,7 @@ const WorkspacePage = () => {
   const folderId = searchParams.get('folderId');
   const { tokens } = useAuth();
   const [workspace, setWorkspace] = useState<WorkspaceSummary | null>(null);
+  const { strings } = useI18n();
 
   usePageTitle(workspace?.name || 'Workspace');
   const [ancestors, setAncestors] = useState<FolderSummary[]>([]);
@@ -346,10 +348,10 @@ const WorkspacePage = () => {
       return (
         <Paper sx={{ p: 6, textAlign: 'center', borderStyle: 'dashed', bgcolor: 'transparent' }}>
           <Typography color="text.secondary" sx={{ mb: 2 }}>
-            This folder is empty.
+            {strings.workspace.emptyFolder}
           </Typography>
           <Button variant="outlined" startIcon={<AddIcon />} onClick={() => handleCreateDocument()}>
-            Create your first document
+            {strings.workspace.createFirstDocument}
           </Button>
         </Paper>
       );
@@ -360,10 +362,10 @@ const WorkspacePage = () => {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell width="50%">Name</TableCell>
-              <TableCell width="20%">Last Modified</TableCell>
-              <TableCell width="20%">Modified By</TableCell>
-              <TableCell align="right" width="10%">Actions</TableCell>
+              <TableCell width="50%">{strings.workspace.nameColumn}</TableCell>
+              <TableCell width="20%">{strings.workspace.lastModifiedColumn}</TableCell>
+              <TableCell width="20%">{strings.workspace.modifiedByColumn}</TableCell>
+              <TableCell align="right" width="10%">{strings.workspace.actionsColumn}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -398,7 +400,7 @@ const WorkspacePage = () => {
                   <Typography variant="body2" color="text.secondary">{formatRelativeDate(doc.updatedAt)}</Typography>
                 </TableCell>
                 <TableCell>
-                  <Chip label={doc.lastModifiedBy || 'User'} size="small" variant="outlined" sx={{ borderRadius: 1 }} />
+                  <Chip label={doc.lastModifiedBy || strings.workspace.ownerLabel} size="small" variant="outlined" sx={{ borderRadius: 1 }} />
                 </TableCell>
                 <TableCell align="right">
                   <IconButton size="small" onClick={(event) => handleMenuOpen(event, { id: doc.id, name: doc.title, type: 'document' })}>
@@ -487,19 +489,19 @@ const WorkspacePage = () => {
         {/* DEBUG: Remove after fixing */}
         {/* <Box sx={{ display: 'none' }}>Ancestors: {JSON.stringify(ancestors)}</Box> */}
 
-        <Box sx={{ display: 'flex', gap: 2 }}>
+      <Box sx={{ display: 'flex', gap: 2 }}>
           <Button variant="outlined" startIcon={<AddIcon />} onClick={() => setCreateFolderDialogOpen(true)}>
-            New Folder
+            {strings.workspace.newFolder}
           </Button>
           <Button variant="contained" startIcon={<AddIcon />} onClick={() => handleCreateDocument()}>
-            New Document
+            {strings.workspace.newDocument}
           </Button>
         </Box>
       </Box>
 
       <Box sx={{ mb: 4 }}>
         <Typography variant="h5" fontWeight="bold" gutterBottom sx={{ mb: 3 }}>
-          Files
+          {strings.workspace.filesTitle}
         </Typography>
         {renderFilesAndFolders()}
       </Box>
@@ -521,8 +523,8 @@ const WorkspacePage = () => {
         transformOrigin={{ horizontal: 'right', vertical: 'top' }}
         anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
       >
-        <MenuItem onClick={handleRenameClick}>Rename</MenuItem>
-        <MenuItem onClick={handleDeleteClick} sx={{ color: 'error.main' }}>Delete</MenuItem>
+        <MenuItem onClick={handleRenameClick}>{strings.workspace.rename}</MenuItem>
+        <MenuItem onClick={handleDeleteClick} sx={{ color: 'error.main' }}>{strings.workspace.delete}</MenuItem>
       </Menu>
 
       <Dialog
@@ -532,18 +534,18 @@ const WorkspacePage = () => {
           setSelectedItem(null);
         }}
       >
-        <DialogTitle>Confirm Deletion</DialogTitle>
+        <DialogTitle>{strings.workspace.confirmDeletionTitle}</DialogTitle>
         <DialogContent>
           <DialogContentText>
-            Are you sure you want to delete "{selectedItem?.name}"? This action cannot be undone.
+            {strings.workspace.confirmDeletionBody.replace('{name}', selectedItem?.name ?? '')}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => {
             setDeleteConfirmOpen(false);
             setSelectedItem(null);
-          }}>Cancel</Button>
-          <Button onClick={handleDeleteConfirm} color="error" variant="contained">Delete</Button>
+          }}>{strings.workspace.cancel}</Button>
+          <Button onClick={handleDeleteConfirm} color="error" variant="contained">{strings.workspace.delete}</Button>
         </DialogActions>
       </Dialog>
 

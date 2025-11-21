@@ -13,12 +13,13 @@ const CreateFolderDialog = ({ open, onClose, onCreate }: CreateFolderDialogProps
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const focusInput = () => {
+    inputRef.current?.focus({ preventScroll: true });
+  };
+
   useEffect(() => {
-    if (open && inputRef.current) {
-      // Ensure focus after dialog animation
-      setTimeout(() => {
-        inputRef.current?.focus();
-      }, 100);
+    if (open) {
+      focusInput();
     }
   }, [open]);
 
@@ -48,7 +49,12 @@ const CreateFolderDialog = ({ open, onClose, onCreate }: CreateFolderDialogProps
   };
 
   return (
-    <Dialog open={open} onClose={handleClose}>
+    <Dialog
+      open={open}
+      onClose={handleClose}
+      TransitionProps={{ onEntered: focusInput }}
+      PaperProps={{ component: 'form', onSubmit: (e) => { e.preventDefault(); void handleCreate(); } }}
+    >
       <DialogTitle>Create a new folder</DialogTitle>
       <DialogContent>
         <DialogContentText>
@@ -71,7 +77,7 @@ const CreateFolderDialog = ({ open, onClose, onCreate }: CreateFolderDialogProps
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose} disabled={loading}>Cancel</Button>
-        <Button onClick={handleCreate} disabled={loading}>
+        <Button type="submit" onClick={handleCreate} disabled={loading} variant="contained" color="primary">
           {loading ? 'Creating...' : 'Create'}
         </Button>
       </DialogActions>

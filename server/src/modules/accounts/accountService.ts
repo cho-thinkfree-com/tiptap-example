@@ -11,6 +11,7 @@ const registerAccountSchema = z.object({
     .max(200)
     .optional(),
   preferredLocale: z.string().optional(),
+  preferredTimezone: z.string().optional(),
 })
 
 export type RegisterAccountInput = z.infer<typeof registerAccountSchema>
@@ -25,11 +26,14 @@ export class AccountService {
     const parsed = registerAccountSchema.parse(input)
     const normalizedEmail = parsed.email.toLowerCase()
     const passwordHash = await this.passwordHasher.hash(parsed.password)
+    const legalName = parsed.legalName?.trim()
+    const fallbackName = legalName && legalName.length > 0 ? legalName : parsed.email.split('@')[0]
     return this.repository.create({
       email: normalizedEmail,
       passwordHash,
-      legalName: parsed.legalName,
+      legalName: fallbackName,
       preferredLocale: parsed.preferredLocale,
+      preferredTimezone: parsed.preferredTimezone,
     })
   }
 
@@ -45,6 +49,12 @@ export class AccountService {
   async updateAccount(accountId: string, data: Partial<RegisterAccountInput> & { preferredLocale?: string; preferredTimezone?: string }): Promise<AccountEntity> {
     if (data.email) {
       data.email = data.email.toLowerCase()
+    }
+    if (data.legalName !== undefined) {
+      data.legalName = data.legalName.trim()
+      if (data.legalName.length === 0) {
+        throw new Error('legalName must be at least 1 character')
+      }
     }
     return this.repository.update(accountId, data)
   }

@@ -33,6 +33,7 @@ const signupSchema = z.object({
     .max(200)
     .optional(),
   preferredLocale: z.string().optional(),
+  preferredTimezone: z.string().optional(),
 })
 
 const refreshSchema = z.object({

@@ -66,8 +66,8 @@ import LanguageSync from './common/LanguageSync';
 const App = () => {
   return (
     <AuthProvider>
-      <LanguageSync />
       <BrowserRouter>
+        <LanguageSync />
         <AppRoutes />
       </BrowserRouter>
     </AuthProvider>

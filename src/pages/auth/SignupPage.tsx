@@ -9,9 +9,22 @@ import { usePageTitle } from '../../hooks/usePageTitle';
 
 const SignupPage = () => {
   usePageTitle('Sign Up');
+  const detectTimezone = () => {
+    try {
+      if (typeof Intl !== 'undefined' && typeof Intl.DateTimeFormat === 'function') {
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        if (tz) return tz;
+      }
+    } catch {
+      /* ignore */
+    }
+    return 'UTC';
+  };
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [legalName, setLegalName] = useState('');
+  const [preferredTimezone] = useState<string>(() => detectTimezone());
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const { signup } = useAuth();
@@ -23,7 +36,9 @@ const SignupPage = () => {
     setError(null);
     setLoading(true);
     try {
-      await signup({ email, password, legalName, preferredLocale: locale });
+      const trimmedName = legalName.trim();
+      const autoName = trimmedName || email.split('@')[0] || undefined;
+      await signup({ email, password, legalName: autoName, preferredLocale: locale, preferredTimezone });
       navigate('/dashboard');
     } catch (err) {
       setError((err as Error).message);
@@ -48,7 +63,12 @@ const SignupPage = () => {
           name="email"
           autoComplete="email"
           value={email}
-          onChange={(e) => setEmail(e.target.value)}
+          onChange={(e) => {
+            const next = e.target.value;
+            setEmail(next);
+            const prefix = next.split('@')[0] ?? '';
+            setLegalName(prefix);
+          }}
           disabled={loading}
           sx={{ mb: 2 }}
         />
@@ -73,7 +93,7 @@ const SignupPage = () => {
           name="legalName"
           autoComplete="name"
           value={legalName}
-          onChange={(e) => setLegalName(e.target.value)}
+          onChange={(e) => { setLegalName(e.target.value); }}
           disabled={loading}
           sx={{ mb: 3 }}
         />

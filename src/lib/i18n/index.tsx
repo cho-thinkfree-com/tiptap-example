@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState, type ReactNode } from 'react'
+import { createContext, useContext, useMemo, useState, useCallback, type ReactNode } from 'react'
 import resourcesJson from './resources.json'
 import type { AppStrings, Locale } from './types'
 
@@ -6,6 +6,7 @@ export { type HeadingLevel, type Locale, type AppStrings, type ShortcutDefinitio
 
 const fallbackLocale: Locale = 'en-US'
 const resources = resourcesJson as unknown as Record<Locale, AppStrings>
+const STORAGE_KEY = 'tiptap-locale'
 
 const normalizeLocale = (locale?: string): Locale => {
   if (!locale) {
@@ -31,6 +32,17 @@ const detectBrowserLocale = (): Locale => {
   }
 
   return normalizeLocale(navigator.language)
+}
+
+const getStoredLocale = (): Locale | null => {
+  if (typeof window === 'undefined') return null
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY)
+    if (!raw) return null
+    return normalizeLocale(raw)
+  } catch {
+    return null
+  }
 }
 
 export const getStringsForLocale = (locale?: string): AppStrings => {
@@ -77,15 +89,27 @@ const deepMerge = (target: any, source: any): any => {
 }
 
 export const I18nProvider = ({ children, initialLocale }: { children: ReactNode; initialLocale?: Locale }) => {
-  const [locale, setLocale] = useState<Locale>(initialLocale ?? detectBrowserLocale())
+  const [locale, setLocaleState] = useState<Locale>(() => initialLocale ?? getStoredLocale() ?? detectBrowserLocale())
+
+  const persistLocale = useCallback((next: Locale) => {
+    if (typeof window === 'undefined') return
+    try {
+      window.localStorage.setItem(STORAGE_KEY, next)
+    } catch {
+      /* ignore storage failures */
+    }
+  }, [])
 
   const value = useMemo<I18nContextValue>(
     () => ({
       locale,
       strings: deepMerge(resources[fallbackLocale], resources[locale]),
-      setLocale,
+      setLocale: (nextLocale) => {
+        persistLocale(nextLocale)
+        setLocaleState(nextLocale)
+      },
     }),
-    [locale],
+    [locale, persistLocale],
   )
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>

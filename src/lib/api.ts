@@ -134,6 +134,7 @@ export interface LoginInput {
 export interface SignupInput extends LoginInput {
   legalName?: string
   preferredLocale?: string
+  preferredTimezone?: string
 }
 
 export interface LoginResult {

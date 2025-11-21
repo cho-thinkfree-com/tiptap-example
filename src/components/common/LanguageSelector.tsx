@@ -2,16 +2,22 @@ import { MenuItem, Select, type SelectChangeEvent, FormControl } from '@mui/mate
 import { useI18n, type Locale } from '../../lib/i18n';
 
 const LanguageSelector = () => {
-    const { locale, setLocale } = useI18n();
+    const { locale, setLocale, strings } = useI18n();
 
     const handleChange = (event: SelectChangeEvent) => {
         setLocale(event.target.value as Locale);
     };
 
+    const languageOptions = strings.settings?.languageOptions ?? {
+        'en-US': 'English (English)',
+        'ko-KR': '한국어 (한국어)',
+        'ja-JP': '日本語 (日本語)',
+    };
+
     const languages: { value: Locale; label: string }[] = [
-        { value: 'en-US', label: 'English' },
-        { value: 'ko-KR', label: '한국어' },
-        { value: 'ja-JP', label: '日本語' },
+        { value: 'en-US', label: languageOptions['en-US'] },
+        { value: 'ko-KR', label: languageOptions['ko-KR'] },
+        { value: 'ja-JP', label: languageOptions['ja-JP'] },
     ];
 
     return (

@@ -159,7 +159,8 @@ const DashboardLayout = () => {
             ]);
             setWorkspaceNameForm(ws.name);
             setWorkspaceDescForm(ws.description || '');
-            setWorkspaceDisplayName(member.displayName || null);
+            const fallbackDisplay = member.displayName || userDisplayName;
+            setWorkspaceDisplayName(fallbackDisplay || '');
             setWorkspaceMember(member);
             setWorkspaceLocaleState((member.preferredLocale as Locale) || 'en-US');
             setWorkspaceTimezoneState(member.timezone || 'UTC');
@@ -200,11 +201,15 @@ const DashboardLayout = () => {
         setWorkspaceSaving(true);
         setWorkspaceError(null);
         try {
-            const memberUpdate = updateWorkspaceMemberProfile(workspaceId, tokens.accessToken, {
-                displayName: workspaceDisplayName?.trim() || workspaceMember?.displayName || '',
+            const trimmedDisplay = workspaceDisplayName?.trim();
+            const memberPayload: Record<string, unknown> = {
                 preferredLocale: workspaceLocaleState,
                 timezone: workspaceTimezoneState,
-            });
+            };
+            if (trimmedDisplay && trimmedDisplay.length > 0) {
+                memberPayload.displayName = trimmedDisplay;
+            }
+            const memberUpdate = updateWorkspaceMemberProfile(workspaceId, tokens.accessToken, memberPayload);
             const workspaceUpdate = isPrivileged
                 ? updateWorkspace(workspaceId, tokens.accessToken, {
                     name: workspaceNameForm.trim(),

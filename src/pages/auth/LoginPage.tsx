@@ -1,5 +1,5 @@
 import { Alert, Box, Button, CircularProgress, Link, TextField, Typography } from '@mui/material';
-import { Link as RouterLink, useNavigate } from 'react-router-dom';
+import { Link as RouterLink, useNavigate, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import AuthLayout from '../../components/layout/AuthLayout';
@@ -15,6 +15,8 @@ const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const { login, logoutMessage } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const from = location.state?.from?.pathname || '/dashboard';
   const { strings } = useI18n();
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
@@ -23,7 +25,7 @@ const LoginPage = () => {
     setLoading(true);
     try {
       await login({ email, password });
-      navigate('/dashboard');
+      navigate(from, { replace: true });
     } catch (err) {
       setError((err as Error).message);
     } finally {

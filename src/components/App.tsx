@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import LoginPage from '../pages/auth/LoginPage';
 import SignupPage from '../pages/auth/SignupPage';
@@ -14,7 +14,8 @@ import SharedDocumentPage from '../pages/editor/SharedDocumentPage';
 
 const ProtectedRoute = () => {
   const { isAuthenticated } = useAuth();
-  return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace />;
+  const location = useLocation();
+  return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace state={{ from: location }} />;
 };
 
 const PublicRoute = () => {

@@ -154,7 +154,7 @@ const WorkspaceSettingsDialog = ({ open, onClose, workspaceId }: WorkspaceSettin
     const renderGeneralTab = () => (
         <Box sx={{ display: 'grid', gap: 2 }}>
             <Typography variant="h6" gutterBottom>
-                {strings.layout.dashboard.workspaceSettingsLabel}
+                {strings.layout.dashboard.workspace || 'Workspace'}
             </Typography>
             <TextField
                 label={strings.workspace.createWorkspacePlaceholder}
@@ -196,7 +196,7 @@ const WorkspaceSettingsDialog = ({ open, onClose, workspaceId }: WorkspaceSettin
     const renderProfileTab = () => (
         <Box sx={{ display: 'grid', gap: 2 }}>
             <Typography variant="h6" gutterBottom>
-                {strings.settings.workspaceProfile.title || 'Workspace Profile'}
+                {strings.workspace.profileTitle || 'Profile'}
             </Typography>
             <TextField
                 label={strings.settings.workspaceProfile.displayName}

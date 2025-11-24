@@ -33,6 +33,15 @@ const dispatchAuthRefreshed = (tokens: LoginResult) => {
   )
 }
 
+export class ApiError extends Error {
+  status: number
+  constructor(message: string, status: number) {
+    super(message)
+    this.status = status
+    this.name = 'ApiError'
+  }
+}
+
 const handleResponse = async <T>(response: Response): Promise<T> => {
   let payload: unknown = null
   try {
@@ -46,7 +55,7 @@ const handleResponse = async <T>(response: Response): Promise<T> => {
       typeof payload === 'object' && payload && 'message' in (payload as Record<string, unknown>)
         ? (payload as Record<string, string>).message
         : response.statusText
-    throw new Error(message || 'Request failed')
+    throw new ApiError(message || 'Request failed', response.status)
   }
 
   return payload as T

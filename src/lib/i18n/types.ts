@@ -107,6 +107,7 @@ export type DashboardStrings = {
   areYouSure: string
   cancel: string
   noWorkspacesFound: string
+  workspaceNotFoundDetail: string
   noRecentDocuments: string
   folderEmpty: string
   createFirstDocument: string

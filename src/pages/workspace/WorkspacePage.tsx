@@ -1,8 +1,8 @@
 import { Alert, Box, Breadcrumbs, Button, CircularProgress, Container, Link, Typography, Menu, MenuItem, IconButton, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip } from '@mui/material';
 import { useCallback, useEffect, useState, useMemo, useRef } from 'react';
-import { useParams, useSearchParams, Link as RouterLink } from 'react-router-dom';
+import { useParams, useSearchParams, Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { getWorkspaceDocuments, getFolder, createFolder, createDocument, deleteDocument, deleteFolder, renameDocument, renameFolder, getWorkspace, type DocumentSummary, type FolderSummary, type WorkspaceSummary } from '../../lib/api';
+import { getWorkspaceDocuments, getFolder, createFolder, createDocument, deleteDocument, deleteFolder, renameDocument, renameFolder, getWorkspace, ApiError, type DocumentSummary, type FolderSummary, type WorkspaceSummary } from '../../lib/api';
 import { formatRelativeDate } from '../../lib/formatDate';
 import HomeIcon from '@mui/icons-material/Home';
 
@@ -22,6 +22,7 @@ import { useI18n } from '../../lib/i18n';
 
 const WorkspacePage = () => {
   const { workspaceId } = useParams<{ workspaceId: string }>();
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const folderId = searchParams.get('folderId');
   const { tokens } = useAuth();
@@ -43,6 +44,7 @@ const WorkspacePage = () => {
   const [folders, setFolders] = useState<FolderSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [notFoundError, setNotFoundError] = useState(false);
   const [isCreateFolderDialogOpen, setCreateFolderDialogOpen] = useState(false);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [anchorElBreadcrumb, setAnchorElBreadcrumb] = useState<null | HTMLElement>(null);
@@ -89,7 +91,11 @@ const WorkspacePage = () => {
           setFolders(contents.folders);
         })
         .catch((err) => {
-          setError((err as Error).message);
+          if (err instanceof ApiError && (err.status === 404 || err.status === 403)) {
+            setNotFoundError(true);
+          } else {
+            setError((err as Error).message);
+          }
         })
         .finally(() => {
           setLoading(false);
@@ -442,6 +448,19 @@ const WorkspacePage = () => {
 
   return (
     <Container maxWidth="xl">
+      <Dialog open={notFoundError}>
+        <DialogTitle>{strings.dashboard.noWorkspacesFound || 'Workspace Not Found'}</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {strings.dashboard.workspaceNotFoundDetail || 'The workspace you are trying to access does not exist or you do not have permission to view it.'}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => navigate('/')} variant="contained" autoFocus>
+            {strings.settings.global.backToDashboard || 'Back to Dashboard'}
+          </Button>
+        </DialogActions>
+      </Dialog>
       <Box ref={breadcrumbContainerRef} sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
         <Breadcrumbs separator={<NavigateNextIcon fontSize="small" />} aria-label="breadcrumb" maxItems={20}>
           {breadcrumbPaths.map((item, index) => {

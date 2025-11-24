@@ -15,7 +15,13 @@ import SharedDocumentPage from '../pages/editor/SharedDocumentPage';
 const ProtectedRoute = () => {
   const { isAuthenticated } = useAuth();
   const location = useLocation();
-  return isAuthenticated ? <Outlet /> : <Navigate to="/login" replace state={{ from: location }} />;
+
+  if (!isAuthenticated) {
+    const redirectUrl = encodeURIComponent(location.pathname + location.search);
+    return <Navigate to={`/login?redirect=${redirectUrl}`} replace />;
+  }
+
+  return <Outlet />;
 };
 
 const PublicRoute = () => {

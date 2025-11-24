@@ -1,6 +1,6 @@
 import { Alert, Box, Button, CircularProgress, Link, TextField, Typography } from '@mui/material';
 import { Link as RouterLink, useNavigate, useSearchParams } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import AuthLayout from '../../components/layout/AuthLayout';
 import { useI18n } from '../../lib/i18n';
@@ -18,6 +18,17 @@ const LoginPage = () => {
   const [searchParams] = useSearchParams();
   const redirectUrl = searchParams.get('redirect') || '/dashboard';
   const { strings } = useI18n();
+
+  // Clear manual logout flag when LoginPage mounts
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const flag = window.sessionStorage.getItem('manual-logout');
+      if (flag === 'true') {
+        console.log('[LoginPage] Clearing manual-logout flag on mount');
+        window.sessionStorage.removeItem('manual-logout');
+      }
+    }
+  }, []);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();

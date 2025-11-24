@@ -16,20 +16,22 @@ const ProtectedRoute = () => {
   const { isAuthenticated } = useAuth();
   const location = useLocation();
 
+  console.log('[ProtectedRoute] Checking auth:', { isAuthenticated, pathname: location.pathname });
+
   if (!isAuthenticated) {
     // Check if this is a manual logout
     const isManualLogout = typeof window !== 'undefined' && window.sessionStorage.getItem('manual-logout') === 'true';
+    console.log('[ProtectedRoute] Not authenticated - manual logout flag:', isManualLogout);
 
     if (isManualLogout) {
-      // Clear the flag and redirect to login without redirect parameter
-      if (typeof window !== 'undefined') {
-        window.sessionStorage.removeItem('manual-logout');
-      }
+      // Don't clear the flag here - let LoginPage clear it to avoid double-render issues
+      console.log('[ProtectedRoute] Manual logout detected - redirecting to /login without param');
       return <Navigate to="/login" replace />;
     }
 
     // For automatic logouts (session expiry), preserve the redirect parameter
     const redirectUrl = encodeURIComponent(location.pathname + location.search);
+    console.log('[ProtectedRoute] Auto logout - redirecting with param:', redirectUrl);
     return <Navigate to={`/login?redirect=${redirectUrl}`} replace />;
   }
 

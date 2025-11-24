@@ -1,5 +1,6 @@
-import { AppBar, Box, Button, TextField, Toolbar, Typography } from '@mui/material';
+import { AppBar, Box, Button, Drawer, IconButton, TextField, Toolbar, Typography } from '@mui/material';
 import { RichTextEditorProvider } from 'mui-tiptap';
+import MenuIcon from '@mui/icons-material/Menu';
 import EditorToolbar from '../editor/EditorToolbar';
 import EditorWorkspace from '../editor/EditorWorkspace';
 import EditorTableOfContents from '../editor/EditorTableOfContents';
@@ -19,9 +20,10 @@ interface EditorLayoutProps {
 }
 
 const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClose, saveStatus, readOnly = false }: EditorLayoutProps) => {
-    const [tocOpen, setTocOpen] = useState(true);
+    const [tocOpen, setTocOpen] = useState(false);
     const [localTitle, setLocalTitle] = useState(document.title);
     const [shareOpen, setShareOpen] = useState(false);
+    const [hasHeadings, setHasHeadings] = useState(false);
 
     useEffect(() => {
         setLocalTitle(document.title);
@@ -30,8 +32,26 @@ const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClos
     useEffect(() => {
         if (editor) {
             editor.on('update', onContentChange);
+
+            // Check for headings
+            const checkHeadings = () => {
+                let found = false;
+                editor.state.doc.descendants((node) => {
+                    if (node.type.name === 'heading') {
+                        found = true;
+                        return false; // Stop searching
+                    }
+                    return true;
+                });
+                setHasHeadings(found);
+            };
+
+            checkHeadings();
+            editor.on('update', checkHeadings);
+
             return () => {
                 editor.off('update', onContentChange);
+                editor.off('update', checkHeadings);
             };
         }
     }, [editor, onContentChange]);
@@ -82,23 +102,46 @@ const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClos
             <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, overflow: 'hidden' }}>
                 <AppBar position="static" color="default" elevation={1}>
                     <Toolbar sx={{ px: { xs: 2, sm: 4, lg: 6 } }}>
-                        <TextField
-                            value={localTitle}
-                            onChange={handleTitleChange}
-                            onBlur={handleTitleBlur}
-                            onKeyDown={handleKeyDown}
-                            placeholder={document.title}
-                            variant="standard"
-                            InputProps={{
-                                disableUnderline: true,
-                                sx: {
+                        <IconButton
+                            edge="start"
+                            color="inherit"
+                            aria-label="목차 열기"
+                            onClick={() => setTocOpen(!tocOpen)}
+                            sx={{
+                                mr: 2,
+                                visibility: (readOnly && !hasHeadings) ? 'hidden' : 'visible'
+                            }}
+                        >
+                            <MenuIcon />
+                        </IconButton>
+                        {readOnly ? (
+                            <Typography
+                                sx={{
                                     fontSize: '2rem',
                                     fontWeight: 700,
-                                }
-                            }}
-                            sx={{ flexGrow: 1 }}
-                            disabled={readOnly}
-                        />
+                                    flexGrow: 1,
+                                }}
+                            >
+                                {localTitle}
+                            </Typography>
+                        ) : (
+                            <TextField
+                                value={localTitle}
+                                onChange={handleTitleChange}
+                                onBlur={handleTitleBlur}
+                                onKeyDown={handleKeyDown}
+                                placeholder={document.title}
+                                variant="standard"
+                                InputProps={{
+                                    disableUnderline: true,
+                                    sx: {
+                                        fontSize: '2rem',
+                                        fontWeight: 700,
+                                    }
+                                }}
+                                sx={{ flexGrow: 1 }}
+                            />
+                        )}
                         {localTitle !== document.title && (
                             <Typography
                                 variant="caption"
@@ -136,39 +179,37 @@ const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClos
                 />
                 {!readOnly && (
                     <EditorToolbar
-                        showTableOfContentsToggle={true}
+                        showTableOfContentsToggle={false}
                         tableOfContentsOpen={tocOpen}
                         onToggleTableOfContents={() => setTocOpen(!tocOpen)}
                     />
                 )}
-                <Box sx={{ display: 'flex', flexGrow: 1, minHeight: 0, overflow: 'hidden' }}>
-                    <Box sx={{
-                        width: tocOpen ? 280 : 0,
-                        overflowY: 'auto',
-                        overflowX: 'hidden',
-                        height: '100%',
-                        minHeight: 0,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        flexShrink: 0,
-                        transition: 'width 0.3s ease',
-                        p: tocOpen ? 2 : 0,
-                    }}>
-                        {tocOpen && <EditorTableOfContents />}
-                    </Box>
-                    <Box sx={{
-                        flexGrow: 1,
-                        minWidth: 0,
-                        minHeight: 0,
-                        display: 'flex',
-                        flexDirection: 'column',
-                        overflow: 'hidden',
-                        p: 3,
-                        px: { xs: 2, sm: 4, lg: 6 },
-                    }}>
-                        <EditorWorkspace />
-                    </Box>
+                <Box sx={{
+                    flexGrow: 1,
+                    minHeight: 0,
+                    overflow: 'hidden',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    p: 3,
+                    px: { xs: 2, sm: 4, lg: 6 },
+                }}>
+                    <EditorWorkspace />
                 </Box>
+                <Drawer
+                    anchor="left"
+                    open={tocOpen}
+                    onClose={() => setTocOpen(false)}
+                    variant="temporary"
+                    sx={{
+                        '& .MuiDrawer-paper': {
+                            width: 280,
+                            boxSizing: 'border-box',
+                            p: 2,
+                        },
+                    }}
+                >
+                    <EditorTableOfContents />
+                </Drawer>
             </Box>
         </RichTextEditorProvider>
     );

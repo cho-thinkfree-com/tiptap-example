@@ -339,18 +339,21 @@ const DashboardLayout = () => {
                                     </Typography>
                                 )}
                             </Box>
-                            {!isWorkspaceContext && (
-                                <IconButton
-                                    size="small"
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        handleMenuClose();
+                            {/* Settings icon always shown, opens appropriate dialog */}
+                            <IconButton
+                                size="small"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleMenuClose();
+                                    if (isWorkspaceContext) {
+                                        openWorkspaceDialog();
+                                    } else {
                                         openAccountDialog();
-                                    }}
-                                >
-                                    <SettingsIcon fontSize="small" />
-                                </IconButton>
-                            )}
+                                    }
+                                }}
+                            >
+                                <SettingsIcon fontSize="small" />
+                            </IconButton>
                         </Box>
                         <Divider />
 
@@ -363,14 +366,7 @@ const DashboardLayout = () => {
                             </MenuItem>
                         )}
 
-                        {isWorkspaceContext && (
-                            <MenuItem onClick={openWorkspaceDialog}>
-                                <ListItemIcon>
-                                    <SettingsIcon fontSize="small" />
-                                </ListItemIcon>
-                                {strings.layout.dashboard.workspaceSettingsLabel}
-                            </MenuItem>
-                        )}
+
 
                         <Divider />
 
@@ -558,7 +554,7 @@ const DashboardLayout = () => {
                 </DialogActions>
             </Dialog>
             <ChangePasswordDialog open={isPasswordDialogOpen} onClose={() => setIsPasswordDialogOpen(false)} />
-        </Box>
+        </Box >
     );
 };
 

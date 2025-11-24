@@ -228,6 +228,9 @@ export interface ShareLinkResponse {
     id: string
     token: string
     accessLevel: string
+    revokedAt?: string | null
+    expiresAt?: string | null
+    allowExternalEdit?: boolean
   }
   token: string
 }
@@ -382,6 +385,33 @@ export const createShareLink = (documentId: string, token: string) =>
     method: 'POST',
     token,
     body: { accessLevel: 'viewer' },
+  })
+
+export const getShareLinks = (documentId: string, token: string) =>
+  requestJSON<{ shareLinks: ShareLinkResponse['shareLink'][] }>(`/api/documents/${documentId}/share-links`, {
+    token,
+  }).then((payload) => payload.shareLinks)
+
+export const revokeShareLink = (shareLinkId: string, token: string) =>
+  requestJSON<void>(`/api/share-links/${shareLinkId}`, { method: 'DELETE', token })
+
+export const updateShareLink = (shareLinkId: string, token: string, body: { allowExternalEdit: boolean }) =>
+  requestJSON<ShareLinkResponse['shareLink']>(`/api/share-links/${shareLinkId}`, {
+    method: 'PATCH',
+    token,
+    body,
+  })
+
+export const resolveShareLink = (token: string, password?: string) =>
+  requestJSON<{
+    token: string
+    document: DocumentSummary
+    revision: DocumentRevision | null
+    accessLevel: string
+  }>(`/api/share-links/${token}/access`, {
+    method: 'POST',
+    body: { password },
+    skipRefresh: true,
   })
 
 export const updateWorkspace = (workspaceId: string, token: string, body: { name?: string; description?: string }) =>

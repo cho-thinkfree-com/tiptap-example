@@ -9,6 +9,7 @@ import { DocumentShareLinkRepository, type ShareLinkEntity } from './documentSha
 import { DocumentShareLinkSessionRepository } from './documentShareLinkSessionRepository.js'
 import { ExternalCollaboratorRepository } from './externalCollaboratorRepository.js'
 import { MembershipRepository, type MembershipEntity } from '../workspaces/membershipRepository.js'
+import { DocumentRevisionRepository } from './documentRevisionRepository.js'
 
 import { MembershipAccessDeniedError } from '../workspaces/membershipService.js'
 import { DocumentNotFoundError } from './documentService.js'
@@ -43,6 +44,7 @@ export class ShareLinkService {
     private readonly sessionRepository: DocumentShareLinkSessionRepository,
     private readonly collaboratorRepository: ExternalCollaboratorRepository,
     private readonly membershipRepository: MembershipRepository,
+    private readonly revisionRepository: DocumentRevisionRepository,
 
     private readonly auditLogService: AuditLogService,
     private readonly passwordHasher = new Argon2PasswordHasher(),
@@ -121,10 +123,11 @@ export class ShareLinkService {
 
   async resolveToken(token: string, payload: unknown) {
     const result = await this.verifyShareLinkToken(token, resolveSchema.parse(payload))
+    const revision = await this.revisionRepository.findLatest(result.document.id)
     return {
       token: result.shareLink.token,
-      documentId: result.document.id,
-      workspaceId: result.document.workspaceId,
+      document: result.document,
+      revision,
       accessLevel: result.shareLink.accessLevel,
     }
   }

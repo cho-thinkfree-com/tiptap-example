@@ -6,6 +6,7 @@ import EditorTableOfContents from '../editor/EditorTableOfContents';
 import type { DocumentSummary } from '../../lib/api';
 import type { Editor } from '@tiptap/react';
 import { useEffect, useState } from 'react';
+import ShareDialog from '../editor/ShareDialog';
 
 interface EditorLayoutProps {
     editor: Editor | null;
@@ -14,11 +15,13 @@ interface EditorLayoutProps {
     onTitleChange: (newTitle: string) => void;
     onClose: () => void;
     saveStatus: 'saved' | 'unsaved' | 'saving';
+    readOnly?: boolean;
 }
 
-const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClose, saveStatus }: EditorLayoutProps) => {
+const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClose, saveStatus, readOnly = false }: EditorLayoutProps) => {
     const [tocOpen, setTocOpen] = useState(true);
     const [localTitle, setLocalTitle] = useState(document.title);
+    const [shareOpen, setShareOpen] = useState(false);
 
     useEffect(() => {
         setLocalTitle(document.title);
@@ -94,6 +97,7 @@ const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClos
                                 }
                             }}
                             sx={{ flexGrow: 1 }}
+                            disabled={readOnly}
                         />
                         {localTitle !== document.title && (
                             <Typography
@@ -108,19 +112,35 @@ const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClos
                                 ESC to cancel
                             </Typography>
                         )}
-                        <Typography variant="body2" sx={{ mr: 1, ml: 2 }}>
-                            {getSaveStatusText()}
-                        </Typography>
-                        <Button color="primary" variant="contained" onClick={onClose}>
-                            Close
-                        </Button>
+                        {!readOnly && (
+                            <Typography variant="body2" sx={{ mr: 1, ml: 2 }}>
+                                {getSaveStatusText()}
+                            </Typography>
+                        )}
+                        {!readOnly && (
+                            <Button color="primary" variant="outlined" onClick={() => setShareOpen(true)} sx={{ mr: 1 }}>
+                                Share
+                            </Button>
+                        )}
+                        {!readOnly && (
+                            <Button color="primary" variant="contained" onClick={onClose}>
+                                Close
+                            </Button>
+                        )}
                     </Toolbar>
                 </AppBar>
-                <EditorToolbar
-                    showTableOfContentsToggle={true}
-                    tableOfContentsOpen={tocOpen}
-                    onToggleTableOfContents={() => setTocOpen(!tocOpen)}
+                <ShareDialog
+                    open={shareOpen}
+                    onClose={() => setShareOpen(false)}
+                    documentId={document.id}
                 />
+                {!readOnly && (
+                    <EditorToolbar
+                        showTableOfContentsToggle={true}
+                        tableOfContentsOpen={tocOpen}
+                        onToggleTableOfContents={() => setTocOpen(!tocOpen)}
+                    />
+                )}
                 <Box sx={{ display: 'flex', flexGrow: 1, minHeight: 0, overflow: 'hidden' }}>
                     <Box sx={{
                         width: tocOpen ? 280 : 0,

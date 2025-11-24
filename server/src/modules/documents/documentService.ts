@@ -1,4 +1,4 @@
-﻿import { z } from 'zod'
+import { z } from 'zod'
 import type { DocumentStatus, DocumentVisibility } from '@prisma/client'
 import { DocumentRepository, type DocumentEntity, type DocumentListFilters } from './documentRepository.js'
 import {

@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   Document as DocumentModel,
   DocumentStatus,
   DocumentVisibility,

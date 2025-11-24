@@ -10,6 +10,7 @@ import WorkspaceMembersPage from '../pages/workspace/WorkspaceMembersPage';
 import GlobalSettingsPage from '../pages/settings/GlobalSettingsPage';
 import WorkspaceProfilePage from '../pages/settings/WorkspaceProfilePage';
 import EditorPage from '../pages/editor/EditorPage';
+import SharedDocumentPage from '../pages/editor/SharedDocumentPage';
 
 const ProtectedRoute = () => {
   const { isAuthenticated } = useAuth();
@@ -32,6 +33,9 @@ const AppRoutes = () => {
           isAuthenticated ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />
         }
       />
+
+      {/* Public Share Route */}
+      <Route path="/share/:token" element={<SharedDocumentPage />} />
 
       {/* Authenticated Routes */}
       <Route element={<ProtectedRoute />}>

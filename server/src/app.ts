@@ -131,6 +131,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     documentShareLinkSessionRepository,
     externalCollaboratorRepository,
     membershipRepository,
+    documentRevisionRepository,
     auditLogService,
   )
 
@@ -302,6 +303,10 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     }
     if ((error as Error).name === 'DocumentNotFoundError' || (error as Error).name === 'FolderNotFoundError') {
       reply.status(404).send({ message: (error as Error).message })
+      return
+    }
+    if ((error as Error).name === 'ShareLinkPasswordRequiredError') {
+      reply.status(401).send({ message: (error as Error).message, code: 'PASSWORD_REQUIRED' })
       return
     }
     if (error instanceof z.ZodError) {
@@ -830,8 +835,16 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
   })
 
   app.post('/api/share-links/:token/access', async (request, reply) => {
-    const payload = await shareLinkService.resolveToken((request.params as { token: string }).token, request.body)
-    reply.send(payload)
+    const token = (request.params as { token: string }).token
+    console.log(`[Debug] Resolving share token: ${token}`)
+    try {
+      const payload = await shareLinkService.resolveToken(token, request.body)
+      console.log(`[Debug] Token resolved successfully for document: ${payload.document.id}`)
+      reply.send(payload)
+    } catch (err) {
+      console.error(`[Debug] Failed to resolve token: ${token}`, err)
+      throw err
+    }
   })
 
   app.post('/api/share-links/:token/accept', async (request, reply) => {

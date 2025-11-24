@@ -15,9 +15,9 @@ const EditorPage = () => {
 
   // Lock outer page scroll while editor is mounted so only editor scrolls
   useEffect(() => {
-    if (typeof document === 'undefined' || !document?.documentElement || !document?.body) return undefined;
-    const html = document.documentElement;
-    const body = document.body;
+    if (typeof window === 'undefined' || !window.document?.documentElement || !window.document?.body) return undefined;
+    const html = window.document.documentElement;
+    const body = window.document.body;
     const prevHtmlOverflow = html.style.overflow;
     const prevBodyOverflow = body.style.overflow;
     html.style.overflow = 'hidden';

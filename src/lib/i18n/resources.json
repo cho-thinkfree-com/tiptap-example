@@ -3,7 +3,8 @@
     "editor": {
       "title": {
         "placeholder": "Untitled",
-        "ariaLabel": "Document title"
+        "ariaLabel": "Document title",
+        "share": "Share"
       },
       "toc": {
         "emptyPlaceholder": "Add a heading to build an outline."
@@ -571,7 +572,8 @@
     "editor": {
       "title": {
         "placeholder": "제목 없음",
-        "ariaLabel": "문서 제목"
+        "ariaLabel": "문서 제목",
+        "share": "공유"
       },
       "content": {
         "placeholder": "내용을 입력하세요."

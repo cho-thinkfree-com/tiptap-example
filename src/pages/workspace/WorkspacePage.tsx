@@ -13,6 +13,7 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import CreateFolderDialog from '../../components/workspace/CreateFolderDialog';
 import RenameDialog from '../../components/workspace/RenameDialog';
+import ShareDialog from '../../components/editor/ShareDialog';
 
 import { usePageTitle } from '../../hooks/usePageTitle';
 import { broadcastSync } from '../../lib/syncEvents';
@@ -48,6 +49,7 @@ const WorkspacePage = () => {
   const [selectedItem, setSelectedItem] = useState<{ id: string; name: string; type: 'document' | 'folder' } | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [shareDialogOpen, setShareDialogOpen] = useState(false);
 
   const breadcrumbContainerRef = useRef<HTMLDivElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -177,6 +179,11 @@ const WorkspacePage = () => {
   const handleMenuClose = () => {
     setAnchorEl(null);
     // Don't clear selectedItem here - it's needed for dialogs
+  };
+
+  const handleShareClick = () => {
+    setShareDialogOpen(true);
+    handleMenuClose();
   };
 
   const handleDeleteClick = () => {
@@ -502,7 +509,7 @@ const WorkspacePage = () => {
         {/* DEBUG: Remove after fixing */}
         {/* <Box sx={{ display: 'none' }}>Ancestors: {JSON.stringify(ancestors)}</Box> */}
 
-      <Box sx={{ display: 'flex', gap: 2 }}>
+        <Box sx={{ display: 'flex', gap: 2 }}>
           <Button variant="outlined" startIcon={<AddIcon />} onClick={() => setCreateFolderDialogOpen(true)}>
             {strings.workspace.newFolder}
           </Button>
@@ -536,6 +543,9 @@ const WorkspacePage = () => {
         transformOrigin={{ horizontal: 'right', vertical: 'top' }}
         anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
       >
+        {selectedItem?.type === 'document' && (
+          <MenuItem onClick={handleShareClick}>{strings.editor.title.share || 'Share'}</MenuItem>
+        )}
         <MenuItem onClick={handleRenameClick}>{strings.workspace.rename}</MenuItem>
         <MenuItem onClick={handleDeleteClick} sx={{ color: 'error.main' }}>{strings.workspace.delete}</MenuItem>
       </Menu>
@@ -572,6 +582,17 @@ const WorkspacePage = () => {
         initialName={selectedItem?.name || ''}
         itemType={selectedItem?.type || 'document'}
       />
+
+      {selectedItem?.type === 'document' && selectedItem.id && (
+        <ShareDialog
+          open={shareDialogOpen}
+          onClose={() => {
+            setShareDialogOpen(false);
+            setSelectedItem(null);
+          }}
+          documentId={selectedItem.id}
+        />
+      )}
     </Container >
   );
 };

@@ -86,7 +86,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       refreshTokenExpiresAt: result.refreshTokenExpiresAt,
     })
     setLogoutMessage(null)
-    // Clear manual logout flag on login
+    // Clear manual logout flag on successful login
     if (typeof window !== 'undefined') {
       window.sessionStorage.removeItem('manual-logout')
     }
@@ -108,11 +108,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const accessToken = tokens?.accessToken
 
   const logout = useCallback(async () => {
-    console.log('[AuthContext] logout() called - setting manual-logout flag')
-    // Set manual logout flag
+    // Set flag to indicate this is a manual logout (not session expiry)
+    // This prevents ProtectedRoute from adding redirect parameter
     if (typeof window !== 'undefined') {
       window.sessionStorage.setItem('manual-logout', 'true')
-      console.log('[AuthContext] manual-logout flag set:', window.sessionStorage.getItem('manual-logout'))
     }
 
     try {
@@ -125,7 +124,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setTokens(null)
       setUser(null)
       setLogoutMessage(null)
-      console.log('[AuthContext] logout() completed - tokens cleared')
     }
   }, [accessToken])
 

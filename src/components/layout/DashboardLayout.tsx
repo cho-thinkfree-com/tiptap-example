@@ -202,11 +202,9 @@ const DashboardLayout = () => {
     };
 
     const handleLogout = async () => {
-        console.log('[DashboardLayout] handleLogout() called');
         handleMenuClose();
         await logout();
-        console.log('[DashboardLayout] logout() completed');
-        // Don't navigate manually - let ProtectedRoute handle it with the manual-logout flag
+        // Navigation is handled by ProtectedRoute based on manual-logout flag
     };
 
     return (

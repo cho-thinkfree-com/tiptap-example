@@ -20,13 +20,11 @@ const LoginPage = () => {
   const { strings } = useI18n();
 
   // Clear manual logout flag when LoginPage mounts
+  // This cleanup happens here (not in ProtectedRoute) to avoid issues
+  // with React re-rendering ProtectedRoute multiple times
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const flag = window.sessionStorage.getItem('manual-logout');
-      if (flag === 'true') {
-        console.log('[LoginPage] Clearing manual-logout flag on mount');
-        window.sessionStorage.removeItem('manual-logout');
-      }
+      window.sessionStorage.removeItem('manual-logout');
     }
   }, []);
 

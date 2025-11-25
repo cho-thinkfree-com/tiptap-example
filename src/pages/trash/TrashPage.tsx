@@ -19,13 +19,18 @@ import {
     DialogContentText,
     DialogActions,
     Button,
+    Breadcrumbs,
+    Link,
 } from '@mui/material'
 import RestoreIcon from '@mui/icons-material/Restore'
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever'
 import FolderIcon from '@mui/icons-material/Folder'
 import ArticleIcon from '@mui/icons-material/Article'
+import HomeIcon from '@mui/icons-material/Home'
+import NavigateNextIcon from '@mui/icons-material/NavigateNext'
 import { useAuth } from '../../context/AuthContext'
 import { listTrash, restoreDocument, permanentlyDeleteDocument, restoreFolder, permanentlyDeleteFolder } from '../../lib/api'
+import { useNavigate } from 'react-router-dom'
 
 interface TrashDocument {
     id: string
@@ -57,6 +62,7 @@ interface TrashItem {
 export default function TrashPage() {
     const { workspaceId } = useParams<{ workspaceId: string }>()
     const { tokens } = useAuth()
+    const navigate = useNavigate()
     const [items, setItems] = useState<TrashItem[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState<string | null>(null)
@@ -184,6 +190,27 @@ export default function TrashPage() {
 
     return (
         <Box p={3}>
+            <Breadcrumbs separator={<NavigateNextIcon fontSize="small" />} sx={{ mb: 2 }}>
+                <Link
+                    component="button"
+                    variant="body1"
+                    onClick={() => navigate(`/workspace/${workspaceId}`)}
+                    sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        textDecoration: 'none',
+                        color: 'text.primary',
+                        '&:hover': {
+                            textDecoration: 'underline',
+                        },
+                    }}
+                >
+                    <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
+                    Files
+                </Link>
+                <Typography color="text.primary">Trash</Typography>
+            </Breadcrumbs>
+
             <Typography variant="h4" gutterBottom>
                 Trash
             </Typography>

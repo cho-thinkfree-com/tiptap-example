@@ -277,9 +277,6 @@ export interface DocumentRevision {
   createdAt: string;
 }
 
-export const getRecentDocuments = () =>
-  requestJSON<{ items: DocumentSummary[] }>('/api/documents/recent').then((payload) => payload.items ?? [])
-
 export const getDocument = (documentId: string) =>
   requestJSON<DocumentSummary>(`/api/documents/${documentId}`)
 

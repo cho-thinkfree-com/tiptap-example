@@ -6,7 +6,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 import LockIcon from '@mui/icons-material/Lock';
 import { useNavigate, Outlet, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { getWorkspaceMemberProfile, updateAccount, type MembershipSummary } from '../../lib/api';
+import { getWorkspaceMemberProfile, updateAccount, getWorkspace, type MembershipSummary, type WorkspaceSummary } from '../../lib/api';
 import { useI18n, type Locale } from '../../lib/i18n';
 import WorkspaceLanguageSync from '../common/WorkspaceLanguageSync';
 import { ChangePasswordDialog } from '../../pages/settings/ChangePasswordDialog';
@@ -20,6 +20,7 @@ const DashboardLayout = () => {
     const { workspaceId } = useParams<{ workspaceId: string }>();
     const [workspaceDisplayName, setWorkspaceDisplayName] = useState<string | null>(null);
     const [workspaceMember, setWorkspaceMember] = useState<MembershipSummary | null>(null);
+    const [workspace, setWorkspace] = useState<WorkspaceSummary | null>(null);
     const [accountDialogOpen, setAccountDialogOpen] = useState(false);
     const [workspaceDialogOpen, setWorkspaceDialogOpen] = useState(false);
     const [accountName, setAccountName] = useState('');
@@ -44,9 +45,18 @@ const DashboardLayout = () => {
                     setWorkspaceDisplayName(null);
                     setWorkspaceMember(null);
                 });
+
+            getWorkspace(workspaceId, tokens.accessToken)
+                .then((ws) => {
+                    setWorkspace(ws);
+                })
+                .catch(() => {
+                    setWorkspace(null);
+                });
         } else {
             setWorkspaceDisplayName(null);
             setWorkspaceMember(null);
+            setWorkspace(null);
         }
     }, [tokens, workspaceId, locale, setLocale]);
 
@@ -229,12 +239,34 @@ const DashboardLayout = () => {
                         sx={{
                             letterSpacing: '-0.02em',
                             cursor: 'pointer',
-                            flexGrow: 1
                         }}
                         onClick={() => navigate('/dashboard')}
                     >
                         {strings.layout.dashboard.ododocs}
                     </Typography>
+
+                    {workspace && (
+                        <>
+                            <Typography variant="h6" sx={{ mx: 1, color: 'text.secondary' }}>
+                                /
+                            </Typography>
+                            <Typography
+                                variant="h6"
+                                noWrap
+                                component="div"
+                                sx={{
+                                    color: 'text.secondary',
+                                    flexGrow: 1
+                                }}
+                            >
+                                {workspace.name}
+                            </Typography>
+                        </>
+                    )}
+
+                    {!workspace && (
+                        <Box sx={{ flexGrow: 1 }} />
+                    )}
 
                     <IconButton
                         onClick={handleMenuOpen}

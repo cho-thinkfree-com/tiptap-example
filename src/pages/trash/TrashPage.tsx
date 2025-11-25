@@ -21,6 +21,8 @@ import {
     Button,
     Breadcrumbs,
     Link,
+    Snackbar,
+    Alert,
 } from '@mui/material'
 import RestoreIcon from '@mui/icons-material/Restore'
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever'
@@ -68,6 +70,8 @@ export default function TrashPage() {
     const [error, setError] = useState<string | null>(null)
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
     const [itemToDelete, setItemToDelete] = useState<TrashItem | null>(null)
+    const [snackbarOpen, setSnackbarOpen] = useState(false)
+    const [snackbarMessage, setSnackbarMessage] = useState('')
 
     const loadTrash = async () => {
         if (!workspaceId || !tokens?.accessToken) return
@@ -120,6 +124,8 @@ export default function TrashPage() {
             } else {
                 await restoreFolder(item.id, tokens.accessToken)
             }
+            setSnackbarMessage(`"${item.name}" restored successfully`)
+            setSnackbarOpen(true)
             await loadTrash()
         } catch (err) {
             console.error('Failed to restore:', err)
@@ -294,6 +300,17 @@ export default function TrashPage() {
                     </Button>
                 </DialogActions>
             </Dialog>
+
+            <Snackbar
+                open={snackbarOpen}
+                autoHideDuration={3000}
+                onClose={() => setSnackbarOpen(false)}
+                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+            >
+                <Alert onClose={() => setSnackbarOpen(false)} severity="success" sx={{ width: '100%' }}>
+                    {snackbarMessage}
+                </Alert>
+            </Snackbar>
         </Box>
     )
 }

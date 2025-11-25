@@ -394,7 +394,6 @@ export default function TrashPage() {
                                 <TableCell>Location</TableCell>
                                 <TableCell>Deleted</TableCell>
                                 <TableCell>Size</TableCell>
-                                <TableCell align="right">Actions</TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -417,26 +416,6 @@ export default function TrashPage() {
                                     </TableCell>
                                     <TableCell>{formatDate(item.deletedAt)}</TableCell>
                                     <TableCell>{formatSize(item.size)}</TableCell>
-                                    <TableCell align="right">
-                                        <Tooltip title="Restore">
-                                            <IconButton
-                                                size="small"
-                                                onClick={() => handleRestore(item)}
-                                                color="primary"
-                                            >
-                                                <RestoreIcon />
-                                            </IconButton>
-                                        </Tooltip>
-                                        <Tooltip title="Delete Forever">
-                                            <IconButton
-                                                size="small"
-                                                onClick={() => handlePermanentDelete(item)}
-                                                color="error"
-                                            >
-                                                <DeleteForeverIcon />
-                                            </IconButton>
-                                        </Tooltip>
-                                    </TableCell>
                                 </TableRow>
                             ))}
                         </TableBody>

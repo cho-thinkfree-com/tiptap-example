@@ -14,6 +14,7 @@ import WorkspaceProfilePage from '../pages/settings/WorkspaceProfilePage';
 import EditorPage from '../pages/editor/EditorPage';
 import SharedDocumentPage from '../pages/editor/SharedDocumentPage';
 import TrashPage from '../pages/trash/TrashPage';
+import RecentDocumentsPage from '../pages/workspace/RecentDocumentsPage';
 import WorkspaceLayout from './layout/WorkspaceLayout';
 
 const ProtectedRoute = () => {
@@ -76,6 +77,7 @@ const AppRoutes = () => {
           {/* Workspace Routes with Sidebar */}
           <Route element={<WorkspaceLayout />}>
             <Route path="/workspace/:workspaceId" element={<WorkspacePage />} />
+            <Route path="/workspace/:workspaceId/recent" element={<RecentDocumentsPage />} />
             <Route path="/workspace/:workspaceId/settings" element={<WorkspaceSettingsPage />} />
             <Route path="/workspace/:workspaceId/profile" element={<WorkspaceProfilePage />} />
             <Route path="/workspace/:workspaceId/members" element={<WorkspaceMembersPage />} />

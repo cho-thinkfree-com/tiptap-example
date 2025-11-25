@@ -265,6 +265,9 @@ export const getWorkspaceDocuments = (
     },
   )
 
+export const getRecentDocuments = (workspaceId: string) =>
+  requestJSON<DocumentSummary[]>(`/api/workspaces/${workspaceId}/documents/recent`)
+
 export interface DocumentRevision {
   id: string;
   documentId: string;

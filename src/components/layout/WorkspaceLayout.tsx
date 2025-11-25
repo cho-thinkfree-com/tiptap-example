@@ -42,7 +42,7 @@ const WorkspaceLayout = () => {
             text: '최근 문서함',
             icon: <HistoryIcon />,
             path: `/workspace/${workspaceId}/recent`,
-            onClick: () => { } // Coming Soon
+            onClick: () => navigate(`/workspace/${workspaceId}/recent`)
         },
         {
             text: '중요 문서함',

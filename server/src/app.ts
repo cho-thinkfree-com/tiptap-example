@@ -665,6 +665,14 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.send(documents)
   })
 
+  app.get('/api/workspaces/:workspaceId/documents/recent', { preHandler: authenticate }, async (request, reply) => {
+    const accountId = requireAccountId(request)
+    const workspaceId = (request.params as { workspaceId: string }).workspaceId
+    await workspaceAccess.assertMember(accountId, workspaceId)
+    const documents = await documentRepository.listRecentByWorkspaces([workspaceId], { limit: 50 })
+    reply.send(documents)
+  })
+
   app.post('/api/workspaces/:workspaceId/documents', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const workspaceId = (request.params as { workspaceId: string }).workspaceId

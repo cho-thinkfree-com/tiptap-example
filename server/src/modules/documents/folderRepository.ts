@@ -11,6 +11,7 @@ export interface FolderEntity {
   deletedAt?: Date | null
   deletedBy?: string | null
   originalParentId?: string | null
+  originalParentName?: string | null
   createdAt: Date
   updatedAt: Date
 }
@@ -152,6 +153,14 @@ export class FolderRepository {
         deletedAt: { not: null },
       },
       orderBy: { deletedAt: 'desc' },
+      include: {
+        parent: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
     })
     return folders.map(toEntity)
   }
@@ -230,7 +239,7 @@ export class FolderRepository {
   }
 }
 
-const toEntity = (folder: FolderModel): FolderEntity => ({
+const toEntity = (folder: FolderModel & { parent?: { id: string; name: string } | null }): FolderEntity => ({
   id: folder.id,
   workspaceId: folder.workspaceId,
   parentId: folder.parentId,
@@ -240,6 +249,7 @@ const toEntity = (folder: FolderModel): FolderEntity => ({
   deletedAt: folder.deletedAt,
   deletedBy: folder.deletedBy,
   originalParentId: folder.originalParentId,
+  originalParentName: folder.parent?.name ?? null,
   createdAt: folder.createdAt,
   updatedAt: folder.updatedAt,
 })

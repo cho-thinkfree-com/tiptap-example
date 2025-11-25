@@ -23,6 +23,7 @@ export interface DocumentEntity {
   deletedAt?: Date | null
   deletedBy?: string | null
   originalFolderId?: string | null
+  originalFolderName?: string | null
   createdAt: Date
   updatedAt: Date
   tags: string[]
@@ -328,6 +329,12 @@ export class DocumentRepository {
             },
           },
         },
+        folder: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     });
     return documents.map(toEntity);
@@ -385,7 +392,7 @@ export class DocumentRepository {
   }
 }
 
-const toEntity = (document: DocumentModel & { revisions?: ({ createdByMembership: { account: { legalName: string | null } | null } | null } | null)[]; tags: { name: string }[] }): DocumentEntity => {
+const toEntity = (document: DocumentModel & { revisions?: ({ createdByMembership: { account: { legalName: string | null } | null } | null } | null)[]; tags: { name: string }[]; folder?: { id: string; name: string } | null }): DocumentEntity => {
   const latestRevision = document.revisions?.[0] as any
   const revisionContentSize = latestRevision?.contentSize as number | undefined
   const revisionContent = latestRevision?.content
@@ -410,6 +417,7 @@ const toEntity = (document: DocumentModel & { revisions?: ({ createdByMembership
     deletedAt: document.deletedAt,
     deletedBy: document.deletedBy,
     originalFolderId: document.originalFolderId,
+    originalFolderName: document.folder?.name ?? null,
     createdAt: document.createdAt,
     updatedAt: document.updatedAt,
     tags: document.tags?.map((tag) => tag.name) ?? [],

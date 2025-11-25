@@ -27,6 +27,7 @@ interface TrashDocument {
     deletedAt: string
     ownerMembershipId: string
     originalFolderId?: string | null
+    originalFolderName?: string | null
     contentSize: number
 }
 
@@ -35,6 +36,7 @@ interface TrashFolder {
     name: string
     deletedAt: string
     originalParentId?: string | null
+    originalParentName?: string | null
 }
 
 interface TrashItem {
@@ -43,6 +45,7 @@ interface TrashItem {
     type: 'document' | 'folder'
     deletedAt: string
     size?: number
+    location?: string | null
 }
 
 export default function TrashPage() {
@@ -66,6 +69,7 @@ export default function TrashPage() {
                     name: f.name,
                     type: 'folder' as const,
                     deletedAt: f.deletedAt,
+                    location: f.originalParentName || null,
                 })),
                 ...(data.documents || []).map(d => ({
                     id: d.id,
@@ -73,6 +77,7 @@ export default function TrashPage() {
                     type: 'document' as const,
                     deletedAt: d.deletedAt,
                     size: d.contentSize,
+                    location: d.originalFolderName || null,
                 }))
             ].sort((a, b) => new Date(b.deletedAt).getTime() - new Date(a.deletedAt).getTime())
 
@@ -172,6 +177,7 @@ export default function TrashPage() {
                         <TableHead>
                             <TableRow>
                                 <TableCell>Name</TableCell>
+                                <TableCell>Location</TableCell>
                                 <TableCell>Deleted</TableCell>
                                 <TableCell>Size</TableCell>
                                 <TableCell align="right">Actions</TableCell>
@@ -183,6 +189,11 @@ export default function TrashPage() {
                                     <TableCell sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                         {item.type === 'folder' ? <FolderIcon color="action" /> : <ArticleIcon color="action" />}
                                         {item.name}
+                                    </TableCell>
+                                    <TableCell>
+                                        <Typography variant="body2" color="text.secondary">
+                                            {item.location || 'Root'}
+                                        </Typography>
                                     </TableCell>
                                     <TableCell>{formatDate(item.deletedAt)}</TableCell>
                                     <TableCell>{formatSize(item.size)}</TableCell>

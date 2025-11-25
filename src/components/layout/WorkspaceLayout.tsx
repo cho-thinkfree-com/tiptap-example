@@ -4,6 +4,9 @@ import FolderIcon from '@mui/icons-material/Folder';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SettingsIcon from '@mui/icons-material/Settings';
 import GroupIcon from '@mui/icons-material/Group';
+import FolderSharedIcon from '@mui/icons-material/FolderShared';
+import HistoryIcon from '@mui/icons-material/History';
+import StarIcon from '@mui/icons-material/Star';
 import { useI18n } from '../../lib/i18n';
 import { useState } from 'react';
 import WorkspaceSettingsDialog from '../workspace/WorkspaceSettingsDialog';
@@ -28,6 +31,24 @@ const WorkspaceLayout = () => {
             path: `/workspace/${workspaceId}`,
             exact: true,
             onClick: () => navigate(`/workspace/${workspaceId}`)
+        },
+        {
+            text: '공유 문서함',
+            icon: <FolderSharedIcon />,
+            path: `/workspace/${workspaceId}/shared`,
+            onClick: () => { } // Coming Soon
+        },
+        {
+            text: '최근 문서함',
+            icon: <HistoryIcon />,
+            path: `/workspace/${workspaceId}/recent`,
+            onClick: () => { } // Coming Soon
+        },
+        {
+            text: '중요 문서함',
+            icon: <StarIcon />,
+            path: `/workspace/${workspaceId}/important`,
+            onClick: () => { } // Coming Soon
         },
         {
             text: strings.workspace.trash || 'Trash',

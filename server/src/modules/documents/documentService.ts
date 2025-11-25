@@ -242,7 +242,56 @@ export class DocumentService {
   async softDelete(accountId: string, documentId: string): Promise<void> {
     const document = await this.ensureDocument(documentId);
     await this.workspaceAccess.assertMember(accountId, document.workspaceId);
-    await this.documentRepository.softDelete(documentId);
+    const membership = await this.membershipRepository.findByWorkspaceAndAccount(document.workspaceId, accountId);
+    if (!membership) {
+      throw new MembershipAccessDeniedError();
+    }
+    await this.documentRepository.softDelete(documentId, membership.id);
+  }
+
+  async listTrashed(accountId: string, workspaceId: string): Promise<DocumentEntity[]> {
+    await this.workspaceAccess.assertMember(accountId, workspaceId);
+    return this.documentRepository.findTrashed(workspaceId);
+  }
+
+  async restoreDocument(accountId: string, documentId: string): Promise<DocumentEntity> {
+    const document = await this.documentRepository.findById(documentId);
+    if (!document || !document.deletedAt) {
+      throw new DocumentNotFoundError();
+    }
+    await this.workspaceAccess.assertMember(accountId, document.workspaceId);
+
+    const originalFolderId = (document as any).originalFolderId;
+    let targetFolderId: string | null = null;
+
+    if (originalFolderId) {
+      const parentPath = await this.validateFolderPath(originalFolderId, document.workspaceId);
+      if (parentPath) {
+        targetFolderId = originalFolderId;
+      }
+    }
+
+    return this.documentRepository.restore(documentId, targetFolderId);
+  }
+
+  async permanentlyDeleteDocument(accountId: string, documentId: string): Promise<void> {
+    const document = await this.documentRepository.findById(documentId);
+    if (!document || !document.deletedAt) {
+      throw new DocumentNotFoundError();
+    }
+    await this.workspaceAccess.assertMember(accountId, document.workspaceId);
+    await this.documentRepository.permanentDelete(documentId);
+  }
+
+  private async validateFolderPath(folderId: string, workspaceId: string): Promise<boolean> {
+    const folder = await this.folderRepository.findById(folderId);
+    if (!folder || folder.deletedAt || folder.workspaceId !== workspaceId) {
+      return false;
+    }
+    if (folder.parentId) {
+      return this.validateFolderPath(folder.parentId, workspaceId);
+    }
+    return true;
   }
 
   private async ensureFolder(workspaceId: string, folderId: string) {

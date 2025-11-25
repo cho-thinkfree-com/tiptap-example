@@ -138,6 +138,9 @@ export interface FolderSummary {
   pathCache: string
   createdAt: string
   updatedAt: string
+  deletedAt?: string | null
+  originalParentId?: string | null
+  originalParentName?: string | null
 }
 
 export interface DocumentSummary {
@@ -154,6 +157,9 @@ export interface DocumentSummary {
   updatedAt: string
   tags: string[]
   lastModifiedBy?: string | null
+  deletedAt?: string | null
+  originalFolderId?: string | null
+  originalFolderName?: string | null
 }
 
 export interface DocumentCreateInput {
@@ -253,7 +259,7 @@ export const removeWorkspaceMember = (workspaceId: string, accountId: string) =>
 
 export const getWorkspaceDocuments = (
   workspaceId: string,
-  options?: { search?: string; folderId?: string },
+  options?: { search?: string; folderId?: string; sortBy?: string; sortOrder?: 'asc' | 'desc' },
 ) =>
   requestJSON<{ documents: DocumentSummary[]; folders: FolderSummary[] }>(
     `/api/workspaces/${workspaceId}/documents`,
@@ -261,12 +267,19 @@ export const getWorkspaceDocuments = (
       query: {
         search: options?.search,
         folderId: options?.folderId,
+        sortBy: options?.sortBy,
+        sortOrder: options?.sortOrder,
       },
     },
   )
 
-export const getRecentDocuments = (workspaceId: string) =>
-  requestJSON<DocumentSummary[]>(`/api/workspaces/${workspaceId}/documents/recent`)
+export const getRecentDocuments = (workspaceId: string, options?: { sortBy?: string; sortOrder?: 'asc' | 'desc' }) =>
+  requestJSON<DocumentSummary[]>(`/api/workspaces/${workspaceId}/documents/recent`, {
+    query: {
+      sortBy: options?.sortBy,
+      sortOrder: options?.sortOrder,
+    },
+  })
 
 export interface DocumentRevision {
   id: string;
@@ -411,9 +424,13 @@ export const downloadDocument = async (documentId: string) => {
 }
 
 // Trash management
-export const listTrash = async (workspaceId: string) => {
-  return requestJSON(`/api/workspaces/${workspaceId}/trash`, {
+export const listTrash = async (workspaceId: string, options?: { sortBy?: string; sortOrder?: 'asc' | 'desc' }) => {
+  return requestJSON<{ documents: DocumentSummary[]; folders: FolderSummary[] }>(`/api/workspaces/${workspaceId}/trash`, {
     method: 'GET',
+    query: {
+      sortBy: options?.sortBy,
+      sortOrder: options?.sortOrder,
+    },
   })
 }
 

@@ -66,6 +66,8 @@ export interface DocumentListFilters {
   search?: string
   includeDeleted?: boolean
   tags?: string[]
+  sortBy?: 'title' | 'name' | 'updatedAt' | 'contentSize' | 'type'
+  sortOrder?: 'asc' | 'desc'
 }
 
 export class DocumentRepository {
@@ -164,6 +166,20 @@ export class DocumentRepository {
   }
 
   async listByWorkspace(workspaceId: string, filters: DocumentListFilters = {}): Promise<DocumentEntity[]> {
+    const orderBy: any[] = []
+
+    if (filters.sortBy) {
+      if (filters.sortBy === 'title' || filters.sortBy === 'name') {
+        orderBy.push({ title: filters.sortOrder || 'asc' })
+      } else if (filters.sortBy === 'updatedAt') {
+        orderBy.push({ updatedAt: filters.sortOrder || 'desc' })
+      } else if (filters.sortBy === 'contentSize' || filters.sortBy === 'size') {
+        orderBy.push({ contentSize: filters.sortOrder || 'desc' })
+      }
+    } else {
+      orderBy.push({ sortOrder: 'asc' }, { title: 'asc' })
+    }
+
     const documents = await this.prisma.document.findMany({
       where: {
         workspaceId,
@@ -190,7 +206,7 @@ export class DocumentRepository {
           }
           : {}),
       },
-      orderBy: [{ sortOrder: 'asc' }, { title: 'asc' }],
+      orderBy,
       include: {
         tags: {
           select: {
@@ -215,7 +231,21 @@ export class DocumentRepository {
     return documents.map(toEntity)
   }
 
-  async listRecentByWorkspaces(workspaceIds: string[], options?: { limit?: number }): Promise<DocumentEntity[]> {
+  async listRecentByWorkspaces(workspaceIds: string[], options?: { limit?: number, sortBy?: string, sortOrder?: 'asc' | 'desc' }): Promise<DocumentEntity[]> {
+    const orderBy: any[] = []
+
+    if (options?.sortBy) {
+      if (options.sortBy === 'title') {
+        orderBy.push({ title: options.sortOrder || 'asc' })
+      } else if (options.sortBy === 'updatedAt') {
+        orderBy.push({ updatedAt: options.sortOrder || 'desc' })
+      } else if (options.sortBy === 'contentSize') {
+        orderBy.push({ contentSize: options.sortOrder || 'desc' })
+      }
+    } else {
+      orderBy.push({ updatedAt: 'desc' })
+    }
+
     const documents = await this.prisma.document.findMany({
       where: {
         workspaceId: {
@@ -223,9 +253,7 @@ export class DocumentRepository {
         },
         deletedAt: null,
       },
-      orderBy: {
-        updatedAt: 'desc',
-      },
+      orderBy,
       take: options?.limit ?? 10,
       include: {
         tags: {
@@ -303,13 +331,27 @@ export class DocumentRepository {
     });
   }
 
-  async findTrashed(workspaceId: string): Promise<DocumentEntity[]> {
+  async findTrashed(workspaceId: string, options?: { sortBy?: string, sortOrder?: 'asc' | 'desc' }): Promise<DocumentEntity[]> {
+    const orderBy: any[] = []
+
+    if (options?.sortBy) {
+      if (options.sortBy === 'name') {
+        orderBy.push({ title: options.sortOrder || 'asc' })
+      } else if (options.sortBy === 'deletedAt') {
+        orderBy.push({ deletedAt: options.sortOrder || 'desc' })
+      } else if (options.sortBy === 'size') {
+        orderBy.push({ contentSize: options.sortOrder || 'desc' })
+      }
+    } else {
+      orderBy.push({ deletedAt: 'desc' })
+    }
+
     const documents = await this.prisma.document.findMany({
       where: {
         workspaceId,
         deletedAt: { not: null },
       },
-      orderBy: { deletedAt: 'desc' },
+      orderBy,
       include: {
         tags: {
           select: {

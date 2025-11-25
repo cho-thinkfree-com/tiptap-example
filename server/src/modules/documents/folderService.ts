@@ -38,9 +38,9 @@ export class FolderService {
     return this.folderRepository.listByWorkspace(workspaceId, includeDeleted)
   }
 
-  async listTrashed(accountId: string, workspaceId: string): Promise<FolderEntity[]> {
+  async listTrashed(accountId: string, workspaceId: string, options?: { sortBy?: string, sortOrder?: 'asc' | 'desc' }): Promise<FolderEntity[]> {
     await this.workspaceAccess.assertMember(accountId, workspaceId)
-    return this.folderRepository.findTrashed(workspaceId)
+    return this.folderRepository.findTrashed(workspaceId, options)
   }
 
   async getFolderWithAncestors(accountId: string, workspaceId: string, folderId: string) {

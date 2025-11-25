@@ -1,4 +1,4 @@
-import { Alert, Box, Breadcrumbs, Button, CircularProgress, Container, Link, Typography, Menu, MenuItem, IconButton, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, useTheme, Snackbar, Checkbox } from '@mui/material';
+import { Alert, Box, Breadcrumbs, Button, CircularProgress, Container, Link, Typography, Menu, MenuItem, IconButton, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, useTheme, Snackbar, Checkbox, TableSortLabel } from '@mui/material';
 import { useCallback, useEffect, useState, useMemo, useRef } from 'react';
 import { useParams, useSearchParams, Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -66,6 +66,10 @@ const WorkspacePage = () => {
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
 
+  // Sorting state
+  const [orderBy, setOrderBy] = useState<string>('name');
+  const [order, setOrder] = useState<'asc' | 'desc'>('asc');
+
   const breadcrumbContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [containerWidth, setContainerWidth] = useState(0);
@@ -83,7 +87,11 @@ const WorkspacePage = () => {
       Promise.all([
         getWorkspace(workspaceId),
         folderDetailsPromise,
-        getWorkspaceDocuments(workspaceId, { folderId: folderId ?? undefined }),
+        getWorkspaceDocuments(workspaceId, {
+          folderId: folderId ?? undefined,
+          sortBy: orderBy,
+          sortOrder: order
+        }),
       ])
         .then(([workspaceData, folderResponse, contents]) => {
           setWorkspace(workspaceData);
@@ -117,11 +125,19 @@ const WorkspacePage = () => {
           setLoading(false);
         });
     }
-  }, [isAuthenticated, workspaceId, folderId]);
+  }, [isAuthenticated, workspaceId, folderId, orderBy, order]);
 
   useEffect(() => {
     fetchContents();
   }, [fetchContents]);
+
+  const handleRequestSort = (property: string) => {
+    const isAsc = orderBy === property && order === 'asc';
+    setOrder(isAsc ? 'desc' : 'asc');
+    setOrderBy(property);
+  };
+
+  // ... (existing code)
 
   // Track breadcrumb container width
   useEffect(() => {
@@ -633,6 +649,36 @@ const WorkspacePage = () => {
     hasFolders: Array.from(selectedItems).some(id => folders.some(f => f.id === id)),
   };
 
+  // Combine and sort folders and documents for display
+  const sortedItems = useMemo(() => {
+    type Item = (FolderSummary & { type: 'folder' }) | (DocumentSummary & { type: 'document' });
+
+    const foldersWithType: Item[] = folders.map(f => ({ ...f, type: 'folder' as const }));
+    const documentsWithType: Item[] = documents.map(d => ({ ...d, type: 'document' as const }));
+
+    // Always keep folders first, then documents
+    // Sort each group independently based on the current sort criteria
+    if (orderBy === 'size') {
+      // For size sorting, sort folders and documents separately
+      const sortedFolders = [...foldersWithType].sort((a, b) => {
+        // Folders don't have size, so always sort by name (A-Z)
+        const aName = (a as FolderSummary).name.toLowerCase();
+        const bName = (b as FolderSummary).name.toLowerCase();
+        return aName.localeCompare(bName);
+      });
+      const sortedDocuments = [...documentsWithType].sort((a, b) => {
+        const aSize = (a as DocumentSummary).contentSize || 0;
+        const bSize = (b as DocumentSummary).contentSize || 0;
+        return order === 'asc' ? aSize - bSize : bSize - aSize;
+      });
+      return [...sortedFolders, ...sortedDocuments];
+    }
+
+    // For other sorting (name, date), backend handles the sorting
+    // Just combine folders first, then documents
+    return [...foldersWithType, ...documentsWithType];
+  }, [folders, documents, orderBy, order]);
+
   const renderFilesAndFolders = () => {
     if (loading) return <CircularProgress />;
     if (error) return <Alert severity="error">{error}</Alert>;
@@ -655,99 +701,135 @@ const WorkspacePage = () => {
         <Table>
           <TableHead>
             <TableRow>
-              <TableCell width="40%">{strings.workspace.nameColumn}</TableCell>
-              <TableCell width="15%">{strings.workspace.sizeColumn}</TableCell>
-              <TableCell width="20%">{strings.workspace.lastModifiedColumn}</TableCell>
+              <TableCell width="40%">
+                <TableSortLabel
+                  active={orderBy === 'name'}
+                  direction={orderBy === 'name' ? order : 'asc'}
+                  onClick={() => handleRequestSort('name')}
+                >
+                  {strings.workspace.nameColumn}
+                </TableSortLabel>
+              </TableCell>
+              <TableCell width="15%">
+                <TableSortLabel
+                  active={orderBy === 'size'}
+                  direction={orderBy === 'size' ? order : 'asc'}
+                  onClick={() => handleRequestSort('size')}
+                >
+                  {strings.workspace.sizeColumn}
+                </TableSortLabel>
+              </TableCell>
+              <TableCell width="20%">
+                <TableSortLabel
+                  active={orderBy === 'updatedAt'}
+                  direction={orderBy === 'updatedAt' ? order : 'asc'}
+                  onClick={() => handleRequestSort('updatedAt')}
+                >
+                  {strings.workspace.lastModifiedColumn}
+                </TableSortLabel>
+              </TableCell>
               <TableCell width="15%">{strings.workspace.modifiedByColumn}</TableCell>
               <TableCell align="right" width="10%">{strings.workspace.actionsColumn}</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
-            {folders.map((folder) => (
-              <TableRow
-                key={folder.id}
-                hover
-                selected={selectedItems.has(folder.id)}
-                onClick={(e) => handleRowClick(folder.id, e)}
-                onDoubleClick={() => handleRowDoubleClick(folder.id, 'folder')}
-                onDragOver={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setDragTargetFolderId(folder.id);
-                }}
-                onDragLeave={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  if (dragTargetFolderId === folder.id) {
-                    setDragTargetFolderId(null);
-                  }
-                }}
-                onDrop={async (e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setIsDragging(false);
-                  setDragTargetFolderId(null);
-                  const files = e.dataTransfer.files;
-                  if (files && files.length > 0 && workspaceId) {
-                    uploadFiles(Array.from(files), workspaceId, folder.id);
-                  }
-                }}
-                sx={{
-                  cursor: 'pointer',
-                  userSelect: 'none',
-                  bgcolor: dragTargetFolderId === folder.id ? 'action.hover' : 'inherit',
-                  border: dragTargetFolderId === folder.id ? `2px dashed ${theme.palette.primary.main}` : undefined
-                }}
-              >
-                <TableCell>
-                  <Box sx={{ display: 'flex', alignItems: 'center', fontWeight: 500 }}>
-                    <FolderIcon color="primary" sx={{ mr: 1.5, opacity: 0.8 }} />
-                    {folder.name}
-                  </Box>
-                </TableCell>
-                <TableCell />
-                <TableCell>
-                  <Typography variant="body2" color="text.secondary">{formatRelativeDate(folder.updatedAt)}</Typography>
-                </TableCell>
-                <TableCell>-</TableCell>
-                <TableCell align="right">
-                  <IconButton size="small" onClick={(event) => handleMenuOpen(event, { id: folder.id, name: folder.name, type: 'folder' })}>
-                    <MoreVertIcon fontSize="small" />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
-            {documents.map((doc) => (
-              <TableRow
-                key={doc.id}
-                hover
-                selected={selectedItems.has(doc.id)}
-                onClick={(e) => handleRowClick(doc.id, e)}
-                onDoubleClick={() => handleRowDoubleClick(doc.id, 'document')}
-                sx={{ cursor: 'pointer', userSelect: 'none' }}
-              >
-                <TableCell>
-                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                    <ArticleIcon color="action" sx={{ mr: 1.5 }} />
-                    {doc.title}
-                  </Box>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2" color="text.secondary">{formatBytes(doc.contentSize)}</Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2" color="text.secondary">{formatRelativeDate(doc.updatedAt)}</Typography>
-                </TableCell>
-                <TableCell>
-                  <Chip label={doc.lastModifiedBy || strings.workspace.ownerLabel} size="small" variant="outlined" sx={{ borderRadius: 1 }} />
-                </TableCell>
-                <TableCell align="right">
-                  <IconButton size="small" onClick={(event) => handleMenuOpen(event, { id: doc.id, name: doc.title, type: 'document' })}>
-                    <MoreVertIcon fontSize="small" />
-                  </IconButton>
-                </TableCell>
-              </TableRow>
-            ))}
+            {sortedItems.map((item) => {
+              const isFolder = item.type === 'folder';
+              const itemId = item.id;
+              const itemName = isFolder ? (item as FolderSummary).name : (item as DocumentSummary).title;
+
+              return (
+                <TableRow
+                  key={itemId}
+                  hover
+                  selected={selectedItems.has(itemId)}
+                  onClick={(e) => handleRowClick(itemId, e)}
+                  onDoubleClick={() => handleRowDoubleClick(itemId, item.type)}
+                  {...(isFolder ? {
+                    onDragOver: (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setDragTargetFolderId(itemId);
+                    },
+                    onDragLeave: (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (dragTargetFolderId === itemId) {
+                        setDragTargetFolderId(null);
+                      }
+                    },
+                    onDrop: async (e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setIsDragging(false);
+                      setDragTargetFolderId(null);
+                      const files = e.dataTransfer.files;
+                      if (files && files.length > 0 && workspaceId) {
+                        uploadFiles(Array.from(files), workspaceId, itemId);
+                      }
+                    }
+                  } : {})}
+                  sx={{
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                    ...(isFolder && dragTargetFolderId === itemId ? {
+                      bgcolor: 'action.hover',
+                      border: `2px dashed ${theme.palette.primary.main}`
+                    } : {})
+                  }}
+                >
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                      {isFolder ? (
+                        <FolderIcon color="action" sx={{ mr: 1.5 }} />
+                      ) : (
+                        <ArticleIcon color="action" sx={{ mr: 1.5 }} />
+                      )}
+                      {itemName}
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    {isFolder ? (
+                      <Typography variant="body2" color="text.secondary">-</Typography>
+                    ) : (
+                      <Typography variant="body2" color="text.secondary">
+                        {formatBytes((item as DocumentSummary).contentSize)}
+                      </Typography>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2" color="text.secondary">
+                      {formatRelativeDate(item.updatedAt)}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    {isFolder ? (
+                      '-'
+                    ) : (
+                      <Chip
+                        label={(item as DocumentSummary).lastModifiedBy || strings.workspace.ownerLabel}
+                        size="small"
+                        variant="outlined"
+                        sx={{ borderRadius: 1 }}
+                      />
+                    )}
+                  </TableCell>
+                  <TableCell align="right">
+                    <IconButton
+                      size="small"
+                      onClick={(event) => handleMenuOpen(event, {
+                        id: itemId,
+                        name: itemName,
+                        type: item.type,
+                        ...(item.type === 'document' ? { title: (item as DocumentSummary).title } : {})
+                      })}
+                    >
+                      <MoreVertIcon fontSize="small" />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </TableContainer>
@@ -890,14 +972,17 @@ const WorkspacePage = () => {
         <Typography variant="h5" fontWeight="bold" gutterBottom sx={{ mb: 3 }}>
           {strings.workspace.filesTitle}
         </Typography>
-        <SelectionToolbar
-          selectedCount={selectedItems.size}
-          hasDocuments={selectedItemsData.hasDocuments}
-          onDelete={handleBulkDelete}
-          onClearSelection={handleClearSelection}
-          onStar={handleStar}
-          onPublish={handlePublish}
-        />
+        <Box sx={{ height: 60, display: 'flex', alignItems: 'center', mb: 2 }}>
+          <SelectionToolbar
+            selectedCount={selectedItems.size}
+            hasDocuments={selectedItemsData.hasDocuments}
+            onDelete={handleBulkDelete}
+            onClearSelection={handleClearSelection}
+            onStar={handleStar}
+            onPublish={handlePublish}
+            onSelectAll={handleSelectAll}
+          />
+        </Box>
         {renderFilesAndFolders()}
       </Box>
 

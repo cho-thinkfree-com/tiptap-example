@@ -96,13 +96,25 @@ export class FolderRepository {
     return { folder, ancestors }
   }
 
-  async listByWorkspace(workspaceId: string, includeDeleted = false): Promise<FolderEntity[]> {
+  async listByWorkspace(workspaceId: string, includeDeleted = false, options?: { sortBy?: string, sortOrder?: 'asc' | 'desc', parentId?: string | null }): Promise<FolderEntity[]> {
+    const orderBy: any[] = []
+    if (options?.sortBy) {
+      if (options.sortBy === 'name') {
+        orderBy.push({ name: options.sortOrder || 'asc' })
+      } else if (options.sortBy === 'updatedAt') {
+        orderBy.push({ updatedAt: options.sortOrder || 'desc' })
+      }
+    } else {
+      orderBy.push({ sortOrder: 'asc' }, { name: 'asc' })
+    }
+
     const folders = await this.prisma.folder.findMany({
       where: {
         workspaceId,
         ...(includeDeleted ? {} : { deletedAt: null }),
+        parentId: options?.parentId !== undefined ? options.parentId : undefined,
       },
-      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+      orderBy,
     })
     return folders.map(toEntity)
   }
@@ -146,13 +158,24 @@ export class FolderRepository {
     })
   }
 
-  async findTrashed(workspaceId: string): Promise<FolderEntity[]> {
+  async findTrashed(workspaceId: string, options?: { sortBy?: string, sortOrder?: 'asc' | 'desc' }): Promise<FolderEntity[]> {
+    const orderBy: any[] = []
+    if (options?.sortBy) {
+      if (options.sortBy === 'name') {
+        orderBy.push({ name: options.sortOrder || 'asc' })
+      } else if (options.sortBy === 'deletedAt') {
+        orderBy.push({ deletedAt: options.sortOrder || 'desc' })
+      }
+    } else {
+      orderBy.push({ deletedAt: 'desc' })
+    }
+
     const folders = await this.prisma.folder.findMany({
       where: {
         workspaceId,
         deletedAt: { not: null },
       },
-      orderBy: { deletedAt: 'desc' },
+      orderBy,
       include: {
         parent: {
           select: {

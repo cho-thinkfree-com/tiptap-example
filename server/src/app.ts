@@ -243,11 +243,16 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
         : undefined
     const search = typeof query.search === 'string' ? query.search.trim() : undefined
     const includeDeleted = typeof query.includeDeleted === 'string' ? parseBoolean(query.includeDeleted) : undefined
+    const sortBy = typeof query.sortBy === 'string' ? query.sortBy : undefined
+    const sortOrder = typeof query.sortOrder === 'string' && (query.sortOrder === 'asc' || query.sortOrder === 'desc') ? query.sortOrder : undefined
+
     if (folderId !== undefined) filters.folderId = folderId
     if (status) filters.status = status
     if (visibility) filters.visibility = visibility
     if (search) filters.search = search
     if (includeDeleted !== undefined) filters.includeDeleted = includeDeleted
+    if (sortBy) filters.sortBy = sortBy as any
+    if (sortOrder) filters.sortOrder = sortOrder as any
     return filters
   }
 
@@ -668,8 +673,12 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
   app.get('/api/workspaces/:workspaceId/documents/recent', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const workspaceId = (request.params as { workspaceId: string }).workspaceId
+    const query = request.query as any
+    const sortBy = typeof query.sortBy === 'string' ? query.sortBy : undefined
+    const sortOrder = typeof query.sortOrder === 'string' && (query.sortOrder === 'asc' || query.sortOrder === 'desc') ? query.sortOrder : undefined
+
     await workspaceAccess.assertMember(accountId, workspaceId)
-    const documents = await documentRepository.listRecentByWorkspaces([workspaceId], { limit: 50 })
+    const documents = await documentRepository.listRecentByWorkspaces([workspaceId], { limit: 50, sortBy, sortOrder })
     reply.send(documents)
   })
 
@@ -699,9 +708,13 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
   app.get('/api/workspaces/:workspaceId/trash', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const workspaceId = (request.params as { workspaceId: string }).workspaceId
+    const query = request.query as any
+    const sortBy = typeof query.sortBy === 'string' ? query.sortBy : undefined
+    const sortOrder = typeof query.sortOrder === 'string' && (query.sortOrder === 'asc' || query.sortOrder === 'desc') ? query.sortOrder : undefined
+
     const [documents, folders] = await Promise.all([
-      documentService.listTrashed(accountId, workspaceId),
-      folderService.listTrashed(accountId, workspaceId)
+      documentService.listTrashed(accountId, workspaceId, { sortBy, sortOrder }),
+      folderService.listTrashed(accountId, workspaceId, { sortBy, sortOrder })
     ])
     reply.send({ documents, folders })
   })

@@ -23,6 +23,8 @@ import {
     Link,
     Snackbar,
     Alert,
+    TableSortLabel,
+    Checkbox,
 } from '@mui/material'
 import RestoreIcon from '@mui/icons-material/Restore'
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever'
@@ -79,31 +81,81 @@ export default function TrashPage() {
     const [lastSelectedId, setLastSelectedId] = useState<string | null>(null)
     const [bulkDeleteDialogOpen, setBulkDeleteDialogOpen] = useState(false)
 
+    // Sorting state
+    const [orderBy, setOrderBy] = useState<string>('deletedAt')
+    const [order, setOrder] = useState<'asc' | 'desc'>('desc')
+
+    const handleRequestSort = (property: string) => {
+        const isAsc = orderBy === property && order === 'asc'
+        setOrder(isAsc ? 'desc' : 'asc')
+        setOrderBy(property)
+    }
+
+    const handleSelectAll = () => {
+        if (selectedItems.size === items.length && items.length > 0) {
+            setSelectedItems(new Set())
+        } else {
+            setSelectedItems(new Set(items.map(item => item.id)))
+        }
+    }
+
+    const isAllSelected = items.length > 0 && selectedItems.size === items.length
+    const isIndeterminate = selectedItems.size > 0 && selectedItems.size < items.length
+
     const loadTrash = async () => {
         if (!workspaceId || !isAuthenticated) return
 
         try {
             setLoading(true)
             setError(null)
-            const data = await listTrash(workspaceId) as { documents: TrashDocument[], folders: TrashFolder[] }
+            const data = await listTrash(workspaceId, { sortBy: orderBy, sortOrder: order }) as { documents: TrashDocument[], folders: TrashFolder[] }
 
-            const combinedItems: TrashItem[] = [
-                ...(data.folders || []).map(f => ({
-                    id: f.id,
-                    name: f.name,
-                    type: 'folder' as const,
-                    deletedAt: f.deletedAt,
-                    location: f.originalParentName || null,
-                })),
-                ...(data.documents || []).map(d => ({
-                    id: d.id,
-                    name: d.title,
-                    type: 'document' as const,
-                    deletedAt: d.deletedAt,
-                    size: d.contentSize,
-                    location: d.originalFolderName || null,
-                }))
-            ].sort((a, b) => new Date(b.deletedAt).getTime() - new Date(a.deletedAt).getTime())
+            // Convert to TrashItem format
+            const folderItems: TrashItem[] = (data.folders || []).map(f => ({
+                id: f.id,
+                name: f.name,
+                type: 'folder' as const,
+                deletedAt: f.deletedAt,
+                location: f.originalParentName || null,
+            }));
+
+            const documentItems: TrashItem[] = (data.documents || []).map(d => ({
+                id: d.id,
+                name: d.title,
+                type: 'document' as const,
+                deletedAt: d.deletedAt,
+                size: d.contentSize,
+                location: d.originalFolderName || null,
+            }));
+
+            // Sort folders and documents separately
+            const sortedFolders = [...folderItems].sort((a, b) => {
+                if (orderBy === 'name') {
+                    return order === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+                } else if (orderBy === 'deletedAt') {
+                    return order === 'asc' ? new Date(a.deletedAt).getTime() - new Date(b.deletedAt).getTime() : new Date(b.deletedAt).getTime() - new Date(a.deletedAt).getTime();
+                } else if (orderBy === 'size') {
+                    // Folders don't have size, so sort by name (A-Z)
+                    return a.name.localeCompare(b.name);
+                }
+                return 0;
+            });
+
+            const sortedDocuments = [...documentItems].sort((a, b) => {
+                if (orderBy === 'name') {
+                    return order === 'asc' ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+                } else if (orderBy === 'deletedAt') {
+                    return order === 'asc' ? new Date(a.deletedAt).getTime() - new Date(b.deletedAt).getTime() : new Date(b.deletedAt).getTime() - new Date(a.deletedAt).getTime();
+                } else if (orderBy === 'size') {
+                    const aSize = a.size || 0;
+                    const bSize = b.size || 0;
+                    return order === 'asc' ? aSize - bSize : bSize - aSize;
+                }
+                return 0;
+            });
+
+            // Always keep folders first, then documents
+            const combinedItems: TrashItem[] = [...sortedFolders, ...sortedDocuments];
 
             setItems(combinedItems)
         } catch (err) {
@@ -116,7 +168,7 @@ export default function TrashPage() {
 
     useEffect(() => {
         loadTrash()
-    }, [workspaceId, isAuthenticated])
+    }, [workspaceId, isAuthenticated, orderBy, order])
 
     const handleRestore = async (item: TrashItem) => {
         if (!isAuthenticated) {
@@ -374,12 +426,15 @@ export default function TrashPage() {
                 Items in trash are permanently deleted after 7 days
             </Typography>
 
-            <TrashSelectionToolbar
-                selectedCount={selectedItems.size}
-                onClearSelection={handleClearSelection}
-                onRestoreAll={handleBulkRestore}
-                onPermanentDeleteAll={handleBulkPermanentDelete}
-            />
+            <Box sx={{ height: 60, display: 'flex', alignItems: 'center', mb: 2 }}>
+                <TrashSelectionToolbar
+                    selectedCount={selectedItems.size}
+                    onClearSelection={handleClearSelection}
+                    onRestoreAll={handleBulkRestore}
+                    onPermanentDeleteAll={handleBulkPermanentDelete}
+                    onSelectAll={handleSelectAll}
+                />
+            </Box>
 
             {items.length === 0 ? (
                 <Box mt={4}>
@@ -390,10 +445,34 @@ export default function TrashPage() {
                     <Table>
                         <TableHead>
                             <TableRow>
-                                <TableCell>Name</TableCell>
+                                <TableCell>
+                                    <TableSortLabel
+                                        active={orderBy === 'name'}
+                                        direction={orderBy === 'name' ? order : 'asc'}
+                                        onClick={() => handleRequestSort('name')}
+                                    >
+                                        Name
+                                    </TableSortLabel>
+                                </TableCell>
                                 <TableCell>Location</TableCell>
-                                <TableCell>Deleted</TableCell>
-                                <TableCell>Size</TableCell>
+                                <TableCell>
+                                    <TableSortLabel
+                                        active={orderBy === 'deletedAt'}
+                                        direction={orderBy === 'deletedAt' ? order : 'asc'}
+                                        onClick={() => handleRequestSort('deletedAt')}
+                                    >
+                                        Deleted
+                                    </TableSortLabel>
+                                </TableCell>
+                                <TableCell>
+                                    <TableSortLabel
+                                        active={orderBy === 'size'}
+                                        direction={orderBy === 'size' ? order : 'asc'}
+                                        onClick={() => handleRequestSort('size')}
+                                    >
+                                        Size
+                                    </TableSortLabel>
+                                </TableCell>
                             </TableRow>
                         </TableHead>
                         <TableBody>
@@ -405,9 +484,11 @@ export default function TrashPage() {
                                     onClick={(e) => handleRowClick(item.id, e)}
                                     sx={{ cursor: 'pointer', userSelect: 'none' }}
                                 >
-                                    <TableCell sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                        {item.type === 'folder' ? <FolderIcon color="action" /> : <ArticleIcon color="action" />}
-                                        {item.name}
+                                    <TableCell>
+                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                            {item.type === 'folder' ? <FolderIcon color="action" /> : <ArticleIcon color="action" />}
+                                            {item.name}
+                                        </Box>
                                     </TableCell>
                                     <TableCell>
                                         <Typography variant="body2" color="text.secondary">

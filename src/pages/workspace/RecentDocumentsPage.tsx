@@ -1,5 +1,5 @@
-import { Alert, Box, Breadcrumbs, CircularProgress, Container, Link, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, Snackbar } from '@mui/material';
-import { useEffect, useState } from 'react';
+import { Alert, Box, Breadcrumbs, CircularProgress, Container, Link, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, Snackbar, TableSortLabel, Checkbox } from '@mui/material';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { getRecentDocuments, type DocumentSummary } from '../../lib/api';
@@ -25,6 +25,17 @@ const RecentDocumentsPage = () => {
     // Multi-select state
     const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
     const [lastSelectedId, setLastSelectedId] = useState<string | null>(null);
+
+    // Sorting state
+    const [orderBy, setOrderBy] = useState<string>('updatedAt');
+    const [order, setOrder] = useState<'asc' | 'desc'>('desc');
+
+    const handleRequestSort = (property: string) => {
+        const isAsc = orderBy === property && order === 'asc';
+        setOrder(isAsc ? 'desc' : 'asc');
+        setOrderBy(property);
+    };
+
     const { strings } = useI18n();
 
     usePageTitle('최근 문서함');
@@ -54,11 +65,11 @@ const RecentDocumentsPage = () => {
             const allIds = documents.map(d => d.id);
             const lastIndex = allIds.indexOf(lastSelectedId);
             const currentIndex = allIds.indexOf(itemId);
-            
+
             if (lastIndex !== -1 && currentIndex !== -1) {
                 const start = Math.min(lastIndex, currentIndex);
                 const end = Math.max(lastIndex, currentIndex);
-                
+
                 for (let i = start; i <= end; i++) {
                     newSelected.add(allIds[i]);
                 }
@@ -93,7 +104,7 @@ const RecentDocumentsPage = () => {
 
     const handlePublish = async () => {
         const selectedDocs = documents.filter(d => selectedItems.has(d.id));
-        
+
         if (selectedDocs.length === 0) {
             return;
         }
@@ -116,10 +127,34 @@ const RecentDocumentsPage = () => {
         // Delete is disabled for recent documents
     };
 
+    const handleSelectAll = () => {
+        if (selectedItems.size === documents.length && documents.length > 0) {
+            setSelectedItems(new Set());
+        } else {
+            const newSelecteds = new Set(documents.map((n) => n.id));
+            setSelectedItems(newSelecteds);
+        }
+    };
+
+    const isAllSelected = documents.length > 0 && selectedItems.size === documents.length;
+    const isIndeterminate = selectedItems.size > 0 && selectedItems.size < documents.length;
+
+    // Sort documents by size on client side when sorting by size
+    const sortedDocuments = useMemo(() => {
+        if (orderBy === 'size') {
+            return [...documents].sort((a, b) => {
+                const aSize = a.contentSize || 0;
+                const bSize = b.contentSize || 0;
+                return order === 'asc' ? aSize - bSize : bSize - aSize;
+            });
+        }
+        return documents;
+    }, [documents, orderBy, order]);
+
     useEffect(() => {
         if (isAuthenticated && workspaceId) {
             setLoading(true);
-            getRecentDocuments(workspaceId)
+            getRecentDocuments(workspaceId, { sortBy: orderBy, sortOrder: order })
                 .then((docs) => {
                     setDocuments(docs);
                 })
@@ -130,7 +165,7 @@ const RecentDocumentsPage = () => {
                     setLoading(false);
                 });
         }
-    }, [isAuthenticated, workspaceId]);
+    }, [isAuthenticated, workspaceId, orderBy, order]);
 
     const renderDocuments = () => {
         if (loading) return <CircularProgress />;
@@ -151,16 +186,40 @@ const RecentDocumentsPage = () => {
                 <Table>
                     <TableHead>
                         <TableRow>
-                            <TableCell width="40%">{strings.workspace.nameColumn}</TableCell>
-                            <TableCell width="15%">{strings.workspace.sizeColumn}</TableCell>
-                            <TableCell width="20%">{strings.workspace.lastModifiedColumn}</TableCell>
+                            <TableCell width="40%">
+                                <TableSortLabel
+                                    active={orderBy === 'title'}
+                                    direction={orderBy === 'title' ? order : 'asc'}
+                                    onClick={() => handleRequestSort('title')}
+                                >
+                                    {strings.workspace.nameColumn}
+                                </TableSortLabel>
+                            </TableCell>
+                            <TableCell width="15%">
+                                <TableSortLabel
+                                    active={orderBy === 'size'}
+                                    direction={orderBy === 'size' ? order : 'asc'}
+                                    onClick={() => handleRequestSort('size')}
+                                >
+                                    {strings.workspace.sizeColumn}
+                                </TableSortLabel>
+                            </TableCell>
+                            <TableCell width="20%">
+                                <TableSortLabel
+                                    active={orderBy === 'updatedAt'}
+                                    direction={orderBy === 'updatedAt' ? order : 'asc'}
+                                    onClick={() => handleRequestSort('updatedAt')}
+                                >
+                                    {strings.workspace.lastModifiedColumn}
+                                </TableSortLabel>
+                            </TableCell>
                             <TableCell width="15%">{strings.workspace.modifiedByColumn}</TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {documents.map((doc) => (
-                            <TableRow 
-                                key={doc.id} 
+                        {sortedDocuments.map((doc) => (
+                            <TableRow
+                                key={doc.id}
                                 hover
                                 selected={selectedItems.has(doc.id)}
                                 onClick={(e) => handleRowClick(doc.id, e)}
@@ -208,15 +267,18 @@ const RecentDocumentsPage = () => {
                 <Typography variant="h5" fontWeight="bold" gutterBottom sx={{ mb: 3 }}>
                     최근 문서함
                 </Typography>
-                <SelectionToolbar
-                    selectedCount={selectedItems.size}
-                    hasDocuments={true}
-                    onDelete={handleDelete}
-                    onClearSelection={handleClearSelection}
-                    onStar={handleStar}
-                    onPublish={handlePublish}
-                    showDelete={false}
-                />
+                <Box sx={{ height: 60, display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <SelectionToolbar
+                        selectedCount={selectedItems.size}
+                        hasDocuments={true}
+                        onDelete={handleDelete}
+                        onClearSelection={() => setSelectedItems(new Set())}
+                        onStar={handleStar}
+                        onPublish={handlePublish}
+                        onSelectAll={handleSelectAll}
+                        showDelete={false}
+                    />
+                </Box>
                 {renderDocuments()}
             </Box>
 

@@ -82,7 +82,11 @@ export class DocumentService {
     await this.workspaceAccess.assertMember(accountId, workspaceId)
     const [documents, folders] = await Promise.all([
       this.documentRepository.listByWorkspace(workspaceId, filters),
-      this.folderRepository.listChildren(workspaceId, filters.folderId ?? null),
+      this.folderRepository.listByWorkspace(workspaceId, false, {
+        sortBy: filters.sortBy,
+        sortOrder: filters.sortOrder,
+        parentId: filters.folderId !== undefined ? filters.folderId : null
+      }),
     ])
     return { documents, folders }
   }
@@ -249,9 +253,9 @@ export class DocumentService {
     await this.documentRepository.softDelete(documentId, membership.id);
   }
 
-  async listTrashed(accountId: string, workspaceId: string): Promise<DocumentEntity[]> {
+  async listTrashed(accountId: string, workspaceId: string, options?: { sortBy?: string, sortOrder?: 'asc' | 'desc' }): Promise<DocumentEntity[]> {
     await this.workspaceAccess.assertMember(accountId, workspaceId);
-    return this.documentRepository.findTrashed(workspaceId);
+    return this.documentRepository.findTrashed(workspaceId, options);
   }
 
   async restoreDocument(accountId: string, documentId: string): Promise<DocumentEntity> {

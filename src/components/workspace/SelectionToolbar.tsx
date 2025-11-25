@@ -3,6 +3,7 @@ import ClearIcon from '@mui/icons-material/Clear';
 import DeleteIcon from '@mui/icons-material/Delete';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
 import PublicIcon from '@mui/icons-material/Public';
+import SelectAllIcon from '@mui/icons-material/SelectAll';
 
 interface SelectionToolbarProps {
     selectedCount: number;
@@ -11,6 +12,7 @@ interface SelectionToolbarProps {
     onClearSelection: () => void;
     onStar: () => void;
     onPublish: () => void;
+    onSelectAll: () => void;
     showStar?: boolean;
     showPublish?: boolean;
     showDelete?: boolean;
@@ -23,6 +25,7 @@ const SelectionToolbar = ({
     onClearSelection,
     onStar,
     onPublish,
+    onSelectAll,
     showStar = true,
     showPublish = true,
     showDelete = true,
@@ -33,7 +36,6 @@ const SelectionToolbar = ({
         <Paper
             elevation={0}
             sx={{
-                mb: 2,
                 px: 2,
                 py: 1.5,
                 display: 'flex',
@@ -56,6 +58,15 @@ const SelectionToolbar = ({
             <Box sx={{ fontSize: '0.875rem', fontWeight: 500, color: 'text.secondary', ml: 0.5 }}>
                 {selectedCount} {selectedCount === 1 ? 'item' : 'items'} selected
             </Box>
+
+            <IconButton
+                size="small"
+                onClick={onSelectAll}
+                title="Select all"
+                sx={{ ml: 0.5 }}
+            >
+                <SelectAllIcon fontSize="small" />
+            </IconButton>
 
             <Divider orientation="vertical" flexItem sx={{ mx: 1 }} />
 

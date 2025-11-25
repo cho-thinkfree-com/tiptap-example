@@ -139,7 +139,6 @@ const WorkspaceLayout = () => {
                 sx={{
                     flexGrow: 1,
                     width: { md: `calc(100% - ${DRAWER_WIDTH}px)` },
-                    minHeight: 'calc(100vh - 64px)',
                     bgcolor: 'background.default'
                 }}
             >

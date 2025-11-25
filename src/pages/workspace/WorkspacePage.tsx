@@ -1058,7 +1058,6 @@ const WorkspacePage = () => {
       onKeyDown={handleKeyDown}
       tabIndex={0}
       sx={{
-        minHeight: 'calc(100vh - 64px)',
         position: 'relative',
         '&::after': isDragging ? {
           content: '""',

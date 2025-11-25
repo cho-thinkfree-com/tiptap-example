@@ -10,7 +10,7 @@ const SharedDocumentsPage = () => {
     usePageTitle('공유 문서함');
 
     return (
-        <Container maxWidth="xl" sx={{ minHeight: 'calc(100vh - 64px)' }}>
+        <Container maxWidth="xl">
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
                 <Breadcrumbs separator={<NavigateNextIcon fontSize="small" />} aria-label="breadcrumb">
                     <Link component={RouterLink} underline="hover" color="inherit" to={`/workspace/${workspaceId}`} sx={{ display: 'flex', alignItems: 'center' }}>

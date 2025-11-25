@@ -36,7 +36,7 @@ const WorkspaceLayout = () => {
             text: '공유 문서함',
             icon: <FolderSharedIcon />,
             path: `/workspace/${workspaceId}/shared`,
-            onClick: () => { } // Coming Soon
+            onClick: () => navigate(`/workspace/${workspaceId}/shared`)
         },
         {
             text: '최근 문서함',
@@ -48,7 +48,7 @@ const WorkspaceLayout = () => {
             text: '중요 문서함',
             icon: <StarIcon />,
             path: `/workspace/${workspaceId}/important`,
-            onClick: () => { } // Coming Soon
+            onClick: () => navigate(`/workspace/${workspaceId}/important`)
         },
         {
             text: strings.workspace.trash || 'Trash',

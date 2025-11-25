@@ -256,8 +256,13 @@ const DashboardLayout = () => {
                                 component="div"
                                 sx={{
                                     color: 'text.secondary',
-                                    flexGrow: 1
+                                    flexGrow: 1,
+                                    cursor: 'pointer',
+                                    '&:hover': {
+                                        color: 'text.primary',
+                                    }
                                 }}
+                                onClick={() => navigate(`/workspace/${workspaceId}`)}
                             >
                                 {workspace.name}
                             </Typography>

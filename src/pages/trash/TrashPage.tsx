@@ -95,7 +95,10 @@ export default function TrashPage() {
     }, [workspaceId, tokens?.accessToken])
 
     const handleRestore = async (item: TrashItem) => {
-        if (!tokens?.accessToken) return
+        if (!tokens?.accessToken) {
+            alert('Please log in to perform this action.')
+            return
+        }
 
         try {
             if (item.type === 'document') {
@@ -111,7 +114,10 @@ export default function TrashPage() {
     }
 
     const handlePermanentDelete = async (item: TrashItem) => {
-        if (!tokens?.accessToken) return
+        if (!tokens?.accessToken) {
+            alert('Please log in to perform this action.')
+            return
+        }
         const message = item.type === 'folder'
             ? 'Are you sure you want to permanently delete this folder and all its contents? This cannot be undone.'
             : 'Are you sure you want to permanently delete this document? This cannot be undone.'

@@ -1,7 +1,8 @@
-import { Alert, Box, Breadcrumbs, Button, CircularProgress, Container, Link, Typography, Menu, MenuItem, IconButton, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, useTheme, Snackbar } from '@mui/material';
+import { Alert, Box, Breadcrumbs, Button, CircularProgress, Container, Link, Typography, Menu, MenuItem, IconButton, Dialog, DialogTitle, DialogContent, DialogContentText, DialogActions, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip, useTheme } from '@mui/material';
 import { useCallback, useEffect, useState, useMemo, useRef } from 'react';
 import { useParams, useSearchParams, Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useUpload } from '../../context/UploadContext';
 import { getWorkspaceDocuments, getFolder, createFolder, createDocument, deleteDocument, deleteFolder, renameDocument, renameFolder, getWorkspace, ApiError, type DocumentSummary, type FolderSummary, type WorkspaceSummary, downloadDocument } from '../../lib/api';
 import { formatRelativeDate } from '../../lib/formatDate';
 import HomeIcon from '@mui/icons-material/Home';
@@ -21,8 +22,6 @@ import { broadcastSync } from '../../lib/syncEvents';
 import { useSyncChannel } from '../../hooks/useSyncChannel';
 import { useI18n } from '../../lib/i18n';
 
-import { validateDocumentContent } from '../../lib/documentValidation';
-
 const WorkspacePage = () => {
   const theme = useTheme();
   const { workspaceId } = useParams<{ workspaceId: string }>();
@@ -30,6 +29,7 @@ const WorkspacePage = () => {
   const [searchParams] = useSearchParams();
   const folderId = searchParams.get('folderId');
   const { tokens } = useAuth();
+  const { uploadFiles } = useUpload();
   const [workspace, setWorkspace] = useState<WorkspaceSummary | null>(null);
   const { strings } = useI18n();
   const formatBytes = (bytes?: number) => {
@@ -56,9 +56,6 @@ const WorkspacePage = () => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [shareDialogOpen, setShareDialogOpen] = useState(false);
-  const [snackbarOpen, setSnackbarOpen] = useState(false);
-  const [snackbarMessage, setSnackbarMessage] = useState('');
-  const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error'>('success');
 
   const breadcrumbContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -187,64 +184,14 @@ const WorkspacePage = () => {
     }
   };
 
-  const processFile = async (file: File, targetFolderId?: string) => {
-    if (!file.name.endsWith('.odocs')) {
-      setSnackbarMessage('Only .odocs files are supported');
-      setSnackbarSeverity('error');
-      setSnackbarOpen(true);
-      return;
-    }
-
-    try {
-      const text = await file.text();
-      let content;
-      try {
-        content = JSON.parse(text);
-      } catch (e) {
-        setSnackbarMessage('Invalid file format: Not a valid JSON');
-        setSnackbarSeverity('error');
-        setSnackbarOpen(true);
-        return;
-      }
-
-      if (!validateDocumentContent(content, strings)) {
-        setSnackbarMessage('Invalid .odocs file: Content structure is incorrect');
-        setSnackbarSeverity('error');
-        setSnackbarOpen(true);
-        return;
-      }
-
-      if (!tokens || !workspaceId) return;
-
-      setLoading(true);
-      // Remove extension for title
-      const title = file.name.replace(/\.odocs$/, '');
-
-      await createDocument(workspaceId, tokens.accessToken, {
-        folderId: targetFolderId ?? folderId ?? undefined,
-        title,
-        initialRevision: {
-          content
-        }
-      });
-
-      fetchContents();
-      setSnackbarMessage('File uploaded successfully');
-      setSnackbarSeverity('success');
-      setSnackbarOpen(true);
-    } catch (err) {
-      setSnackbarMessage((err as Error).message);
-      setSnackbarSeverity('error');
-      setSnackbarOpen(true);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    console.log('[DEBUG] handleFileUpload called', event.target.files);
     const files = event.target.files;
-    if (!files || files.length === 0) return;
-    await processFile(files[0]);
+    if (!files || files.length === 0 || !workspaceId) return;
+
+    console.log('[DEBUG] Calling uploadFiles with', files.length, 'files');
+    uploadFiles(Array.from(files), workspaceId, folderId ?? undefined);
+
     // Reset input
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
@@ -271,8 +218,8 @@ const WorkspacePage = () => {
     setDragTargetFolderId(null);
 
     const files = e.dataTransfer.files;
-    if (files && files.length > 0) {
-      await processFile(files[0]);
+    if (files && files.length > 0 && workspaceId) {
+      uploadFiles(Array.from(files), workspaceId, folderId ?? undefined);
     }
   };
 
@@ -532,8 +479,8 @@ const WorkspacePage = () => {
                   setIsDragging(false);
                   setDragTargetFolderId(null);
                   const files = e.dataTransfer.files;
-                  if (files && files.length > 0) {
-                    await processFile(files[0], folder.id);
+                  if (files && files.length > 0 && workspaceId) {
+                    uploadFiles(Array.from(files), workspaceId, folder.id);
                   }
                 }}
                 sx={{
@@ -618,6 +565,7 @@ const WorkspacePage = () => {
         ref={fileInputRef}
         style={{ display: 'none' }}
         accept=".odocs"
+        multiple
         onChange={handleFileUpload}
       />
       <Dialog open={notFoundError}>
@@ -795,17 +743,6 @@ const WorkspacePage = () => {
           documentId={selectedItem.id}
         />
       )}
-
-      <Snackbar
-        open={snackbarOpen}
-        autoHideDuration={6000}
-        onClose={() => setSnackbarOpen(false)}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-      >
-        <Alert onClose={() => setSnackbarOpen(false)} severity={snackbarSeverity} sx={{ width: '100%' }}>
-          {snackbarMessage}
-        </Alert>
-      </Snackbar>
     </Container >
   );
 };

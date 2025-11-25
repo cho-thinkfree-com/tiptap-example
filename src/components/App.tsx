@@ -1,5 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation, useSearchParams } from 'react-router-dom';
 import { AuthProvider, useAuth } from '../context/AuthContext';
+import { UploadProvider } from '../context/UploadContext';
+import UploadManager from './upload/UploadManager';
 import LoginPage from '../pages/auth/LoginPage';
 import SignupPage from '../pages/auth/SignupPage';
 import DashboardLayout from './layout/DashboardLayout';
@@ -96,10 +98,13 @@ import LanguageSync from './common/LanguageSync';
 const App = () => {
   return (
     <AuthProvider>
-      <BrowserRouter>
-        <LanguageSync />
-        <AppRoutes />
-      </BrowserRouter>
+      <UploadProvider>
+        <BrowserRouter>
+          <LanguageSync />
+          <AppRoutes />
+          <UploadManager />
+        </BrowserRouter>
+      </UploadProvider>
     </AuthProvider>
   );
 };

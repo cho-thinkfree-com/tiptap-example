@@ -1,4 +1,4 @@
-import { Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Divider, useTheme, useMediaQuery } from '@mui/material';
+import { Box, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText, Divider, useTheme, useMediaQuery, alpha } from '@mui/material';
 import { Outlet, useNavigate, useLocation, useParams } from 'react-router-dom';
 import FolderIcon from '@mui/icons-material/Folder';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -85,13 +85,13 @@ const WorkspaceLayout = () => {
                                 onClick={item.onClick}
                                 sx={{
                                     '&.Mui-selected': {
-                                        bgcolor: 'primary.light',
-                                        color: 'primary.contrastText',
+                                        bgcolor: alpha(theme.palette.primary.main, 0.08),
+                                        color: 'primary.main',
                                         '&:hover': {
-                                            bgcolor: 'primary.main',
+                                            bgcolor: alpha(theme.palette.primary.main, 0.12),
                                         },
                                         '& .MuiListItemIcon-root': {
-                                            color: 'inherit',
+                                            color: 'primary.main',
                                         }
                                     },
                                     borderRadius: 1,

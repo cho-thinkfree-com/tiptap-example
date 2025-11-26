@@ -32,12 +32,17 @@ const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClos
     const [hasHeadings, setHasHeadings] = useState(false);
     const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
     const [showSavedStatus, setShowSavedStatus] = useState(true);
+    const [viewerWidth, setViewerWidth] = useState(initialWidth);
     const { isAuthenticated } = useAuth();
     const { strings } = useI18n();
 
     useEffect(() => {
         setLocalTitle(document.title);
     }, [document.title]);
+
+    useEffect(() => {
+        setViewerWidth(initialWidth);
+    }, [initialWidth]);
 
     // Auto-hide "Saved" status after 2 seconds
     useEffect(() => {
@@ -190,11 +195,12 @@ const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClos
                                 <Box
                                     sx={{
                                         width: '100%',
-                                        maxWidth: initialWidth,
+                                        maxWidth: viewerWidth, // Use viewerWidth
                                         px: '48px', // Match EditorWorkspace padding
                                         boxSizing: 'border-box',
                                         display: 'flex',
                                         alignItems: 'center',
+                                        position: 'relative', // For absolute positioning of children if needed
                                     }}
                                 >
                                     <Box
@@ -215,11 +221,24 @@ const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClos
                                             overflow: 'hidden',
                                             textOverflow: 'ellipsis',
                                             color: 'text.primary',
-                                            pointerEvents: 'auto' // Allow text selection if needed
+                                            pointerEvents: 'auto', // Allow text selection if needed
+                                            flexGrow: 1, // Allow title to take available space
+                                            mr: 2, // Add spacing before the selector
                                         }}
                                     >
                                         {localTitle}
                                     </Typography>
+
+                                    {/* Viewer Width Selector */}
+                                    <Box sx={{ pointerEvents: 'auto' }}>
+                                        <EditorWidthSelector
+                                            editor={null}
+                                            readOnly={true}
+                                            value={viewerWidth}
+                                            onChange={setViewerWidth}
+                                            initialWidth={initialWidth}
+                                        />
+                                    </Box>
                                 </Box>
                             </Box>
                         )}
@@ -315,11 +334,19 @@ const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClos
                     documentId={document.id}
                 />
                 {!readOnly && (
-                    <EditorToolbar
-                        showTableOfContentsToggle={false}
-                        tableOfContentsOpen={tocOpen}
-                        onToggleTableOfContents={() => setTocOpen(!tocOpen)}
-                    />
+                    <Box sx={{
+                        zIndex: 2,
+                        position: 'relative',
+                        backgroundColor: 'background.paper',
+                        borderBottom: 1,
+                        borderColor: 'divider'
+                    }}>
+                        <EditorToolbar
+                            showTableOfContentsToggle={false}
+                            tableOfContentsOpen={tocOpen}
+                            onToggleTableOfContents={() => setTocOpen(!tocOpen)}
+                        />
+                    </Box>
                 )}
                 <Box sx={{
                     flexGrow: 1,
@@ -330,7 +357,11 @@ const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClos
                     p: 0,
                     px: 0,
                 }}>
-                    <EditorWorkspace readOnly={readOnly} initialWidth={initialWidth} />
+                    <EditorWorkspace
+                        readOnly={readOnly}
+                        initialWidth={initialWidth}
+                        overrideWidth={readOnly ? viewerWidth : undefined}
+                    />
                 </Box>
                 <Drawer
                     anchor="left"

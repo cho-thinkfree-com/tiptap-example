@@ -8,13 +8,24 @@ type EditorWidthSelectorProps = {
     editor: Editor | null;
     onContentChange?: () => void;
     initialWidth?: string;
+    readOnly?: boolean;
+    value?: string;
+    onChange?: (width: string) => void;
 };
 
-const EditorWidthSelector = ({ editor, onContentChange, initialWidth = '950px' }: EditorWidthSelectorProps) => {
+const EditorWidthSelector = ({
+    editor,
+    onContentChange,
+    initialWidth = '950px',
+    readOnly = false,
+    value,
+    onChange
+}: EditorWidthSelectorProps) => {
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const open = Boolean(anchorEl);
 
-    if (!editor) {
+    // In readOnly mode, we don't need the editor instance
+    if (!editor && !readOnly) {
         return null;
     }
 
@@ -38,9 +49,24 @@ const EditorWidthSelector = ({ editor, onContentChange, initialWidth = '950px' }
         return `${closest}px`;
     };
 
-    const [width, setWidth] = useState(getClosestWidth(editor.state.doc.attrs['x-odocs-layoutWidth'] || initialWidth));
+    // Initialize width state
+    // In readOnly mode, use the passed value prop
+    // In editor mode, derive from editor attributes
+    const [width, setWidth] = useState(() => {
+        if (readOnly) {
+            return getClosestWidth(value || initialWidth);
+        }
+        return getClosestWidth(editor?.state.doc.attrs['x-odocs-layoutWidth'] || initialWidth);
+    });
 
     useEffect(() => {
+        if (readOnly) {
+            setWidth(getClosestWidth(value || initialWidth));
+            return;
+        }
+
+        if (!editor) return;
+
         const updateWidth = () => {
             const currentAttr = editor.state.doc.attrs['x-odocs-layoutWidth'];
             setWidth(getClosestWidth(currentAttr || initialWidth));
@@ -51,10 +77,18 @@ const EditorWidthSelector = ({ editor, onContentChange, initialWidth = '950px' }
         return () => {
             editor.off('transaction', updateWidth);
         };
-    }, [editor, initialWidth]);
+    }, [editor, initialWidth, readOnly, value]);
 
     const handleWidthChange = (newWidth: string) => {
-        if (newWidth !== width) {
+        if (readOnly) {
+            if (onChange) {
+                onChange(newWidth);
+            }
+            handleClose();
+            return;
+        }
+
+        if (editor && newWidth !== width) {
             const json = editor.getJSON();
             if (!json.attrs) {
                 json.attrs = {};

@@ -7,13 +7,19 @@ import { useEffect, useState } from 'react'
 interface EditorWorkspaceProps {
   readOnly?: boolean
   initialWidth?: string
+  overrideWidth?: string
 }
 
-const EditorWorkspace = ({ readOnly, initialWidth = '950px' }: EditorWorkspaceProps) => {
+const EditorWorkspace = ({ readOnly, initialWidth = '950px', overrideWidth }: EditorWorkspaceProps) => {
   const editor = useRichTextEditorContext()
   const [layoutWidth, setLayoutWidth] = useState(initialWidth)
 
   useEffect(() => {
+    if (overrideWidth) {
+      setLayoutWidth(overrideWidth)
+      return
+    }
+
     if (!editor) return
 
     const updateWidth = () => {
@@ -31,7 +37,7 @@ const EditorWorkspace = ({ readOnly, initialWidth = '950px' }: EditorWorkspacePr
       editor.off('transaction', updateWidth)
       editor.off('update', updateWidth)
     }
-  }, [editor, initialWidth])
+  }, [editor, initialWidth, overrideWidth])
 
   return (
     <Box
@@ -45,13 +51,13 @@ const EditorWorkspace = ({ readOnly, initialWidth = '950px' }: EditorWorkspacePr
         gap: 0,
         overflow: 'hidden',
         position: 'relative',
-        backgroundColor: readOnly ? '#f5f5f5' : 'transparent',
+        backgroundColor: '#fafafa', // Very subtle gray
       }}
     >
       <RichTextField
         variant='standard'
         RichTextContentProps={{
-          sx: readOnly ? {
+          sx: {
             flex: 1,
             minHeight: 0,
             height: '100%',
@@ -60,37 +66,31 @@ const EditorWorkspace = ({ readOnly, initialWidth = '950px' }: EditorWorkspacePr
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
+            // Add spacing via pseudo-element to guarantee scroll space
+            '&::after': {
+              content: '""',
+              display: 'block',
+              minHeight: '30vh',
+              width: '100%',
+              maxWidth: layoutWidth === '100%' ? 'none' : layoutWidth, // Match paper width
+              backgroundColor: 'white', // Match paper color
+              flexShrink: 0,
+              border: '1px solid rgba(0, 0, 0, 0.05)', // Subtle border
+              borderTop: 'none', // Merge with content
+              boxSizing: 'border-box',
+            },
             '& .ProseMirror': {
               width: '100%',
               maxWidth: layoutWidth === '100%' ? 'none' : layoutWidth,
-              minHeight: 'calc(100% - 32px)',
-              margin: '32px auto 0',
-              backgroundColor: 'white',
-              boxShadow: '0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24)',
-              padding: '48px',
-              paddingBottom: '80px', // Extra padding at bottom for better look
-              boxSizing: 'border-box',
-              outline: 'none',
-              transition: 'max-width 0.3s ease-in-out',
-            },
-          } : {
-            flex: 1,
-            minHeight: 0,
-            height: '100%',
-            overflowY: 'auto',
-            typography: 'body1',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center', // Center the editor content
-            '& .ProseMirror': {
-              width: '100%',
-              maxWidth: layoutWidth === '100%' ? 'none' : layoutWidth, // Dynamic width
               minHeight: '100%',
               padding: '48px',
-              paddingBottom: '50vh', // Allow scrolling past the end
               boxSizing: 'border-box',
-              margin: '0 auto', // Center horizontally
+              margin: '32px auto 0',
               transition: 'max-width 0.3s ease-in-out',
+              // Ensure white background for the content area
+              backgroundColor: 'white',
+              border: '1px solid rgba(0, 0, 0, 0.05)', // Subtle border
+              borderBottom: 'none', // Merge with spacer
             },
             // Custom scrollbar styling for "floating" look
             '&::-webkit-scrollbar': {

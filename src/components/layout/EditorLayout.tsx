@@ -157,7 +157,6 @@ const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClos
                             onClick={() => setTocOpen(!tocOpen)}
                             sx={{
                                 mr: 2,
-                                visibility: (readOnly && !hasHeadings) ? 'hidden' : 'visible'
                             }}
                         >
                             <MenuIcon />

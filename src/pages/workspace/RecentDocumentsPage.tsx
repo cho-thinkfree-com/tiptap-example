@@ -2,7 +2,7 @@ import { Alert, Box, Breadcrumbs, CircularProgress, Container, Link, Typography,
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams, Link as RouterLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { getRecentDocuments, type DocumentSummary, toggleDocumentStarred } from '../../lib/api';
+import { getRecentDocuments, type DocumentSummary, toggleDocumentStarred, getShareLinks } from '../../lib/api';
 import { formatRelativeDate } from '../../lib/formatDate';
 import HomeIcon from '@mui/icons-material/Home';
 import ArticleIcon from '@mui/icons-material/Article';
@@ -145,23 +145,35 @@ const RecentDocumentsPage = () => {
     };
 
     const handlePublish = async () => {
-        const selectedDocs = documents.filter(d => selectedItems.has(d.id));
+        const selectedDocs = documents.filter(d => selectedItems.has(d.id) && d.visibility === 'public');
 
         if (selectedDocs.length === 0) {
             return;
         }
 
-        const links = selectedDocs.map(doc => {
-            const url = `${window.location.origin}/document/${doc.id}`;
-            return `[${doc.title}](${url})`;
-        }).join('\n');
-
         try {
-            await navigator.clipboard.writeText(links);
-            setSnackbarMessage(`Copied ${selectedDocs.length} link(s) to clipboard`);
-            setSnackbarOpen(true);
+            const links = await Promise.all(
+                selectedDocs.map(async (doc) => {
+                    const shareLinks = await getShareLinks(doc.id);
+                    const activeLink = shareLinks.find(l => !l.revokedAt);
+                    if (activeLink) {
+                        const url = `${window.location.origin}/share/${activeLink.token}`;
+                        return `${doc.title}\n${url}`;
+                    }
+                    return null;
+                })
+            );
+
+            const validLinks = links.filter(l => l !== null).join('\n\n');
+            if (validLinks) {
+                await navigator.clipboard.writeText(validLinks);
+                setSnackbarMessage(`Copied ${selectedDocs.length} link(s)`);
+                setSnackbarOpen(true);
+            }
         } catch (err) {
-            console.error('Failed to copy to clipboard');
+            console.error('Failed to copy links:', err);
+            setSnackbarMessage('Failed to copy links');
+            setSnackbarOpen(true);
         }
     };
 
@@ -192,6 +204,12 @@ const RecentDocumentsPage = () => {
         }
         return documents;
     }, [documents, orderBy, order]);
+
+    // Check if all selected documents have public links
+    const hasPublicLinks = useMemo(() => {
+        const selectedDocs = documents.filter(d => selectedItems.has(d.id));
+        return selectedDocs.length > 0 && selectedDocs.every(d => d.visibility === 'public');
+    }, [documents, selectedItems]);
 
     useEffect(() => {
         if (isAuthenticated) {
@@ -343,6 +361,7 @@ const RecentDocumentsPage = () => {
                     <SelectionToolbar
                         selectedCount={selectedItems.size}
                         hasDocuments={true}
+                        hasPublicLinks={hasPublicLinks}
                         onDelete={handleDelete}
                         onClearSelection={() => setSelectedItems(new Set())}
                         onStar={handleStar}

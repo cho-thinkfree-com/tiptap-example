@@ -8,6 +8,7 @@ import SelectAllIcon from '@mui/icons-material/SelectAll';
 interface SelectionToolbarProps {
     selectedCount: number;
     hasDocuments: boolean;
+    hasPublicLinks: boolean;
     onDelete: () => void;
     onClearSelection: () => void;
     onStar: () => void;
@@ -21,6 +22,7 @@ interface SelectionToolbarProps {
 const SelectionToolbar = ({
     selectedCount,
     hasDocuments,
+    hasPublicLinks,
     onDelete,
     onClearSelection,
     onStar,
@@ -84,8 +86,14 @@ const SelectionToolbar = ({
                 <IconButton
                     size="small"
                     onClick={onPublish}
-                    disabled={!hasDocuments}
-                    title={hasDocuments ? "Copy public link" : "Only documents can be published"}
+                    disabled={!hasDocuments || !hasPublicLinks}
+                    title={
+                        !hasDocuments
+                            ? "Only documents can be published"
+                            : !hasPublicLinks
+                                ? "Selected items must have public links"
+                                : "Copy public link"
+                    }
                 >
                     <PublicIcon fontSize="small" />
                 </IconButton>

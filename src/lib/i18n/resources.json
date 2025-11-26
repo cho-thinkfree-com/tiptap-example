@@ -15,7 +15,8 @@
         "closeNow": "Close Now"
       },
       "toc": {
-        "emptyPlaceholder": "Add a heading to build an outline."
+        "emptyPlaceholder": "Add a heading to build an outline.",
+        "emptyPlaceholderViewer": "This document has no table of contents."
       },
       "viewerTemplate": {
         "label": "Template",
@@ -936,7 +937,8 @@
         ]
       },
       "toc": {
-        "emptyPlaceholder": "제목을 추가해 목차를 생성하세요."
+        "emptyPlaceholder": "제목을 추가해 목차를 생성하세요.",
+        "emptyPlaceholderViewer": "이 문서에는 목차가 없습니다."
       }
     },
     "auth": {

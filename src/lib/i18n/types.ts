@@ -75,6 +75,7 @@ export type EditorStrings = {
   }
   toc: {
     emptyPlaceholder: string
+    emptyPlaceholderViewer: string
   }
   viewerTemplate: {
     label: string

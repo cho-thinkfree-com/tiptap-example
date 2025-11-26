@@ -20,6 +20,7 @@ type TocState = {
 type EditorTableOfContentsProps = {
   onNavigate?: () => void
   onClose?: () => void
+  readOnly?: boolean
 }
 
 const createUniqueId = (baseId: string, index: number, existing: Set<string>) => {
@@ -66,7 +67,7 @@ const buildTableOfContents = (editor: Editor): TocState => {
   return { items, activeId }
 }
 
-const EditorTableOfContents = ({ onNavigate, onClose }: EditorTableOfContentsProps) => {
+const EditorTableOfContents = ({ onNavigate, onClose, readOnly = false }: EditorTableOfContentsProps) => {
   const editor = useRichTextEditorContext()
   const { strings } = useI18n()
   const [toc, setToc] = useState<TocState>({ items: [], activeId: null })
@@ -109,7 +110,9 @@ const EditorTableOfContents = ({ onNavigate, onClose }: EditorTableOfContentsPro
     [editor, onNavigate],
   )
 
-  const placeholder = strings.editor.toc.emptyPlaceholder
+  const placeholder = readOnly
+    ? strings.editor.toc.emptyPlaceholderViewer
+    : strings.editor.toc.emptyPlaceholder
 
   const content = useMemo(() => {
     if (toc.items.length === 0) {
@@ -149,7 +152,7 @@ const EditorTableOfContents = ({ onNavigate, onClose }: EditorTableOfContentsPro
         ))}
       </List>
     )
-  }, [handleNavigate, toc.items, toc.activeId])
+  }, [handleNavigate, toc.items, toc.activeId, placeholder])
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>

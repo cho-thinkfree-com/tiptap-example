@@ -380,7 +380,7 @@ const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClos
                         },
                     }}
                 >
-                    <EditorTableOfContents onClose={() => setTocOpen(false)} />
+                    <EditorTableOfContents onClose={() => setTocOpen(false)} readOnly={readOnly} />
                 </Drawer>
             </Box>
         </RichTextEditorProvider >

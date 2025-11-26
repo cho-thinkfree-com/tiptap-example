@@ -2,7 +2,7 @@ import { Alert, Box, Breadcrumbs, CircularProgress, Container, Link, Typography,
 import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useParams, Link as RouterLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { getPublicDocuments, type DocumentSummary, toggleDocumentStarred } from '../../lib/api';
+import { getPublicDocuments, type DocumentSummary, toggleDocumentStarred, getShareLinks } from '../../lib/api';
 import { formatRelativeDate } from '../../lib/formatDate';
 import HomeIcon from '@mui/icons-material/Home';
 import ArticleIcon from '@mui/icons-material/Article';
@@ -137,15 +137,249 @@ const SharedDocumentsPage = () => {
 
             fetchDocuments();
             setSnackbarMessage(newImportantStatus ? 'Added to Starred' : 'Removed from Starred');
-            const handleSelectAll = () => {
-                if (selectedItems.size === documents.length && documents.length > 0) {
-                    setSelectedItems(new Set());
-                    autoHideDuration = { 3000}
-                    onClose = {() => setSnackbarOpen(false)}
-message = { snackbarMessage }
-    />
-                </Container >
+            setSnackbarOpen(true);
+        } catch (err) {
+            setError((err as Error).message);
+        }
+    };
+
+    const handlePublish = async () => {
+        const selectedDocs = documents.filter(d => selectedItems.has(d.id));
+
+        if (selectedDocs.length === 0) {
+            return;
+        }
+
+        try {
+            const links = await Promise.all(
+                selectedDocs.map(async (doc) => {
+                    const shareLinks = await getShareLinks(doc.id);
+                    const activeLink = shareLinks.find(l => !l.revokedAt);
+                    if (activeLink) {
+                        const url = `${window.location.origin}/share/${activeLink.token}`;
+                        return `${doc.title}\n${url}`;
+                    }
+                    return null;
+                })
             );
-        };
+
+            const validLinks = links.filter(l => l !== null).join('\n\n');
+            if (validLinks) {
+                await navigator.clipboard.writeText(validLinks);
+                setSnackbarMessage(`Copied ${selectedDocs.length} link(s)`);
+                setSnackbarOpen(true);
+            }
+        } catch (err) {
+            console.error('Failed to copy links:', err);
+            setSnackbarMessage('Failed to copy links');
+            setSnackbarOpen(true);
+        }
+    };
+
+    const handleDelete = () => {
+        // Delete is disabled for shared documents
+    };
+
+    const handleSelectAll = () => {
+        if (selectedItems.size === documents.length && documents.length > 0) {
+            setSelectedItems(new Set());
+        } else {
+            const newSelecteds = new Set(documents.map((n) => n.id));
+            setSelectedItems(newSelecteds);
+        }
+    };
+
+    // Sort documents by size on client side when sorting by size
+    const sortedDocuments = useMemo(() => {
+        if (orderBy === 'size') {
+            return [...documents].sort((a, b) => {
+                const aSize = a.contentSize || 0;
+                const bSize = b.contentSize || 0;
+                return order === 'asc' ? aSize - bSize : bSize - aSize;
+            });
+        }
+        return documents;
+    }, [documents, orderBy, order]);
+
+    // All documents in this page are public, so hasPublicLinks is true when any are selected
+    const hasPublicLinks = useMemo(() => {
+        return selectedItems.size > 0;
+    }, [selectedItems]);
+
+    useEffect(() => {
+        fetchDocuments();
+    }, [fetchDocuments]);
+
+    const renderDocuments = () => {
+        if (loading) return <CircularProgress />;
+        if (error) return <Alert severity="error">{error}</Alert>;
+
+        if (documents.length === 0) {
+            return (
+                <Paper sx={{ p: 6, textAlign: 'center', borderStyle: 'dashed', bgcolor: 'transparent' }}>
+                    <Typography color="text.secondary" sx={{ mb: 2 }}>
+                        공개된 문서가 없습니다.
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                        문서를 공개하려면 문서의 공유 설정에서 "Publish to Web"을 선택하세요.
+                    </Typography>
+                </Paper>
+            );
+        }
+
+        return (
+            <TableContainer component={Paper} variant="outlined" sx={{ border: 'none' }}>
+                <Table>
+                    <TableHead>
+                        <TableRow>
+                            <TableCell width="30%">
+                                <TableSortLabel
+                                    active={orderBy === 'title'}
+                                    direction={orderBy === 'title' ? order : 'asc'}
+                                    onClick={() => handleRequestSort('title')}
+                                >
+                                    {strings.workspace.nameColumn}
+                                </TableSortLabel>
+                            </TableCell>
+                            <TableCell width="15%">{strings.workspace.folderColumn}</TableCell>
+                            <TableCell width="10%">
+                                <TableSortLabel
+                                    active={orderBy === 'size'}
+                                    direction={orderBy === 'size' ? order : 'asc'}
+                                    onClick={() => handleRequestSort('size')}
+                                >
+                                    {strings.workspace.sizeColumn}
+                                </TableSortLabel>
+                            </TableCell>
+                            <TableCell width="15%">
+                                <TableSortLabel
+                                    active={orderBy === 'createdAt'}
+                                    direction={orderBy === 'createdAt' ? order : 'asc'}
+                                    onClick={() => handleRequestSort('createdAt')}
+                                >
+                                    공개 일시
+                                </TableSortLabel>
+                            </TableCell>
+                            <TableCell width="15%">
+                                <TableSortLabel
+                                    active={orderBy === 'updatedAt'}
+                                    direction={orderBy === 'updatedAt' ? order : 'asc'}
+                                    onClick={() => handleRequestSort('updatedAt')}
+                                >
+                                    {strings.workspace.lastModifiedColumn}
+                                </TableSortLabel>
+                            </TableCell>
+                            <TableCell width="15%">{strings.workspace.modifiedByColumn}</TableCell>
+                        </TableRow>
+                    </TableHead>
+                    <TableBody>
+                        {sortedDocuments.map((doc) => (
+                            <TableRow
+                                key={doc.id}
+                                hover
+                                selected={selectedItems.has(doc.id)}
+                                onClick={(e) => handleRowClick(doc.id, e)}
+                                onDoubleClick={() => handleRowDoubleClick(doc.id)}
+                                sx={{ cursor: 'pointer', userSelect: 'none' }}
+                            >
+                                <TableCell>
+                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                        <ArticleIcon color="action" sx={{ mr: 1.5 }} />
+                                        {doc.title}
+                                        {doc.isImportant && (
+                                            <StarIcon
+                                                sx={{
+                                                    ml: 1,
+                                                    fontSize: '1rem',
+                                                    color: 'warning.main',
+                                                    opacity: 0.6
+                                                }}
+                                            />
+                                        )}
+                                        <PublicDocumentIndicator
+                                            documentId={doc.id}
+                                            title={doc.title}
+                                        />
+                                    </Box>
+                                </TableCell>
+                                <TableCell>
+                                    <Typography variant="body2" color="text.secondary">
+                                        <Link
+                                            component={RouterLink}
+                                            to={`/workspace/${doc.workspaceId}${doc.folderId ? `?folderId=${doc.folderId}` : ''}`}
+                                            underline="hover"
+                                            color="inherit"
+                                            onClick={(e) => e.stopPropagation()}
+                                        >
+                                            {doc.folderName || strings.workspace.rootFolder}
+                                        </Link>
+                                    </Typography>
+                                </TableCell>
+                                <TableCell>
+                                    <Typography variant="body2" color="text.secondary">{formatBytes(doc.contentSize)}</Typography>
+                                </TableCell>
+                                <TableCell>
+                                    <Typography variant="body2" color="text.secondary">{formatRelativeDate(doc.createdAt)}</Typography>
+                                </TableCell>
+                                <TableCell>
+                                    <Typography variant="body2" color="text.secondary">{formatRelativeDate(doc.updatedAt)}</Typography>
+                                </TableCell>
+                                <TableCell>
+                                    <Chip label={doc.lastModifiedBy || strings.workspace.ownerLabel} size="small" variant="outlined" sx={{ borderRadius: 1 }} />
+                                </TableCell>
+                            </TableRow>
+                        ))}
+                    </TableBody>
+                </Table>
+            </TableContainer>
+        );
+    };
+
+    return (
+        <Container maxWidth="xl">
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
+                <Breadcrumbs separator={<NavigateNextIcon fontSize="small" />} aria-label="breadcrumb">
+                    <Link component={RouterLink} underline="hover" color="inherit" to={`/workspace/${workspaceId}`} sx={{ display: 'flex', alignItems: 'center' }}>
+                        <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
+                        Files
+                    </Link>
+                    <Typography color="text.primary" fontWeight="600" sx={{ display: 'flex', alignItems: 'center' }}>
+                        공유 문서함
+                    </Typography>
+                </Breadcrumbs>
+            </Box>
+
+            <Box sx={{ mb: 4 }}>
+                <Typography variant="h5" fontWeight="bold" gutterBottom sx={{ mb: 1 }}>
+                    공유 문서함
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                    공개된 문서 목록입니다. 회원 간 공유 기능은 추후 지원될 예정입니다.
+                </Typography>
+                <Box sx={{ height: 60, display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <SelectionToolbar
+                        selectedCount={selectedItems.size}
+                        hasDocuments={true}
+                        hasPublicLinks={hasPublicLinks}
+                        onDelete={handleDelete}
+                        onClearSelection={() => setSelectedItems(new Set())}
+                        onStar={handleStar}
+                        onPublish={handlePublish}
+                        onSelectAll={handleSelectAll}
+                        showDelete={false}
+                    />
+                </Box>
+                {renderDocuments()}
+            </Box>
+
+            <Snackbar
+                open={snackbarOpen}
+                autoHideDuration={3000}
+                onClose={() => setSnackbarOpen(false)}
+                message={snackbarMessage}
+            />
+        </Container>
+    );
+};
 
 export default SharedDocumentsPage;

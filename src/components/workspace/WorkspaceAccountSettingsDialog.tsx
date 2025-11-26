@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     Dialog,
     DialogTitle,
@@ -37,6 +38,7 @@ const WorkspaceAccountSettingsDialog = ({ open, onClose, workspaceId }: Workspac
     const { isAuthenticated } = useAuth();
     const { strings, setLocale } = useI18n();
     const theme = useTheme();
+    const navigate = useNavigate();
 
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -210,7 +212,7 @@ const WorkspaceAccountSettingsDialog = ({ open, onClose, workspaceId }: Workspac
                                     onClick={() => {
                                         onClose();
                                         // Navigate to global settings
-                                        window.location.href = '/settings';
+                                        navigate('/settings');
                                     }}
                                     sx={{ cursor: 'pointer', fontWeight: 'bold' }}
                                 >

@@ -135,14 +135,11 @@ const BlockDragHandle = () => {
               }
             }
 
-            // If no padding found or it's too small, default to a reasonable offset
-            // mainAxis is the gap between reference (paragraph) and handle.
-            // Move into the left padding area; push further left if padding is wide.
-            const EXTRA_LEFT = 30
-            // Clamp the handle further into the gutter: push left by padding width plus an extra bias.
-            const mainAxis = paddingLeft > 0
-              ? paddingLeft + EXTRA_LEFT
-              : EXTRA_LEFT
+            // Calculate offset to center the handle within the left padding
+            // If padding is 48px and handle is 28px, we want (48 - 28) / 2 = 10px gap
+            const mainAxis = paddingLeft > HANDLE_SIZE
+              ? (paddingLeft - HANDLE_SIZE) / 2
+              : 4 // Fallback small gap if padding is too small
 
             return {
               mainAxis,

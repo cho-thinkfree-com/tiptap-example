@@ -33,6 +33,7 @@ import { SlashHelpExtension, type SlashHelpOptions } from './slashHelp'
 import { CalloutExtension } from './callout'
 import { ReactNodeViewRenderer } from '@tiptap/react'
 import CalloutNodeView from './CalloutNodeView.tsx'
+import { DocumentLayout } from './DocumentLayout'
 
 const lowlight = createLowlight()
 lowlight.register('javascript', javascript)
@@ -61,16 +62,16 @@ export const createBaseExtensions = (strings: AppStrings, options?: BaseExtensio
         ...parent,
         setSubscript:
           () =>
-          ({ commands }) => {
-            commands.unsetSuperscript?.()
-            return commands.setMark(this.name)
-          },
+            ({ commands }) => {
+              commands.unsetSuperscript?.()
+              return commands.setMark(this.name)
+            },
         toggleSubscript:
           () =>
-          ({ commands }) => {
-            commands.unsetSuperscript?.()
-            return commands.toggleMark(this.name)
-          },
+            ({ commands }) => {
+              commands.unsetSuperscript?.()
+              return commands.toggleMark(this.name)
+            },
       }
     },
   })
@@ -82,16 +83,16 @@ export const createBaseExtensions = (strings: AppStrings, options?: BaseExtensio
         ...parent,
         setSuperscript:
           () =>
-          ({ commands }) => {
-            commands.unsetSubscript?.()
-            return commands.setMark(this.name)
-          },
+            ({ commands }) => {
+              commands.unsetSubscript?.()
+              return commands.setMark(this.name)
+            },
         toggleSuperscript:
           () =>
-          ({ commands }) => {
-            commands.unsetSubscript?.()
-            return commands.toggleMark(this.name)
-          },
+            ({ commands }) => {
+              commands.unsetSubscript?.()
+              return commands.toggleMark(this.name)
+            },
       }
     },
   })
@@ -161,5 +162,6 @@ export const createBaseExtensions = (strings: AppStrings, options?: BaseExtensio
     CalloutExtension.configure({
       addNodeView: () => ReactNodeViewRenderer(CalloutNodeView),
     }),
+    DocumentLayout,
   ] as Extension[]
 }

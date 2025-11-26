@@ -11,6 +11,7 @@ import type { Editor } from '@tiptap/react';
 import { useEffect, useState } from 'react';
 import ShareDialog from '../editor/ShareDialog';
 import { useI18n } from '../../lib/i18n';
+import EditorWidthSelector from '../editor/EditorWidthSelector';
 
 interface EditorLayoutProps {
     editor: Editor | null;
@@ -166,51 +167,71 @@ const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClos
                             }}
                         />
 
-                        {readOnly ? (
-                            <Typography
-                                sx={{
-                                    fontSize: '1.5rem',
-                                    fontWeight: 700,
-                                    flexGrow: 1,
-                                }}
-                            >
-                                {localTitle}
-                            </Typography>
-                        ) : (
-                            <TextField
-                                value={localTitle}
-                                onChange={handleTitleChange}
-                                onBlur={handleTitleBlur}
-                                onKeyDown={handleKeyDown}
-                                placeholder={document.title}
-                                variant="standard"
-                                InputProps={{
-                                    disableUnderline: true,
-                                    sx: {
+                        <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
+                            {readOnly ? (
+                                <Typography
+                                    sx={{
                                         fontSize: '1.5rem',
                                         fontWeight: 700,
-                                    }
-                                }}
-                                sx={{ flexGrow: 1 }}
-                            />
-                        )}
-                        {localTitle !== document.title && (
-                            <Typography
-                                variant="caption"
-                                sx={{
-                                    color: 'text.secondary',
-                                    ml: 2,
-                                    fontSize: '0.75rem',
-                                    whiteSpace: 'nowrap'
-                                }}
-                            >
-                                ESC to cancel
-                            </Typography>
-                        )}
-                        {!readOnly && (saveStatus !== 'saved' || showSavedStatus) && (
-                            <Typography variant="body2" sx={{ mr: 1, ml: 2 }}>
-                                {getSaveStatusText()}
-                            </Typography>
+                                        whiteSpace: 'nowrap',
+                                        overflow: 'hidden',
+                                        textOverflow: 'ellipsis',
+                                    }}
+                                >
+                                    {localTitle}
+                                </Typography>
+                            ) : (
+                                <TextField
+                                    value={localTitle}
+                                    onChange={handleTitleChange}
+                                    onBlur={handleTitleBlur}
+                                    onKeyDown={handleKeyDown}
+                                    placeholder={document.title}
+                                    variant="standard"
+                                    InputProps={{
+                                        disableUnderline: true,
+                                        sx: {
+                                            fontSize: '1.5rem',
+                                            fontWeight: 700,
+                                        }
+                                    }}
+                                    sx={{ minWidth: 200 }}
+                                />
+                            )}
+
+                            {!readOnly && (saveStatus !== 'saved' || showSavedStatus) && (
+                                <Typography
+                                    variant="caption"
+                                    sx={{
+                                        color: 'text.secondary',
+                                        ml: 2,
+                                        whiteSpace: 'nowrap',
+                                        pt: 1 // Align baseline with title roughly
+                                    }}
+                                >
+                                    {getSaveStatusText()}
+                                </Typography>
+                            )}
+
+                            {localTitle !== document.title && (
+                                <Typography
+                                    variant="caption"
+                                    sx={{
+                                        color: 'text.secondary',
+                                        ml: 2,
+                                        fontSize: '0.75rem',
+                                        whiteSpace: 'nowrap',
+                                        pt: 1
+                                    }}
+                                >
+                                    ESC to cancel
+                                </Typography>
+                            )}
+                        </Box>
+                        {!readOnly && (
+                            <Box sx={{ mr: 2, display: { xs: 'none', md: 'block' } }}>
+                                <EditorWidthSelector editor={editor} onContentChange={onContentChange} />
+                            </Box>
                         )}
                         {!readOnly && (
                             <Button color="primary" variant="contained" onClick={onClose}>
@@ -282,7 +303,7 @@ const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClos
                     <EditorTableOfContents />
                 </Drawer>
             </Box>
-        </RichTextEditorProvider>
+        </RichTextEditorProvider >
     );
 };
 

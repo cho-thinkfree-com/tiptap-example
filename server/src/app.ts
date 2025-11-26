@@ -798,7 +798,10 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
 
   app.get('/api/documents/recent', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
-    const documents = await documentService.listRecentDocuments(accountId)
+    const query = request.query as any
+    const sortBy = typeof query.sortBy === 'string' ? query.sortBy : undefined
+    const sortOrder = typeof query.sortOrder === 'string' && (query.sortOrder === 'asc' || query.sortOrder === 'desc') ? query.sortOrder : undefined
+    const documents = await documentService.listRecentDocuments(accountId, { sortBy, sortOrder })
     reply.send({ items: documents })
   })
 

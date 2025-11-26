@@ -14,7 +14,6 @@ import SelectionToolbar from '../../components/workspace/SelectionToolbar';
 import { useNavigate } from 'react-router-dom';
 
 const RecentDocumentsPage = () => {
-    const { workspaceId } = useParams<{ workspaceId: string }>();
     const { isAuthenticated } = useAuth();
     const navigate = useNavigate();
     const [documents, setDocuments] = useState<DocumentSummary[]>([]);
@@ -100,21 +99,21 @@ const RecentDocumentsPage = () => {
     };
 
     const fetchDocuments = useCallback(async () => {
-        if (!isAuthenticated || !workspaceId) return;
+        if (!isAuthenticated) return;
         setLoading(true);
         setError(null);
         try {
-            const docs = await getRecentDocuments(workspaceId, { sortBy: orderBy, sortOrder: order });
+            const docs = await getRecentDocuments({ sortBy: orderBy, sortOrder: order });
             setDocuments(docs);
         } catch (err) {
             setError((err as Error).message);
         } finally {
             setLoading(false);
         }
-    }, [isAuthenticated, workspaceId, orderBy, order]);
+    }, [isAuthenticated, orderBy, order]);
 
     const handleStar = async () => {
-        if (!isAuthenticated || !workspaceId) return;
+        if (!isAuthenticated) return;
 
         const itemsToStar = Array.from(selectedItems);
 
@@ -193,9 +192,9 @@ const RecentDocumentsPage = () => {
     }, [documents, orderBy, order]);
 
     useEffect(() => {
-        if (isAuthenticated && workspaceId) {
+        if (isAuthenticated) {
             setLoading(true);
-            getRecentDocuments(workspaceId, { sortBy: orderBy, sortOrder: order })
+            getRecentDocuments({ sortBy: orderBy, sortOrder: order })
                 .then((docs) => {
                     setDocuments(docs);
                 })
@@ -206,7 +205,7 @@ const RecentDocumentsPage = () => {
                     setLoading(false);
                 });
         }
-    }, [isAuthenticated, workspaceId, orderBy, order]);
+    }, [isAuthenticated, orderBy, order]);
 
     const renderDocuments = () => {
         if (loading) return <CircularProgress />;
@@ -304,9 +303,9 @@ const RecentDocumentsPage = () => {
         <Container maxWidth="xl">
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 4 }}>
                 <Breadcrumbs separator={<NavigateNextIcon fontSize="small" />} aria-label="breadcrumb">
-                    <Link component={RouterLink} underline="hover" color="inherit" to={`/workspace/${workspaceId}`} sx={{ display: 'flex', alignItems: 'center' }}>
+                    <Link component={RouterLink} underline="hover" color="inherit" to="/dashboard" sx={{ display: 'flex', alignItems: 'center' }}>
                         <HomeIcon sx={{ mr: 0.5 }} fontSize="inherit" />
-                        Files
+                        Dashboard
                     </Link>
                     <Typography color="text.primary" fontWeight="600" sx={{ display: 'flex', alignItems: 'center' }}>
                         최근 문서함

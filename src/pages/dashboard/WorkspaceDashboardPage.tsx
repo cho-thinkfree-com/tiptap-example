@@ -45,26 +45,29 @@ const WorkspaceDashboardPage = () => {
     }
   }, [isAuthenticated]);
 
-  const fetchRecentDocuments = useCallback(() => {
+  const fetchRecentDocuments = useCallback(async () => {
     if (isAuthenticated) {
       setRecentDocumentsLoading(true);
-      getRecentDocuments()
-        .then((data) => {
-          setRecentDocuments(data);
-        })
-        .catch((err) => {
-          setRecentDocumentsError((err as Error).message);
-        })
-        .finally(() => {
-          setRecentDocumentsLoading(false);
-        });
+      try {
+        // Fetch recent documents from all workspaces using the global endpoint
+        const allDocuments = await getRecentDocuments();
+
+        // Already sorted by updatedAt from the backend, just take top 10
+        setRecentDocuments(allDocuments.slice(0, 10));
+        setRecentDocumentsError(null);
+      } catch (err) {
+        setRecentDocumentsError((err as Error).message);
+      } finally {
+        setRecentDocumentsLoading(false);
+      }
     }
   }, [isAuthenticated]);
 
   useEffect(() => {
     fetchWorkspaces();
     fetchRecentDocuments();
-  }, [fetchWorkspaces, fetchRecentDocuments]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated]);
 
   // Listen for sync events from other tabs
   useSyncChannel(useCallback((event) => {

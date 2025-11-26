@@ -276,13 +276,13 @@ export const getWorkspaceDocuments = (
     },
   )
 
-export const getRecentDocuments = (workspaceId: string, options?: { sortBy?: string; sortOrder?: 'asc' | 'desc' }) =>
-  requestJSON<DocumentSummary[]>(`/api/workspaces/${workspaceId}/documents/recent`, {
+export const getRecentDocuments = (options?: { sortBy?: string; sortOrder?: 'asc' | 'desc' }) =>
+  requestJSON<{ items: DocumentSummary[] }>(`/api/documents/recent`, {
     query: {
       sortBy: options?.sortBy,
       sortOrder: options?.sortOrder,
     },
-  })
+  }).then((payload) => payload.items ?? [])
 
 export interface DocumentRevision {
   id: string;

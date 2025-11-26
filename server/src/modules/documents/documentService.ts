@@ -91,10 +91,10 @@ export class DocumentService {
     return { documents, folders }
   }
 
-  async listRecentDocuments(accountId: string): Promise<DocumentEntity[]> {
+  async listRecentDocuments(accountId: string, options?: { sortBy?: string, sortOrder?: 'asc' | 'desc' }): Promise<DocumentEntity[]> {
     const memberships = await this.membershipRepository.findByAccount(accountId);
     const workspaceIds = memberships.map(m => m.workspaceId);
-    return this.documentRepository.listRecentByWorkspaces(workspaceIds, { limit: 10 });
+    return this.documentRepository.listRecentByWorkspaces(workspaceIds, { limit: 50, sortBy: options?.sortBy, sortOrder: options?.sortOrder });
   }
 
   async createDocument(

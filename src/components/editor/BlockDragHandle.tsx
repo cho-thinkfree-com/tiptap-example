@@ -68,12 +68,15 @@ const getFirstLineRect = (element: Element) => {
   const rects = range.getClientRects()
   for (let index = 0; index < rects.length; index += 1) {
     const rect = rects.item(index)
-    if (rect && rect.height > 0 && rect.width > 0) {
+    // Relaxed check: allow 0 width (common for empty lines with br)
+    if (rect && rect.height > 0) {
       return rect
     }
   }
 
-  return null
+  // Fallback: if no internal rects (e.g. empty p), use the element's own rect
+  // This ensures we always have a valid rect for positioning
+  return element.getBoundingClientRect()
 }
 
 const BlockDragHandle = () => {
@@ -160,11 +163,20 @@ const BlockDragHandle = () => {
       }}
     >
       <button type='button' className='editor-block-handle__button' aria-label='Drag block' tabIndex={-1}>
-        <svg className='editor-block-handle__icon' viewBox='0 0 24 24' focusable='false' aria-hidden='true'>
+        <svg className='editor-block-handle__icon' viewBox='0 0 24 24' focusable='false' aria-hidden='true' style={{ pointerEvents: 'none' }}>
           <path d='M8 6h2v2H8zM14 6h2v2h-2zM8 11h2v2H8zM14 11h2v2h-2zM8 16h2v2H8zM14 16h2v2h-2z' />
         </svg>
       </button>
     </DragHandle>
+    /* 
+      TODO: Known issue - Dragging empty lines (paragraphs with no content) sometimes fails or drops the handle.
+      Attempts to fix included:
+      1. Relaxing getFirstLineRect to allow 0-width rects.
+      2. Fallback to getBoundingClientRect for empty elements.
+      3. Adding pointer-events: none to the icon.
+      
+      Further investigation needed into @tiptap/extension-drag-handle-react behavior with empty nodes.
+    */
   )
 }
 

@@ -1,6 +1,7 @@
-import { AppBar, Box, Button, Drawer, IconButton, TextField, Toolbar, Typography } from '@mui/material';
+import { AppBar, Box, Button, Drawer, IconButton, Menu, MenuItem, TextField, Toolbar, Typography } from '@mui/material';
 import { RichTextEditorProvider } from 'mui-tiptap';
 import MenuIcon from '@mui/icons-material/Menu';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 import EditorToolbar from '../editor/EditorToolbar';
 import EditorWorkspace from '../editor/EditorWorkspace';
 import EditorTableOfContents from '../editor/EditorTableOfContents';
@@ -9,6 +10,7 @@ import { useAuth } from '../../context/AuthContext';
 import type { Editor } from '@tiptap/react';
 import { useEffect, useState } from 'react';
 import ShareDialog from '../editor/ShareDialog';
+import { useI18n } from '../../lib/i18n';
 
 interface EditorLayoutProps {
     editor: Editor | null;
@@ -25,11 +27,27 @@ const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClos
     const [localTitle, setLocalTitle] = useState(document.title);
     const [shareOpen, setShareOpen] = useState(false);
     const [hasHeadings, setHasHeadings] = useState(false);
+    const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+    const [showSavedStatus, setShowSavedStatus] = useState(true);
     const { isAuthenticated } = useAuth();
+    const { strings } = useI18n();
 
     useEffect(() => {
         setLocalTitle(document.title);
     }, [document.title]);
+
+    // Auto-hide "Saved" status after 2 seconds
+    useEffect(() => {
+        if (saveStatus === 'saved') {
+            setShowSavedStatus(true);
+            const timer = setTimeout(() => {
+                setShowSavedStatus(false);
+            }, 2000);
+            return () => clearTimeout(timer);
+        } else {
+            setShowSavedStatus(true);
+        }
+    }, [saveStatus]);
 
     useEffect(() => {
         if (editor) {
@@ -99,6 +117,26 @@ const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClos
         }
     };
 
+    const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+        setMenuAnchorEl(event.currentTarget);
+    };
+
+    const handleMenuClose = () => {
+        setMenuAnchorEl(null);
+    };
+
+    const handleShareClick = () => {
+        handleMenuClose();
+        setShareOpen(true);
+    };
+
+    const handleDownloadClick = () => {
+        handleMenuClose();
+        if (editor && isAuthenticated) {
+            downloadDocument(document.id);
+        }
+    };
+
     return (
         <RichTextEditorProvider editor={editor}>
             <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, overflow: 'hidden' }}>
@@ -157,15 +195,10 @@ const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClos
                                 ESC to cancel
                             </Typography>
                         )}
-                        {!readOnly && (
+                        {!readOnly && (saveStatus !== 'saved' || showSavedStatus) && (
                             <Typography variant="body2" sx={{ mr: 1, ml: 2 }}>
                                 {getSaveStatusText()}
                             </Typography>
-                        )}
-                        {!readOnly && (
-                            <Button color="primary" variant="outlined" onClick={() => setShareOpen(true)} sx={{ mr: 1 }}>
-                                Share
-                            </Button>
                         )}
                         {!readOnly && (
                             <Button color="primary" variant="contained" onClick={onClose}>
@@ -173,18 +206,28 @@ const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClos
                             </Button>
                         )}
                         {!readOnly && (
-                            <Button
-                                color="inherit"
-                                variant="outlined"
-                                onClick={() => {
-                                    if (editor && isAuthenticated) {
-                                        downloadDocument(document.id);
-                                    }
-                                }}
-                                sx={{ ml: 1 }}
-                            >
-                                Download .odocs
-                            </Button>
+                            <>
+                                <IconButton
+                                    color="inherit"
+                                    onClick={handleMenuOpen}
+                                    sx={{ ml: 1 }}
+                                    aria-label="More options"
+                                >
+                                    <MoreVertIcon />
+                                </IconButton>
+                                <Menu
+                                    anchorEl={menuAnchorEl}
+                                    open={Boolean(menuAnchorEl)}
+                                    onClose={handleMenuClose}
+                                >
+                                    <MenuItem onClick={handleShareClick}>
+                                        {strings.editor.title.share || 'Share'}
+                                    </MenuItem>
+                                    <MenuItem onClick={handleDownloadClick}>
+                                        {strings.editor.title.download || 'Download .odocs'}
+                                    </MenuItem>
+                                </Menu>
+                            </>
                         )}
                     </Toolbar>
                 </AppBar>

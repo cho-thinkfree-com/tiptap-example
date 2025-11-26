@@ -1,12 +1,13 @@
 import { useEffect } from 'react';
 
-export const usePageTitle = (title: string) => {
+export const usePageTitle = (title: string, unsaved: boolean = false) => {
     useEffect(() => {
         const prevTitle = document.title;
-        document.title = `${title} | ododocs`;
+        const prefix = unsaved ? '* ' : '';
+        document.title = `${prefix}${title} | ododocs`;
 
         return () => {
             document.title = prevTitle;
         };
-    }, [title]);
+    }, [title, unsaved]);
 };

@@ -4,7 +4,15 @@
       "title": {
         "placeholder": "Untitled",
         "ariaLabel": "Document title",
-        "share": "Share"
+        "share": "Share",
+        "download": "Download .odocs",
+        "saveInProgress": "Please wait while your changes are being saved..."
+      },
+      "close": {
+        "saving": "Saving changes... Please wait. The document will close automatically when complete.",
+        "saveComplete": "Save complete! The document will close shortly.",
+        "saveError": "Failed to save changes. Please try again in a moment.",
+        "closeNow": "Close Now"
       },
       "toc": {
         "emptyPlaceholder": "Add a heading to build an outline."
@@ -575,7 +583,15 @@
       "title": {
         "placeholder": "제목 없음",
         "ariaLabel": "문서 제목",
-        "share": "공유"
+        "share": "공유",
+        "download": ".odocs 다운로드",
+        "saveInProgress": "변경사항을 저장하는 중입니다. 잠시만 기다려 주세요..."
+      },
+      "close": {
+        "saving": "변경사항을 저장하는 중입니다. 잠시만 기다려 주세요. 저장이 완료되면 자동으로 닫힙니다.",
+        "saveComplete": "저장이 완료되었습니다. 곧 문서가 닫힙니다.",
+        "saveError": "변경사항 저장에 실패했습니다. 잠시 후 다시 시도해 주세요.",
+        "closeNow": "지금 닫기"
       },
       "content": {
         "placeholder": "내용을 입력하세요."

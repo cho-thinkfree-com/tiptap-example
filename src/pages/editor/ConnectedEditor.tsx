@@ -1,5 +1,5 @@
 import { Snackbar, Alert, Box, Button } from '@mui/material';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { appendRevision, renameDocument, type DocumentRevision, type DocumentSummary } from '../../lib/api';
 import EditorLayout from '../../components/layout/EditorLayout';
@@ -7,21 +7,27 @@ import useEditorInstance from '../../editor/useEditorInstance';
 import { useDebouncedCallback } from '../../lib/useDebounce';
 import { broadcastSync } from '../../lib/syncEvents';
 import { usePageTitle } from '../../hooks/usePageTitle';
+import { useI18n } from '../../lib/i18n';
+import CloseOverlay from '../../components/editor/CloseOverlay';
 
 type ConnectedEditorProps = {
     document: DocumentSummary;
     initialRevision: DocumentRevision | null;
 };
 
+type CloseFlowState = null | 'saving' | 'success' | 'error';
+
 const ConnectedEditor = ({ document, initialRevision }: ConnectedEditorProps) => {
     const { isAuthenticated } = useAuth();
+    const { strings } = useI18n();
     const [saveStatus, setSaveStatus] = useState<'saved' | 'unsaved' | 'saving'>('saved');
     const [snackbarOpen, setSnackbarOpen] = useState(false);
     const [currentDocument, setCurrentDocument] = useState(document);
     const [editorError, setEditorError] = useState<string | null>(null);
+    const [closeFlowState, setCloseFlowState] = useState<CloseFlowState>(null);
 
     // Update page title when document title changes
-    usePageTitle(currentDocument.title);
+    usePageTitle(currentDocument.title, saveStatus === 'unsaved' || saveStatus === 'saving');
 
     // This hook is now called ONLY when ConnectedEditor mounts, which happens after data is loaded.
     const editor = useEditorInstance({
@@ -31,9 +37,9 @@ const ConnectedEditor = ({ document, initialRevision }: ConnectedEditorProps) =>
         }
     });
 
-    const handleSave = useCallback(async () => {
+    const handleSave = useCallback(async (isImmediateSave = false) => {
         if (!editor || !isAuthenticated) {
-            return;
+            return { success: false, error: null };
         }
 
         setSaveStatus('saving');
@@ -44,7 +50,9 @@ const ConnectedEditor = ({ document, initialRevision }: ConnectedEditorProps) =>
             await appendRevision(currentDocument.id, { content });
 
             setSaveStatus('saved');
-            setSnackbarOpen(true);
+            if (!isImmediateSave) {
+                setSnackbarOpen(true);
+            }
 
             // Broadcast document update so lists (size/modified) refresh
             broadcastSync({
@@ -54,9 +62,12 @@ const ConnectedEditor = ({ document, initialRevision }: ConnectedEditorProps) =>
                 documentId: currentDocument.id,
                 data: { source: 'content-save' }
             });
+
+            return { success: true, error: null };
         } catch (err) {
             console.error(err);
             setSaveStatus('unsaved');
+            return { success: false, error: err };
         }
     }, [editor, currentDocument, isAuthenticated]);
 
@@ -87,7 +98,7 @@ const ConnectedEditor = ({ document, initialRevision }: ConnectedEditorProps) =>
         }
     }, [currentDocument, isAuthenticated]);
 
-    const debouncedSave = useDebouncedCallback(handleSave, 2000);
+    const debouncedSave = useDebouncedCallback(() => handleSave(false), 2000);
     const debouncedTitleSave = useDebouncedCallback(handleTitleSave, 2000);
 
     const handleContentChange = () => {
@@ -100,9 +111,43 @@ const ConnectedEditor = ({ document, initialRevision }: ConnectedEditorProps) =>
         debouncedTitleSave(newTitle);
     };
 
-    const handleClose = () => {
+    const handleClose = async () => {
+        // If already saved, close immediately
+        if (saveStatus === 'saved') {
+            window.close();
+            return;
+        }
+
+        // If unsaved or saving, start close flow
+        setCloseFlowState('saving');
+
+        // Trigger immediate save
+        const result = await handleSave(true);
+
+        if (result.success) {
+            setCloseFlowState('success');
+        } else {
+            setCloseFlowState('error');
+        }
+    };
+
+    const handleCloseNow = () => {
         window.close();
     };
+
+    const handleCloseDismiss = () => {
+        setCloseFlowState(null);
+    };
+
+    // Auto-close timer after successful save
+    useEffect(() => {
+        if (closeFlowState === 'success') {
+            const timer = setTimeout(() => {
+                window.close();
+            }, 3000);
+            return () => clearTimeout(timer);
+        }
+    }, [closeFlowState]);
 
     if (editorError) {
         return (
@@ -130,6 +175,12 @@ const ConnectedEditor = ({ document, initialRevision }: ConnectedEditorProps) =>
                 autoHideDuration={3000}
                 onClose={() => setSnackbarOpen(false)}
                 message="Document saved"
+            />
+            <CloseOverlay
+                open={closeFlowState !== null}
+                state={closeFlowState || 'saving'}
+                onCloseNow={handleCloseNow}
+                onDismiss={handleCloseDismiss}
             />
         </>
     );

@@ -132,25 +132,6 @@ const RecentDocumentsPage = () => {
         const newImportantStatus = !allStarred;
 
         try {
-            await Promise.all(itemsToStar.map(async (itemId) => {
-                await toggleDocumentStarred(itemId, newImportantStatus);
-            }));
-
-            fetchDocuments();
-            setSnackbarMessage(newImportantStatus ? 'Added to Starred' : 'Removed from Starred');
-            const handleSelectAll = () => {
-                if (selectedItems.size === documents.length && documents.length > 0) {
-                    setSelectedItems(new Set());
-                } else {
-                    const newSelecteds = new Set(documents.map((n) => n.id));
-                    setSelectedItems(newSelecteds);
-                }
-            };
-
-            const isAllSelected = documents.length > 0 && selectedItems.size === documents.length;
-            const isIndeterminate = selectedItems.size > 0 && selectedItems.size < documents.length;
-
-            // Sort documents by size on client side when sorting by size
             const sortedDocuments = useMemo(() => {
                 if (orderBy === 'size') {
                     return [...documents].sort((a, b) => {

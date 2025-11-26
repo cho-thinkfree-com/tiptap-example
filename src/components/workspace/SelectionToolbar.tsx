@@ -2,34 +2,27 @@ import { Box, Paper, IconButton, Divider } from '@mui/material';
 import ClearIcon from '@mui/icons-material/Clear';
 import DeleteIcon from '@mui/icons-material/Delete';
 import StarBorderIcon from '@mui/icons-material/StarBorder';
-import PublicIcon from '@mui/icons-material/Public';
 import SelectAllIcon from '@mui/icons-material/SelectAll';
 
 interface SelectionToolbarProps {
     selectedCount: number;
     hasDocuments: boolean;
-    hasPublicLinks: boolean;
     onDelete: () => void;
     onClearSelection: () => void;
     onStar: () => void;
-    onPublish: () => void;
     onSelectAll: () => void;
     showStar?: boolean;
-    showPublish?: boolean;
     showDelete?: boolean;
 }
 
 const SelectionToolbar = ({
     selectedCount,
     hasDocuments,
-    hasPublicLinks,
     onDelete,
     onClearSelection,
     onStar,
-    onPublish,
     onSelectAll,
     showStar = true,
-    showPublish = true,
     showDelete = true,
 }: SelectionToolbarProps) => {
     if (selectedCount === 0) return null;
@@ -79,23 +72,6 @@ const SelectionToolbar = ({
                     title="Mark as important"
                 >
                     <StarBorderIcon fontSize="small" />
-                </IconButton>
-            )}
-
-            {showPublish && (
-                <IconButton
-                    size="small"
-                    onClick={onPublish}
-                    disabled={!hasDocuments || !hasPublicLinks}
-                    title={
-                        !hasDocuments
-                            ? "Only documents can be published"
-                            : !hasPublicLinks
-                                ? "Selected items must have public links"
-                                : "Copy public link"
-                    }
-                >
-                    <PublicIcon fontSize="small" />
                 </IconButton>
             )}
 

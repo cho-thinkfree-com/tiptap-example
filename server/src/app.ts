@@ -875,6 +875,25 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.send({ documents: documents.documents, folders: folders.filter(f => f.isImportant) })
   })
 
+  app.get('/api/workspaces/:workspaceId/public-documents', { preHandler: authenticate }, async (request, reply) => {
+    const accountId = requireAccountId(request)
+    const workspaceId = (request.params as { workspaceId: string }).workspaceId
+    const query = request.query as any
+    const sortBy = typeof query.sortBy === 'string' ? query.sortBy : undefined
+    const sortOrder = typeof query.sortOrder === 'string' && (query.sortOrder === 'asc' || query.sortOrder === 'desc') ? query.sortOrder : undefined
+
+    await workspaceAccess.assertMember(accountId, workspaceId)
+
+    // Fetch documents with visibility='public'
+    const result = await documentService.listWorkspaceDocuments(accountId, workspaceId, {
+      visibility: 'public',
+      sortBy,
+      sortOrder
+    })
+
+    reply.send({ items: result.documents })
+  })
+
   app.get('/api/documents/:documentId/revisions/latest', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const documentId = (request.params as { documentId: string }).documentId

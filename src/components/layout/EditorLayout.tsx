@@ -154,10 +154,22 @@ const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClos
                         >
                             <MenuIcon />
                         </IconButton>
+
+                        <Box
+                            component="img"
+                            src="/odocs-logo-small.png"
+                            alt="odocs"
+                            sx={{
+                                height: 24,
+                                mr: 2,
+                                display: 'block'
+                            }}
+                        />
+
                         {readOnly ? (
                             <Typography
                                 sx={{
-                                    fontSize: '2rem',
+                                    fontSize: '1.5rem',
                                     fontWeight: 700,
                                     flexGrow: 1,
                                 }}
@@ -175,7 +187,7 @@ const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClos
                                 InputProps={{
                                     disableUnderline: true,
                                     sx: {
-                                        fontSize: '2rem',
+                                        fontSize: '1.5rem',
                                         fontWeight: 700,
                                     }
                                 }}
@@ -249,10 +261,10 @@ const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClos
                     overflow: 'hidden',
                     display: 'flex',
                     flexDirection: 'column',
-                    p: 3,
-                    px: { xs: 2, sm: 4, lg: 6 },
+                    p: readOnly ? 0 : 3,
+                    px: readOnly ? 0 : { xs: 2, sm: 4, lg: 6 },
                 }}>
-                    <EditorWorkspace />
+                    <EditorWorkspace readOnly={readOnly} />
                 </Box>
                 <Drawer
                     anchor="left"

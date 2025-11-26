@@ -119,7 +119,7 @@ const DashboardLayout = () => {
                 }}
             >
                 <Toolbar>
-                    <Box component="img" src="/logo.png" alt="ododocs logo" sx={{ height: 32, width: 'auto', mr: 2, cursor: 'pointer' }} onClick={() => navigate('/dashboard')} />
+                    <Box component="img" src="/odocs-logo-small.png" alt="ododocs logo" sx={{ height: 32, width: 'auto', mr: 2, cursor: 'pointer' }} onClick={() => navigate('/dashboard')} />
                     <Typography
                         variant="h6"
                         noWrap

@@ -32,7 +32,7 @@ const AuthLayout = ({ children, title, subtitle }: AuthLayoutProps) => {
             >
                 <Box sx={{ position: 'relative', zIndex: 1, maxWidth: 600, mx: 'auto' }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mb: 6 }}>
-                        <img src="/logo.png" alt="ododocs logo" style={{ width: 48, height: 48 }} />
+                        <img src="/odocs-logo-small.png" alt="ododocs logo" style={{ width: 48, height: 48 }} />
                         <Typography variant="h4" fontWeight="800" color="inherit" sx={{ letterSpacing: '-0.02em' }}>
                             ododocs
                         </Typography>

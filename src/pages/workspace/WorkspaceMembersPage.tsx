@@ -2,14 +2,13 @@ import { Alert, Box, Button, CircularProgress, Container, Dialog, DialogActions,
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { useI18n } from '../../context/i18n';
+
 import { getWorkspaceMembers, inviteWorkspaceMember, changeWorkspaceMemberRole, removeWorkspaceMember, type MembershipSummary } from '../../lib/api';
-import AddIcon from '@mui/icons-material/Add';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import DeleteIcon from '@mui/icons-material/Delete';
 
 const WorkspaceMembersPage = () => {
   const { workspaceId } = useParams<{ workspaceId: string }>();
-  const { strings } = useI18n();
   const [comingSoonOpen, setComingSoonOpen] = useState(false);
   const { isAuthenticated, user } = useAuth();
   const [members, setMembers] = useState<MembershipSummary[]>([]);
@@ -157,6 +156,29 @@ const WorkspaceMembersPage = () => {
           <Button onClick={() => setInviteDialogOpen(false)} disabled={inviteLoading}>Cancel</Button>
           <Button onClick={handleInviteMember} disabled={inviteLoading}>
             {inviteLoading ? 'Inviting...' : 'Invite'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Coming Soon Dialog */}
+      <Dialog
+        open={comingSoonOpen}
+        onClose={() => setComingSoonOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Coming Soon</DialogTitle>
+        <DialogContent>
+          <Typography>
+            멤버 초대 기능은 곧 제공될 예정입니다.
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+            The member invitation feature will be available soon.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setComingSoonOpen(false)} variant="contained">
+            확인
           </Button>
         </DialogActions>
       </Dialog>

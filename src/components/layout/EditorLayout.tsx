@@ -320,9 +320,6 @@ const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClos
                                     <MenuItem onClick={handleShareClick}>
                                         {strings.editor.title.share || 'Share'}
                                     </MenuItem>
-                                    <MenuItem onClick={handleDownloadClick}>
-                                        {strings.editor.title.download || 'Download .odocs'}
-                                    </MenuItem>
                                 </Menu>
                             </>
                         )}

@@ -160,7 +160,13 @@ const BlogLandingPage = () => {
                 onThemeChange={(newThemeId) => {
                     setActiveThemeId(newThemeId);
                     if (handle) {
-                        localStorage.setItem(`blog_theme_${handle}`, newThemeId);
+                        // If the selected theme matches the owner's default, clear the preference
+                        // so the visitor follows future updates by the owner.
+                        if (newThemeId === profile.blogTheme) {
+                            localStorage.removeItem(`blog_theme_${handle}`);
+                        } else {
+                            localStorage.setItem(`blog_theme_${handle}`, newThemeId);
+                        }
                     }
                 }}
             />

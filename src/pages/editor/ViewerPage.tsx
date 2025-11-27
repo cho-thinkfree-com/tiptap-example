@@ -6,11 +6,11 @@ import EditorLayout from '../../components/layout/EditorLayout';
 import useEditorInstance from '../../editor/useEditorInstance';
 import { useSEO } from '../../hooks/useSEO';
 
-interface SharedDocumentPageProps {
+interface ViewerPageProps {
     isPublic?: boolean;
 }
 
-const SharedDocumentPage = ({ isPublic = false }: SharedDocumentPageProps) => {
+const ViewerPage = ({ isPublic = false }: ViewerPageProps) => {
     const { token } = useParams<{ token: string }>();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -80,20 +80,20 @@ const SharedDocumentPage = ({ isPublic = false }: SharedDocumentPageProps) => {
 
     const fetchDocument = async (pwd?: string) => {
         if (!token) return;
-        console.log('[SharedDocumentPage] Fetching document with token:', token);
+        console.log('[ViewerPage] Fetching document with token:', token);
         setLoading(true);
         setError(null);
         try {
             const result = await resolveShareLink(token, pwd);
-            console.log('[SharedDocumentPage] API response:', result);
+            console.log('[ViewerPage] API response:', result);
             setDocument(result.document);
             setRevision(result.revision);
             setPasswordRequired(false);
-            console.log('[SharedDocumentPage] Document and revision set successfully');
+            console.log('[ViewerPage] Document and revision set successfully');
         } catch (err: any) {
-            console.error('[SharedDocumentPage] Error fetching document:', err);
-            console.error('[SharedDocumentPage] Error message:', err.message);
-            console.error('[SharedDocumentPage] Error stack:', err.stack);
+            console.error('[ViewerPage] Error fetching document:', err);
+            console.error('[ViewerPage] Error message:', err.message);
+            console.error('[ViewerPage] Error stack:', err.stack);
             if (err.message === 'Share link password required or incorrect' || err.message?.includes('password')) {
                 setPasswordRequired(true);
                 setError('Password required');
@@ -187,4 +187,4 @@ const SharedDocumentPage = ({ isPublic = false }: SharedDocumentPageProps) => {
     );
 };
 
-export default SharedDocumentPage;
+export default ViewerPage;

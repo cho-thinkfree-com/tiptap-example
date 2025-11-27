@@ -12,7 +12,7 @@ import WorkspaceMembersPage from '../pages/workspace/WorkspaceMembersPage';
 import GlobalSettingsPage from '../pages/settings/GlobalSettingsPage';
 import WorkspaceProfilePage from '../pages/settings/WorkspaceProfilePage';
 import EditorPage from '../pages/editor/EditorPage';
-import SharedDocumentPage from '../pages/editor/SharedDocumentPage';
+import ViewerPage from '../pages/editor/ViewerPage';
 import TrashPage from '../pages/trash/TrashPage';
 import RecentDocumentsPage from '../pages/workspace/RecentDocumentsPage';
 import SharedDocumentsPage from '../pages/workspace/SharedDocumentsPage';
@@ -68,10 +68,10 @@ const AppRoutes = () => {
       />
 
       {/* Public documents - searchable by search engines */}
-      <Route path="/public/:token/*" element={<SharedDocumentPage isPublic={true} />} />
+      <Route path="/public/:token/*" element={<ViewerPage isPublic={true} />} />
 
       {/* Link-only shared documents - not searchable */}
-      <Route path="/share/:token/*" element={<SharedDocumentPage isPublic={false} />} />
+      <Route path="/share/:token/*" element={<ViewerPage isPublic={false} />} />
 
       {/* Authenticated Routes */}
       <Route element={<ProtectedRoute />}>

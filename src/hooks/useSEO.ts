@@ -8,6 +8,7 @@ interface SEOProps {
     modifiedTime?: string;
     url?: string;
     type?: 'website' | 'article';
+    robots?: string;
 }
 
 export const useSEO = ({
@@ -18,6 +19,7 @@ export const useSEO = ({
     modifiedTime,
     url,
     type = 'article',
+    robots,
 }: SEOProps) => {
     useEffect(() => {
         // Set document title
@@ -41,6 +43,10 @@ export const useSEO = ({
         // Basic meta tags
         if (description) {
             setMetaTag('description', description, false);
+        }
+
+        if (robots) {
+            setMetaTag('robots', robots, false);
         }
 
         if (author) {
@@ -88,5 +94,5 @@ export const useSEO = ({
         return () => {
             document.title = 'ododocs';
         };
-    }, [title, description, author, publishedTime, modifiedTime, url, type]);
+    }, [title, description, author, publishedTime, modifiedTime, url, type, robots]);
 };

@@ -3,7 +3,7 @@ import { RichTextEditorProvider } from 'mui-tiptap';
 import MenuIcon from '@mui/icons-material/Menu';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import EditorToolbar from '../editor/EditorToolbar';
-import EditorWorkspace from '../editor/EditorWorkspace';
+import EditorContentArea from '../editor/EditorContentArea';
 import EditorTableOfContents from '../editor/EditorTableOfContents';
 import { type DocumentSummary, downloadDocument } from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
@@ -291,7 +291,7 @@ const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClos
                                     sx={{
                                         width: '100%',
                                         maxWidth: viewerWidth, // Use viewerWidth
-                                        px: '48px', // Match EditorWorkspace padding
+                                        px: '48px', // Match EditorContentArea padding
                                         pl: '72px', // Extra left padding to avoid TOC button overlap
                                         boxSizing: 'border-box',
                                         display: 'flex',
@@ -447,7 +447,7 @@ const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClos
                     p: 0,
                     px: 0,
                 }}>
-                    <EditorWorkspace
+                    <EditorContentArea
                         readOnly={readOnly}
                         initialWidth={initialWidth}
                         overrideWidth={readOnly ? viewerWidth : undefined}

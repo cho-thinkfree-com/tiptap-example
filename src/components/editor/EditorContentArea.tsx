@@ -7,14 +7,14 @@ import type { ViewerTemplate } from '../../lib/viewerTemplates'
 import { getTemplateStyles } from '../../lib/viewerTemplates'
 import { baseDocumentStyles } from '../../lib/baseDocumentStyles'
 
-interface EditorWorkspaceProps {
+interface EditorContentAreaProps {
   readOnly?: boolean
   initialWidth?: string
   overrideWidth?: string
   viewerTemplate?: ViewerTemplate
 }
 
-const EditorWorkspace = ({ readOnly, initialWidth = '950px', overrideWidth, viewerTemplate }: EditorWorkspaceProps) => {
+const EditorContentArea = ({ readOnly, initialWidth = '950px', overrideWidth, viewerTemplate }: EditorContentAreaProps) => {
   const editor = useRichTextEditorContext()
   const [layoutWidth, setLayoutWidth] = useState(initialWidth)
 
@@ -138,4 +138,4 @@ const EditorWorkspace = ({ readOnly, initialWidth = '950px', overrideWidth, view
   )
 }
 
-export default EditorWorkspace
+export default EditorContentArea

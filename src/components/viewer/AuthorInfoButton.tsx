@@ -6,10 +6,9 @@ import AuthorInfoPopover from './AuthorInfoPopover';
 interface AuthorInfoButtonProps {
     token: string;
     authorName?: string;
-    documentUpdatedAt: string;
 }
 
-const AuthorInfoButton = ({ token, authorName, documentUpdatedAt }: AuthorInfoButtonProps) => {
+const AuthorInfoButton = ({ token, authorName }: AuthorInfoButtonProps) => {
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
 
     const handleClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -43,7 +42,6 @@ const AuthorInfoButton = ({ token, authorName, documentUpdatedAt }: AuthorInfoBu
                 onClose={handleClose}
                 token={token}
                 authorName={authorName}
-                documentUpdatedAt={documentUpdatedAt}
             />
         </>
     );

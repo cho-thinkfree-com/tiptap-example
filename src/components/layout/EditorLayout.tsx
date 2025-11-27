@@ -250,7 +250,6 @@ const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClos
                                             <AuthorInfoButton
                                                 token={shareToken}
                                                 authorName={document.lastModifiedBy || undefined}
-                                                documentUpdatedAt={document.updatedAt}
                                             />
                                         )}
                                     </Box>

@@ -1,11 +1,12 @@
-import { Box, CircularProgress, Link, List, ListItem, Popover, Typography } from '@mui/material';
+import { Box, CircularProgress, Link, List, ListItem, Popover, Tooltip, Typography } from '@mui/material';
 import PublicIcon from '@mui/icons-material/Public';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import LockIcon from '@mui/icons-material/Lock';
 import PersonIcon from '@mui/icons-material/Person';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { getAuthorPublicDocuments, type AuthorDocument } from '../../lib/api';
 import { useI18n } from '../../lib/i18n';
+import React from 'react';
 
 interface AuthorInfoPopoverProps {
     open: boolean;
@@ -13,10 +14,33 @@ interface AuthorInfoPopoverProps {
     onClose: () => void;
     token: string;
     authorName?: string;
-    documentUpdatedAt: string;
 }
 
-const AuthorInfoPopover = ({ open, anchorEl, onClose, token, authorName, documentUpdatedAt }: AuthorInfoPopoverProps) => {
+// Component that only shows tooltip when text is truncated
+const ConditionalTooltip = ({ title, children }: { title: string; children: React.ReactNode }) => {
+    const [isOverflowed, setIsOverflowed] = useState(false);
+    const textRef = useRef<HTMLSpanElement>(null);
+
+    useEffect(() => {
+        const element = textRef.current;
+        if (element) {
+            const child = element.firstElementChild as HTMLElement;
+            if (child) {
+                setIsOverflowed(child.scrollWidth > child.clientWidth);
+            }
+        }
+    }, [title]);
+
+    return (
+        <Tooltip title={title} placement="top" disableHoverListener={!isOverflowed}>
+            <span ref={textRef} style={{ display: 'flex', flex: 1, minWidth: 0 }}>
+                {children}
+            </span>
+        </Tooltip>
+    );
+};
+
+const AuthorInfoPopover = ({ open, anchorEl, onClose, token, authorName }: AuthorInfoPopoverProps) => {
     const [documents, setDocuments] = useState<AuthorDocument[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -74,7 +98,7 @@ const AuthorInfoPopover = ({ open, anchorEl, onClose, token, authorName, documen
             }}
             sx={{
                 '& .MuiPopover-paper': {
-                    width: 340,
+                    width: 420,
                     maxHeight: 500,
                 },
             }}
@@ -85,9 +109,6 @@ const AuthorInfoPopover = ({ open, anchorEl, onClose, token, authorName, documen
                     <Typography variant="subtitle1" fontWeight={600} sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
                         <PersonIcon fontSize="small" />
                         {displayAuthorName}
-                    </Typography>
-                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.25, display: 'block' }}>
-                        마지막 업데이트: {formatDate(documentUpdatedAt)}
                     </Typography>
                 </Box>
 
@@ -120,20 +141,22 @@ const AuthorInfoPopover = ({ open, anchorEl, onClose, token, authorName, documen
                                     {strings.editor?.author?.currentDocument || '현재 문서'}
                                 </Typography>
                                 <Box sx={{ pl: 0.5 }}>
-                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.25 }}>
-                                        <Typography
-                                            variant="body2"
-                                            fontWeight={600}
-                                            sx={{
-                                                overflow: 'hidden',
-                                                textOverflow: 'ellipsis',
-                                                whiteSpace: 'nowrap',
-                                                flex: 1,
-                                                minWidth: 0,
-                                            }}
-                                        >
-                                            {currentDocument.document.title}
-                                        </Typography>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                        <ConditionalTooltip title={currentDocument.document.title}>
+                                            <Typography
+                                                variant="body2"
+                                                fontWeight={600}
+                                                sx={{
+                                                    overflow: 'hidden',
+                                                    textOverflow: 'ellipsis',
+                                                    whiteSpace: 'nowrap',
+                                                    flex: 1,
+                                                    minWidth: 0,
+                                                }}
+                                            >
+                                                {currentDocument.document.title}
+                                            </Typography>
+                                        </ConditionalTooltip>
                                         <Typography
                                             variant="caption"
                                             color="text.secondary"
@@ -144,10 +167,12 @@ const AuthorInfoPopover = ({ open, anchorEl, onClose, token, authorName, documen
                                             }}
                                         >
                                             <span>{currentDocument.document.viewCount?.toLocaleString() || 0}</span>
+                                            <span>•</span>
+                                            <span>{formatDate(currentDocument.document.createdAt)}</span>
                                         </Typography>
                                     </Box>
                                     {!currentDocument.shareLink.isPublic && (
-                                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontStyle: 'italic' }}>
+                                        <Typography variant="caption" color="text.secondary" sx={{ display: 'block', fontStyle: 'italic', mt: 0.5 }}>
                                             링크가 있는 사람만 볼 수 있습니다
                                         </Typography>
                                     )}
@@ -189,19 +214,21 @@ const AuthorInfoPopover = ({ open, anchorEl, onClose, token, authorName, documen
                                                         }}
                                                     >
                                                         <Box sx={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                            <Typography
-                                                                variant="body2"
-                                                                sx={{
-                                                                    overflow: 'hidden',
-                                                                    textOverflow: 'ellipsis',
-                                                                    whiteSpace: 'nowrap',
-                                                                    fontWeight: 500,
-                                                                    flex: 1,
-                                                                    minWidth: 0,
-                                                                }}
-                                                            >
-                                                                {doc.document.title}
-                                                            </Typography>
+                                                            <ConditionalTooltip title={doc.document.title}>
+                                                                <Typography
+                                                                    variant="body2"
+                                                                    sx={{
+                                                                        overflow: 'hidden',
+                                                                        textOverflow: 'ellipsis',
+                                                                        whiteSpace: 'nowrap',
+                                                                        fontWeight: 500,
+                                                                        flex: 1,
+                                                                        minWidth: 0,
+                                                                    }}
+                                                                >
+                                                                    {doc.document.title}
+                                                                </Typography>
+                                                            </ConditionalTooltip>
                                                             <VisibilityIcon
                                                                 sx={{
                                                                     fontSize: 16,
@@ -242,19 +269,21 @@ const AuthorInfoPopover = ({ open, anchorEl, onClose, token, authorName, documen
                                                         }}
                                                     >
                                                         <Box sx={{ flex: 1, minWidth: 0, display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                            <Typography
-                                                                variant="body2"
-                                                                sx={{
-                                                                    overflow: 'hidden',
-                                                                    textOverflow: 'ellipsis',
-                                                                    whiteSpace: 'nowrap',
-                                                                    fontWeight: 400,
-                                                                    flex: 1,
-                                                                    minWidth: 0,
-                                                                }}
-                                                            >
-                                                                {doc.document.title}
-                                                            </Typography>
+                                                            <ConditionalTooltip title={doc.document.title}>
+                                                                <Typography
+                                                                    variant="body2"
+                                                                    sx={{
+                                                                        overflow: 'hidden',
+                                                                        textOverflow: 'ellipsis',
+                                                                        whiteSpace: 'nowrap',
+                                                                        fontWeight: 400,
+                                                                        flex: 1,
+                                                                        minWidth: 0,
+                                                                    }}
+                                                                >
+                                                                    {doc.document.title}
+                                                                </Typography>
+                                                            </ConditionalTooltip>
                                                             <Typography
                                                                 variant="caption"
                                                                 color="text.secondary"

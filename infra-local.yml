@@ -25,8 +25,8 @@ services:
     volumes:
       - ./volumes/minio:/data
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "${MINIO_PORT_API}:9000"
+      - "${MINIO_PORT_CONSOLE}:9001"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 5s
@@ -40,7 +40,7 @@ services:
         condition: service_healthy
     entrypoint: >
       /bin/sh -c "
-      /usr/bin/mc alias set myminio ${OBJECT_STORAGE_ENDPOINT} ${OBJECT_STORAGE_ACCESS_KEY} ${OBJECT_STORAGE_SECRET_KEY};
+      /usr/bin/mc alias set myminio http://minio:9000 ${OBJECT_STORAGE_ACCESS_KEY} ${OBJECT_STORAGE_SECRET_KEY};
       /usr/bin/mc mb myminio/${OBJECT_STORAGE_BUCKET} --ignore-existing --region ${OBJECT_STORAGE_REGION};
       /usr/bin/mc anonymous set public myminio/${OBJECT_STORAGE_BUCKET};
       exit 0;

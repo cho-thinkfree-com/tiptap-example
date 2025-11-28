@@ -25,3 +25,7 @@ prisma/**/*.db-journal
 *.njsproj
 *.sln
 *.sw?
+
+# Docker volumes
+volumes/*
+!volumes/README.md

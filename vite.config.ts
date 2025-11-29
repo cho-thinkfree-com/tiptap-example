@@ -7,11 +7,5 @@ export default defineConfig({
   server: {
     port: 9910,
     allowedHosts: ['cho.cszero.io'],
-    proxy: {
-      '/api': {
-        target: 'http://localhost:9920',
-        changeOrigin: true,
-      },
-    },
   },
 })

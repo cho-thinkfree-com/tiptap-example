@@ -63,7 +63,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
   const app = Fastify({ logger })
 
   await app.register(fastifyCors as any, {
-    origin: true,
+    origin: process.env.FRONTEND_URL ? [process.env.FRONTEND_URL] : true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     exposedHeaders: ['Content-Disposition'],
@@ -76,8 +76,8 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
   })
 
   app.register(fastifyStatic, {
-    root: path.join(process.cwd(), 'docs/api/openapi'),
-    prefix: '/api/openapi/',
+    root: path.join(process.cwd(), 'docs/api/v1/openapi'),
+    prefix: '/api/v1/openapi/',
     decorateReply: false,
   })
 
@@ -168,9 +168,9 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     auditLogService,
   )
 
-  // app.register(shareLinkRoutes, { prefix: '/api/share-links' })
-  // app.register(trashRoutes, { prefix: '/api/trash' })
-  app.register(blogRoutes, { prefix: '/api/blog' })
+  // app.register(shareLinkRoutes, { prefix: '/api/v1/share-links' })
+  // app.register(trashRoutes, { prefix: '/api/v1/trash' })
+  app.register(blogRoutes, { prefix: '/api/v1/blog' })
 
   app.addHook('onRequest', async (request) => {
     request.db = db
@@ -336,7 +336,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
   const invitationAcceptSchema = z.object({ token: z.string() })
   const joinRequestSchema = z.object({ message: z.string().max(500).optional() })
 
-  app.post('/api/auth/signup', async (request, reply) => {
+  app.post('/api/v1/auth/signup', async (request, reply) => {
     const account = await authService.signup(request.body as any)
     reply.status(201).send({
       id: account.id,
@@ -347,7 +347,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     })
   })
 
-  app.post('/api/auth/login', async (request, reply) => {
+  app.post('/api/v1/auth/login', async (request, reply) => {
     const result = await authService.login(request.body as any)
 
     reply.setCookie('session_id', result.sessionId, {
@@ -361,7 +361,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.send(result)
   })
 
-  app.get('/api/auth/me', { preHandler: authenticate }, async (request, reply) => {
+  app.get('/api/v1/auth/me', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const account = await accountRepository.findById(accountId)
     if (!account) {
@@ -373,14 +373,14 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     })
   })
 
-  app.patch('/api/auth/me', { preHandler: authenticate }, async (request, reply) => {
+  app.patch('/api/v1/auth/me', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     await authService.updateAccount(accountId, request.body as any)
     const account = await accountRepository.findById(accountId)
     reply.send(account)
   })
 
-  app.post('/api/auth/logout', { preHandler: authenticate }, async (request, reply) => {
+  app.post('/api/v1/auth/logout', { preHandler: authenticate }, async (request, reply) => {
     if (request.sessionId) {
       await authService.logout(request.sessionId)
     }
@@ -388,7 +388,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.send({ ok: true })
   })
 
-  app.post('/api/auth/logout-all', { preHandler: authenticate }, async (request, reply) => {
+  app.post('/api/v1/auth/logout-all', { preHandler: authenticate }, async (request, reply) => {
     if (!request.accountId) {
       throw createUnauthorized('Account missing')
     }
@@ -398,34 +398,34 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
 
 
 
-  app.post('/api/auth/password-reset/request', async (request, reply) => {
+  app.post('/api/v1/auth/password-reset/request', async (request, reply) => {
     const result = await authService.requestPasswordReset(request.body as any)
     reply.send(result)
   })
 
-  app.post('/api/auth/password-reset/confirm', async (request, reply) => {
+  app.post('/api/v1/auth/password-reset/confirm', async (request, reply) => {
     await authService.confirmPasswordReset(request.body as any)
     reply.send({ ok: true })
   })
 
-  app.post('/api/auth/delete', async (request, reply) => {
+  app.post('/api/v1/auth/delete', async (request, reply) => {
     await authService.deleteAccount(request.body as any)
     reply.send({ ok: true })
   })
 
-  app.post('/api/workspaces', { preHandler: authenticate }, async (request, reply) => {
+  app.post('/api/v1/workspaces', { preHandler: authenticate }, async (request, reply) => {
     const ownerId = requireAccountId(request)
     const workspace = await workspaceService.create(ownerId, request.body as any)
     reply.status(201).send(workspace)
   })
 
-  app.get('/api/workspaces', { preHandler: authenticate }, async (request, reply) => {
+  app.get('/api/v1/workspaces', { preHandler: authenticate }, async (request, reply) => {
     const ownerId = requireAccountId(request)
     const workspaces = await workspaceService.listOwned(ownerId)
     reply.send({ items: workspaces })
   })
 
-  app.get('/api/workspaces/:workspaceId', { preHandler: authenticate }, async (request, reply) => {
+  app.get('/api/v1/workspaces/:workspaceId', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const workspaceId = (request.params as { workspaceId: string }).workspaceId
     await workspaceAccess.assertMember(accountId, workspaceId)
@@ -436,28 +436,28 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.send(workspace)
   })
 
-  app.patch('/api/workspaces/:workspaceId', { preHandler: authenticate }, async (request, reply) => {
+  app.patch('/api/v1/workspaces/:workspaceId', { preHandler: authenticate }, async (request, reply) => {
     const ownerId = requireAccountId(request)
     const workspaceId = (request.params as { workspaceId: string }).workspaceId
     const updated = await workspaceService.update(ownerId, workspaceId, request.body as any)
     reply.send(updated)
   })
 
-  app.delete('/api/workspaces/:workspaceId', { preHandler: authenticate }, async (request, reply) => {
+  app.delete('/api/v1/workspaces/:workspaceId', { preHandler: authenticate }, async (request, reply) => {
     const ownerId = requireAccountId(request)
     const workspaceId = (request.params as { workspaceId: string }).workspaceId
     await workspaceService.softDelete(ownerId, workspaceId)
     reply.status(204).send()
   })
 
-  app.get('/api/workspaces/:workspaceId/members', { preHandler: authenticate }, async (request, reply) => {
+  app.get('/api/v1/workspaces/:workspaceId/members', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const workspaceId = (request.params as { workspaceId: string }).workspaceId
     const members = await membershipService.listMembers(accountId, workspaceId)
     reply.send({ items: members })
   })
 
-  app.post('/api/workspaces/:workspaceId/members', { preHandler: authenticate }, async (request, reply) => {
+  app.post('/api/v1/workspaces/:workspaceId/members', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const workspaceId = (request.params as { workspaceId: string }).workspaceId
     const membership = await membershipService.addMember(accountId, workspaceId, request.body as any)
@@ -468,7 +468,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     Params: { workspaceId: string; accountId: string }
     Body: { role?: 'owner' | 'admin' | 'member'; status?: 'active' | 'invited' | 'pending' | 'removed' }
   }>(
-    '/api/workspaces/:workspaceId/members/:accountId',
+    '/api/v1/workspaces/:workspaceId/members/:accountId',
     { preHandler: [authenticate] },
     async (request) => {
       const { workspaceId, accountId } = request.params
@@ -485,7 +485,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
   app.get<{
     Params: { workspaceId: string }
   }>(
-    '/api/workspaces/:workspaceId/members/me',
+    '/api/v1/workspaces/:workspaceId/members/me',
     { preHandler: [authenticate] },
     async (request) => {
       const { workspaceId } = request.params
@@ -507,7 +507,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
       blogDescription?: string
     }
   }>(
-    '/api/workspaces/:workspaceId/members/me',
+    '/api/v1/workspaces/:workspaceId/members/me',
     { preHandler: [authenticate] },
     async (request, reply) => {
       const { workspaceId } = request.params
@@ -558,7 +558,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     },
   )
 
-  app.delete('/api/workspaces/:workspaceId/members/:accountId', { preHandler: authenticate }, async (request, reply) => {
+  app.delete('/api/v1/workspaces/:workspaceId/members/:accountId', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const workspaceId = (request.params as { workspaceId: string }).workspaceId
     const targetAccountId = (request.params as { accountId: string }).accountId
@@ -566,7 +566,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.status(204).send()
   })
 
-  app.post('/api/workspaces/:workspaceId/invitations', { preHandler: authenticate }, async (request, reply) => {
+  app.post('/api/v1/workspaces/:workspaceId/invitations', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const workspaceId = (request.params as { workspaceId: string }).workspaceId
     const payload = emailSchema.parse(request.body)
@@ -574,21 +574,21 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.status(201).send(result)
   })
 
-  app.post('/api/invitations/accept', { preHandler: authenticate }, async (request, reply) => {
+  app.post('/api/v1/invitations/accept', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const payload = invitationAcceptSchema.parse(request.body)
     await invitationService.acceptInvitation(payload.token, accountId)
     reply.send({ ok: true })
   })
 
-  app.post('/api/workspaces/:workspaceId/join-requests', { preHandler: authenticate }, async (request, reply) => {
+  app.post('/api/v1/workspaces/:workspaceId/join-requests', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const workspaceId = (request.params as { workspaceId: string }).workspaceId
     const result = await joinRequestService.requestJoin(accountId, workspaceId, joinRequestSchema.parse(request.body).message)
     reply.send(result)
   })
 
-  app.post('/api/workspaces/:workspaceId/join-requests/:requestId/approve', { preHandler: authenticate }, async (request, reply) => {
+  app.post('/api/v1/workspaces/:workspaceId/join-requests/:requestId/approve', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const workspaceId = (request.params as { workspaceId: string }).workspaceId
     const requestId = (request.params as { requestId: string }).requestId
@@ -596,7 +596,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.send({ ok: true })
   })
 
-  app.post('/api/workspaces/:workspaceId/join-requests/:requestId/deny', { preHandler: authenticate }, async (request, reply) => {
+  app.post('/api/v1/workspaces/:workspaceId/join-requests/:requestId/deny', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const workspaceId = (request.params as { workspaceId: string }).workspaceId
     const requestId = (request.params as { requestId: string }).requestId
@@ -604,7 +604,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.send({ ok: true })
   })
 
-  app.post('/api/workspaces/:workspaceId/transfer-ownership', { preHandler: authenticate }, async (request, reply) => {
+  app.post('/api/v1/workspaces/:workspaceId/transfer-ownership', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const workspaceId = (request.params as { workspaceId: string }).workspaceId
     const newOwnerAccountId = transferSchema.parse(request.body).newOwnerAccountId
@@ -612,7 +612,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.send({ ok: true })
   })
 
-  app.patch('/api/workspaces/:workspaceId/members/:accountId/role', { preHandler: authenticate }, async (request, reply) => {
+  app.patch('/api/v1/workspaces/:workspaceId/members/:accountId/role', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const workspaceId = (request.params as { workspaceId: string }).workspaceId
     const targetAccountId = (request.params as { accountId: string }).accountId
@@ -621,7 +621,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.send({ ok: true })
   })
 
-  app.post('/api/workspaces/:workspaceId/members/:accountId/leave', { preHandler: authenticate }, async (request, reply) => {
+  app.post('/api/v1/workspaces/:workspaceId/members/:accountId/leave', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const workspaceId = (request.params as { workspaceId: string }).workspaceId
     const targetAccountId = (request.params as { accountId: string }).accountId
@@ -640,7 +640,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     return folder.workspaceId
   }
 
-  app.get('/api/workspaces/:workspaceId/folders', { preHandler: authenticate }, async (request, reply) => {
+  app.get('/api/v1/workspaces/:workspaceId/folders', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const workspaceId = (request.params as { workspaceId: string }).workspaceId
     const query = request.query as any
@@ -649,7 +649,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.send({ folders })
   })
 
-  app.patch('/api/documents/:documentId/starred', { preHandler: authenticate }, async (request, reply) => {
+  app.patch('/api/v1/documents/:documentId/starred', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const documentId = (request.params as { documentId: string }).documentId
     const { isStarred } = request.body as { isStarred: boolean }
@@ -657,7 +657,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.send(document)
   })
 
-  app.patch('/api/folders/:folderId/starred', { preHandler: authenticate }, async (request, reply) => {
+  app.patch('/api/v1/folders/:folderId/starred', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const folderId = (request.params as { folderId: string }).folderId
     const workspaceId = await loadFolderWorkspaceId(folderId)
@@ -666,14 +666,14 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.send(folder)
   })
 
-  app.post('/api/workspaces/:workspaceId/folders', { preHandler: authenticate }, async (request, reply) => {
+  app.post('/api/v1/workspaces/:workspaceId/folders', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const workspaceId = (request.params as { workspaceId: string }).workspaceId
     const folder = await folderService.createFolder(accountId, workspaceId, request.body as any)
     reply.status(201).send(folder)
   })
 
-  app.patch('/api/folders/:folderId', { preHandler: authenticate }, async (request, reply) => {
+  app.patch('/api/v1/folders/:folderId', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const folderId = (request.params as { folderId: string }).folderId
     const workspaceId = await loadFolderWorkspaceId(folderId)
@@ -681,7 +681,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.send(folder)
   })
 
-  app.put('/api/folders/:folderId/move', { preHandler: authenticate }, async (request, reply) => {
+  app.put('/api/v1/folders/:folderId/move', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const folderId = (request.params as { folderId: string }).folderId
     const workspaceId = await loadFolderWorkspaceId(folderId)
@@ -689,7 +689,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.send(folder)
   })
 
-  app.delete('/api/folders/:folderId', { preHandler: authenticate }, async (request, reply) => {
+  app.delete('/api/v1/folders/:folderId', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const folderId = (request.params as { folderId: string }).folderId
     const workspaceId = await loadFolderWorkspaceId(folderId)
@@ -697,7 +697,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.status(204).send()
   })
 
-  app.get('/api/folders/:folderId', { preHandler: authenticate }, async (request, reply) => {
+  app.get('/api/v1/folders/:folderId', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const folderId = (request.params as { folderId: string }).folderId
     const workspaceId = await loadFolderWorkspaceId(folderId)
@@ -705,7 +705,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.send(result)
   })
 
-  app.get('/api/workspaces/:workspaceId/documents/check-title', { preHandler: authenticate }, async (request, reply) => {
+  app.get('/api/v1/workspaces/:workspaceId/documents/check-title', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const { workspaceId } = request.params as { workspaceId: string }
     const { title, folderId, excludeId } = request.query as {
@@ -725,7 +725,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.send({ isDuplicate })
   })
 
-  app.get('/api/workspaces/:workspaceId/documents', { preHandler: authenticate }, async (request, reply) => {
+  app.get('/api/v1/workspaces/:workspaceId/documents', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const workspaceId = (request.params as { workspaceId: string }).workspaceId
     const filters = parseDocumentFilters(request.query as Record<string, unknown>)
@@ -733,7 +733,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.send(documents)
   })
 
-  app.get('/api/workspaces/:workspaceId/documents/recent', { preHandler: authenticate }, async (request, reply) => {
+  app.get('/api/v1/workspaces/:workspaceId/documents/recent', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const workspaceId = (request.params as { workspaceId: string }).workspaceId
     const query = request.query as any
@@ -745,14 +745,14 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.send(documents)
   })
 
-  app.post('/api/workspaces/:workspaceId/documents', { preHandler: authenticate }, async (request, reply) => {
+  app.post('/api/v1/workspaces/:workspaceId/documents', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const workspaceId = (request.params as { workspaceId: string }).workspaceId
     const document = await documentService.createDocument(accountId, workspaceId, request.body as any)
     reply.status(201).send(document)
   })
 
-  app.patch('/api/documents/:documentId', { preHandler: authenticate }, async (request, reply) => {
+  app.patch('/api/v1/documents/:documentId', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const documentId = (request.params as { documentId: string }).documentId
     const document = await loadDocumentWorkspace(documentId)
@@ -760,7 +760,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.send(updated)
   })
 
-  app.delete('/api/documents/:documentId', { preHandler: authenticate }, async (request, reply) => {
+  app.delete('/api/v1/documents/:documentId', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const documentId = (request.params as { documentId: string }).documentId
     await documentService.softDelete(accountId, documentId)
@@ -768,7 +768,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
   })
 
   // Trash management endpoints
-  app.get('/api/workspaces/:workspaceId/trash', { preHandler: authenticate }, async (request, reply) => {
+  app.get('/api/v1/workspaces/:workspaceId/trash', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const workspaceId = (request.params as { workspaceId: string }).workspaceId
     const query = request.query as any
@@ -782,28 +782,28 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.send({ documents, folders })
   })
 
-  app.post('/api/trash/restore/document/:documentId', { preHandler: authenticate }, async (request, reply) => {
+  app.post('/api/v1/trash/restore/document/:documentId', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const documentId = (request.params as { documentId: string }).documentId
     const document = await documentService.restoreDocument(accountId, documentId)
     reply.send(document)
   })
 
-  app.delete('/api/trash/document/:documentId', { preHandler: authenticate }, async (request, reply) => {
+  app.delete('/api/v1/trash/document/:documentId', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const documentId = (request.params as { documentId: string }).documentId
     await documentService.permanentlyDeleteDocument(accountId, documentId)
     reply.status(204).send()
   })
 
-  app.post('/api/trash/restore/folder/:folderId', { preHandler: authenticate }, async (request, reply) => {
+  app.post('/api/v1/trash/restore/folder/:folderId', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const folderId = (request.params as { folderId: string }).folderId
     const folder = await folderService.restoreFolder(accountId, folderId)
     reply.send(folder)
   })
 
-  app.delete('/api/trash/folder/:folderId', { preHandler: authenticate }, async (request, reply) => {
+  app.delete('/api/v1/trash/folder/:folderId', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const folderId = (request.params as { folderId: string }).folderId
     await folderService.permanentlyDeleteFolder(accountId, folderId)
@@ -811,7 +811,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
   })
 
 
-  app.post('/api/documents/:documentId/tags', { preHandler: authenticate }, async (request, reply) => {
+  app.post('/api/v1/documents/:documentId/tags', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const documentId = (request.params as { documentId: string }).documentId
     const document = await loadDocumentWorkspace(documentId)
@@ -826,7 +826,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     }
   })
 
-  app.delete('/api/documents/:documentId/tags/:tagName', { preHandler: authenticate }, async (request, reply) => {
+  app.delete('/api/v1/documents/:documentId/tags/:tagName', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const documentId = (request.params as { documentId: string }).documentId
     const tagName = decodeURIComponent((request.params as { tagName: string }).tagName)
@@ -842,7 +842,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     }
   })
 
-  app.get('/api/documents/recent', { preHandler: authenticate }, async (request, reply) => {
+  app.get('/api/v1/documents/recent', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const query = request.query as any
     const sortBy = typeof query.sortBy === 'string' ? query.sortBy : undefined
@@ -851,7 +851,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.send({ items: documents })
   })
 
-  app.get('/api/documents/:documentId', { preHandler: authenticate }, async (request, reply) => {
+  app.get('/api/v1/documents/:documentId', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const documentId = (request.params as { documentId: string }).documentId
     const document = await loadDocumentWorkspace(documentId)
@@ -859,7 +859,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.send(document)
   })
 
-  app.post('/api/documents/:documentId/revisions', { preHandler: authenticate }, async (request, reply) => {
+  app.post('/api/v1/documents/:documentId/revisions', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const documentId = (request.params as { documentId: string }).documentId
     await loadDocumentWorkspace(documentId)
@@ -869,7 +869,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
 
 
 
-  app.post('/api/folders/:folderId/tags', { preHandler: authenticate }, async (request, reply) => {
+  app.post('/api/v1/folders/:folderId/tags', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const folderId = (request.params as { folderId: string }).folderId
     const workspaceId = await loadFolderWorkspaceId(folderId)
@@ -878,7 +878,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.status(201).send(tag)
   })
 
-  app.delete('/api/folders/:folderId/tags/:tagName', { preHandler: authenticate }, async (request, reply) => {
+  app.delete('/api/v1/folders/:folderId/tags/:tagName', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const folderId = (request.params as { folderId: string }).folderId
     const workspaceId = await loadFolderWorkspaceId(folderId)
@@ -887,7 +887,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.status(204).send()
   })
 
-  app.get('/api/workspaces/:workspaceId/starred', { preHandler: authenticate }, async (request, reply) => {
+  app.get('/api/v1/workspaces/:workspaceId/starred', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const workspaceId = (request.params as { workspaceId: string }).workspaceId
 
@@ -921,7 +921,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.send({ documents: documents.documents, folders: folders.filter(f => f.isImportant) })
   })
 
-  app.get('/api/workspaces/:workspaceId/public-documents', { preHandler: authenticate }, async (request, reply) => {
+  app.get('/api/v1/workspaces/:workspaceId/public-documents', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const workspaceId = (request.params as { workspaceId: string }).workspaceId
     const query = request.query as any
@@ -940,7 +940,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.send({ items: result.documents })
   })
 
-  app.get('/api/documents/:documentId/revisions/latest', { preHandler: authenticate }, async (request, reply) => {
+  app.get('/api/v1/documents/:documentId/revisions/latest', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const documentId = (request.params as { documentId: string }).documentId
     await loadDocumentWorkspace(documentId)
@@ -948,7 +948,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.send(latest)
   })
 
-  app.get('/api/documents/:documentId/permissions', { preHandler: authenticate }, async (request, reply) => {
+  app.get('/api/v1/documents/:documentId/permissions', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const documentId = (request.params as { documentId: string }).documentId
     const document = await loadDocumentWorkspace(documentId)
@@ -956,7 +956,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.send(permissions)
   })
 
-  app.post('/api/documents/:documentId/permissions', { preHandler: authenticate }, async (request, reply) => {
+  app.post('/api/v1/documents/:documentId/permissions', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const documentId = (request.params as { documentId: string }).documentId
     const document = await loadDocumentWorkspace(documentId)
@@ -964,7 +964,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.status(201).send(permission)
   })
 
-  app.delete('/api/documents/:documentId/permissions/:permissionId', { preHandler: authenticate }, async (request, reply) => {
+  app.delete('/api/v1/documents/:documentId/permissions/:permissionId', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const documentId = (request.params as { documentId: string }).documentId
     const permissionId = (request.params as { permissionId: string }).permissionId
@@ -973,7 +973,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.status(204).send()
   })
 
-  app.patch('/api/documents/:documentId/workspace-access', { preHandler: authenticate }, async (request, reply) => {
+  app.patch('/api/v1/documents/:documentId/workspace-access', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const documentId = (request.params as { documentId: string }).documentId
     const document = await loadDocumentWorkspace(documentId)
@@ -981,7 +981,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.send(updated)
   })
 
-  app.get('/api/documents/:documentId/permissions/summary', { preHandler: authenticate }, async (request, reply) => {
+  app.get('/api/v1/documents/:documentId/permissions/summary', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const documentId = (request.params as { documentId: string }).documentId
     const document = await loadDocumentWorkspace(documentId)
@@ -989,7 +989,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.send(summary)
   })
 
-  app.get('/api/documents/:documentId/share-links', { preHandler: authenticate }, async (request, reply) => {
+  app.get('/api/v1/documents/:documentId/share-links', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const documentId = (request.params as { documentId: string }).documentId
     const document = await loadDocumentWorkspace(documentId)
@@ -997,7 +997,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.send({ shareLinks })
   })
 
-  app.get('/api/documents/:documentId/download', { preHandler: authenticate }, async (request, reply) => {
+  app.get('/api/v1/documents/:documentId/download', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const documentId = (request.params as { documentId: string }).documentId
     const document = await loadDocumentWorkspace(documentId)
@@ -1017,7 +1017,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.send(JSON.stringify(revision.content))
   })
 
-  app.post('/api/documents/:documentId/share-links', { preHandler: authenticate }, async (request, reply) => {
+  app.post('/api/v1/documents/:documentId/share-links', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const documentId = (request.params as { documentId: string }).documentId
     const document = await loadDocumentWorkspace(documentId)
@@ -1025,7 +1025,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.status(201).send(result)
   })
 
-  app.delete('/api/share-links/:shareLinkId', { preHandler: authenticate }, async (request, reply) => {
+  app.delete('/api/v1/share-links/:shareLinkId', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const shareLinkId = (request.params as { shareLinkId: string }).shareLinkId
     const shareLink = await documentShareLinkRepository.findById(shareLinkId)
@@ -1037,7 +1037,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.status(204).send()
   })
 
-  app.patch('/api/share-links/:shareLinkId', { preHandler: authenticate }, async (request, reply) => {
+  app.patch('/api/v1/share-links/:shareLinkId', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const shareLinkId = (request.params as { shareLinkId: string }).shareLinkId
     const shareLink = await documentShareLinkRepository.findById(shareLinkId)
@@ -1049,7 +1049,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.send(updated)
   })
 
-  app.delete('/api/share-links/:shareLinkId/guest-sessions', { preHandler: authenticate }, async (request, reply) => {
+  app.delete('/api/v1/share-links/:shareLinkId/guest-sessions', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const shareLinkId = (request.params as { shareLinkId: string }).shareLinkId
     const shareLink = await documentShareLinkRepository.findById(shareLinkId)
@@ -1061,7 +1061,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.status(204).send()
   })
 
-  app.post('/api/share-links/:token/access', async (request, reply) => {
+  app.post('/api/v1/share-links/:token/access', async (request, reply) => {
     const token = (request.params as { token: string }).token
     console.log(`[Debug] Resolving share token: ${token} `)
     try {
@@ -1074,7 +1074,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     }
   })
 
-  app.get('/api/share-links/:token/author/documents', async (request, reply) => {
+  app.get('/api/v1/share-links/:token/author/documents', async (request, reply) => {
     const token = (request.params as { token: string }).token
     try {
       const documents = await shareLinkService.getAuthorPublicDocuments(token)
@@ -1085,13 +1085,13 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     }
   })
 
-  app.post('/api/share-links/:token/accept', async (request, reply) => {
+  app.post('/api/v1/share-links/:token/accept', async (request, reply) => {
     const token = (request.params as { token: string }).token
     const result = await shareLinkService.acceptGuest(token, request.body)
     reply.send(result)
   })
 
-  app.post('/api/search', { preHandler: authenticate }, async (request, reply) => {
+  app.post('/api/v1/search', { preHandler: authenticate }, async (request, reply) => {
     const payload = searchRequestSchema.parse(request.body)
     const accountId = requireAccountId(request)
     await workspaceAccess.assertMember(accountId, payload.workspaceId)
@@ -1114,7 +1114,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     })
   })
 
-  app.get('/api/workspaces/:workspaceId/activity-feed', { preHandler: authenticate }, async (request, reply) => {
+  app.get('/api/v1/workspaces/:workspaceId/activity-feed', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const workspaceId = (request.params as { workspaceId: string }).workspaceId
     const requestQuery = request.query as any
@@ -1141,14 +1141,14 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.send(logs)
   })
 
-  app.post('/api/export', { preHandler: authenticate }, async (request, reply) => {
+  app.post('/api/v1/export', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const payload = exportRequestSchema.parse(request.body)
     const job = await exportJobService.createJob(accountId, payload)
     reply.status(201).send(job)
   })
 
-  app.get('/api/export/:jobId', { preHandler: authenticate }, async (request, reply) => {
+  app.get('/api/v1/export/:jobId', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const jobId = (request.params as { jobId: string }).jobId
     const job = await exportJobService.getJob(jobId)
@@ -1159,7 +1159,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     reply.send(job)
   })
 
-  app.get('/api/export/:jobId/result', { preHandler: authenticate }, async (request, reply) => {
+  app.get('/api/v1/export/:jobId/result', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const jobId = (request.params as { jobId: string }).jobId
     try {
@@ -1173,14 +1173,14 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     }
   })
 
-  app.post('/api/export/:jobId/cancel', { preHandler: authenticate }, async (request, reply) => {
+  app.post('/api/v1/export/:jobId/cancel', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const jobId = (request.params as { jobId: string }).jobId
     await exportJobService.cancelJob(accountId, jobId)
     reply.send({ ok: true })
   })
 
-  app.post('/api/export/:jobId/retry', { preHandler: authenticate }, async (request, reply) => {
+  app.post('/api/v1/export/:jobId/retry', { preHandler: authenticate }, async (request, reply) => {
     const accountId = requireAccountId(request)
     const jobId = (request.params as { jobId: string }).jobId
     try {
@@ -1197,7 +1197,7 @@ export const buildServer = async ({ prisma, logger = true }: ServerOptions = {})
     }
   })
 
-  app.get('/api/workspaces/:workspaceId/audit', { preHandler: authenticate }, async (request, reply) => {
+  app.get('/api/v1/workspaces/:workspaceId/audit', { preHandler: authenticate }, async (request, reply) => {
     const { workspaceId } = request.params as { workspaceId: string }
     const accountId = request.accountId
     if (!accountId) {

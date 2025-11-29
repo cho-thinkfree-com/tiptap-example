@@ -144,7 +144,7 @@ export const getBlogByHandle = (handle: string, page = 1, limit = 10) =>
       total: number
       totalPages: number
     }
-  }>(`/api/blog/${handle}?page=${page}&limit=${limit}`)
+  }>(`/api/v1/blog/${handle}?page=${page}&limit=${limit}`)
 
 export const getBlogDocument = (handle: string, documentNumber: string) =>
   requestJSON<{
@@ -152,10 +152,10 @@ export const getBlogDocument = (handle: string, documentNumber: string) =>
     revision: DocumentRevision | null
     accessLevel: string
     createdByMembershipId: string
-  }>(`/api/blog/${handle}/documents/${documentNumber}`)
+  }>(`/api/v1/blog/${handle}/documents/${documentNumber}`)
 
 export const checkBlogHandleAvailability = (handle: string) =>
-  requestJSON<{ available: boolean }>(`/api/blog/check-handle?handle=${handle}`)
+  requestJSON<{ available: boolean }>(`/api/v1/blog/check-handle?handle=${handle}`)
 
 
 
@@ -231,27 +231,27 @@ export interface ShareLinkResponse {
   token: string
 }
 
-export const login = (input: LoginInput) => requestJSON<LoginResult>('/api/auth/login', { method: 'POST', body: input })
-export const signup = (input: SignupInput) => requestJSON<AccountResponse>('/api/auth/signup', { method: 'POST', body: input })
+export const login = (input: LoginInput) => requestJSON<LoginResult>('/api/v1/auth/login', { method: 'POST', body: input })
+export const signup = (input: SignupInput) => requestJSON<AccountResponse>('/api/v1/auth/signup', { method: 'POST', body: input })
 export const logout = async () => {
-  return requestJSON<{ ok: boolean }>('/api/auth/logout', {
+  return requestJSON<{ ok: boolean }>('/api/v1/auth/logout', {
     method: 'POST',
   })
 }
-export const getMe = () => requestJSON<AccountResponse>('/api/auth/me')
-export const updateAccount = (body: { email?: string; legalName?: string; preferredLanguage?: string; preferredTimezone?: string; currentPassword?: string; newPassword?: string }) => requestJSON<AccountResponse>('/api/auth/me', { method: 'PATCH', body })
+export const getMe = () => requestJSON<AccountResponse>('/api/v1/auth/me')
+export const updateAccount = (body: { email?: string; legalName?: string; preferredLanguage?: string; preferredTimezone?: string; currentPassword?: string; newPassword?: string }) => requestJSON<AccountResponse>('/api/v1/auth/me', { method: 'PATCH', body })
 
 export const getWorkspaces = () =>
-  requestJSON<{ items: WorkspaceSummary[] }>('/api/workspaces').then((payload) => payload.items ?? [])
+  requestJSON<{ items: WorkspaceSummary[] }>('/api/v1/workspaces').then((payload) => payload.items ?? [])
 
 export const getWorkspace = (workspaceId: string) =>
-  requestJSON<WorkspaceSummary>(`/api/workspaces/${workspaceId}`)
+  requestJSON<WorkspaceSummary>(`/api/v1/workspaces/${workspaceId}`)
 
 export const getWorkspaceMembers = (workspaceId: string) =>
-  requestJSON<{ items: MembershipSummary[] }>(`/api/workspaces/${workspaceId}/members`)
+  requestJSON<{ items: MembershipSummary[] }>(`/api/v1/workspaces/${workspaceId}/members`)
 
 export const getWorkspaceMemberProfile = (workspaceId: string) =>
-  requestJSON<MembershipSummary>(`/api/workspaces/${workspaceId}/members/me`)
+  requestJSON<MembershipSummary>(`/api/v1/workspaces/${workspaceId}/members/me`)
 
 export const updateWorkspaceMemberProfile = (
   workspaceId: string,
@@ -265,7 +265,7 @@ export const updateWorkspaceMemberProfile = (
     blogDescription?: string;
   },
 ) =>
-  requestJSON<MembershipSummary>(`/api/workspaces/${workspaceId}/members/me`, {
+  requestJSON<MembershipSummary>(`/api/v1/workspaces/${workspaceId}/members/me`, {
     method: 'PATCH',
     body,
   })
@@ -279,7 +279,7 @@ export const inviteWorkspaceMember = (
   workspaceId: string,
   input: InviteMemberInput,
 ) =>
-  requestJSON<MembershipSummary>(`/api/workspaces/${workspaceId}/members`, {
+  requestJSON<MembershipSummary>(`/api/v1/workspaces/${workspaceId}/members`, {
     method: 'POST',
     body: input,
   })
@@ -289,13 +289,13 @@ export const changeWorkspaceMemberRole = (
   accountId: string,
   role: 'owner' | 'admin' | 'member',
 ) =>
-  requestJSON<MembershipSummary>(`/api/workspaces/${workspaceId}/members/${accountId}/role`, {
+  requestJSON<MembershipSummary>(`/api/v1/workspaces/${workspaceId}/members/${accountId}/role`, {
     method: 'PATCH',
     body: { role },
   })
 
 export const removeWorkspaceMember = (workspaceId: string, accountId: string) =>
-  requestJSON<void>(`/api/workspaces/${workspaceId}/members/${accountId}`, {
+  requestJSON<void>(`/api/v1/workspaces/${workspaceId}/members/${accountId}`, {
     method: 'DELETE',
   })
 
@@ -304,7 +304,7 @@ export const getWorkspaceDocuments = (
   options?: { search?: string; folderId?: string; sortBy?: string; sortOrder?: 'asc' | 'desc' },
 ) =>
   requestJSON<{ documents: DocumentSummary[]; folders: FolderSummary[] }>(
-    `/api/workspaces/${workspaceId}/documents`,
+    `/api/v1/workspaces/${workspaceId}/documents`,
     {
       query: {
         search: options?.search,
@@ -316,7 +316,7 @@ export const getWorkspaceDocuments = (
   )
 
 export const getRecentDocuments = (options?: { sortBy?: string; sortOrder?: 'asc' | 'desc' }) =>
-  requestJSON<{ items: DocumentSummary[] }>(`/api/documents/recent`, {
+  requestJSON<{ items: DocumentSummary[] }>(`/api/v1/documents/recent`, {
     query: {
       sortBy: options?.sortBy,
       sortOrder: options?.sortOrder,
@@ -324,7 +324,7 @@ export const getRecentDocuments = (options?: { sortBy?: string; sortOrder?: 'asc
   }).then((payload) => payload.items ?? [])
 
 export const getPublicDocuments = (workspaceId: string, options?: { sortBy?: string; sortOrder?: 'asc' | 'desc' }) =>
-  requestJSON<{ items: DocumentSummary[] }>(`/api/workspaces/${workspaceId}/public-documents`, {
+  requestJSON<{ items: DocumentSummary[] }>(`/api/v1/workspaces/${workspaceId}/public-documents`, {
     query: {
       sortBy: options?.sortBy,
       sortOrder: options?.sortOrder,
@@ -341,85 +341,85 @@ export interface DocumentRevision {
 }
 
 export const getDocument = (documentId: string) =>
-  requestJSON<DocumentSummary>(`/api/documents/${documentId}`)
+  requestJSON<DocumentSummary>(`/api/v1/documents/${documentId}`)
 
 export const getLatestRevision = (documentId: string) =>
   requestJSON<{ document: DocumentSummary; revision: DocumentRevision }>(
-    `/api/documents/${documentId}/revisions/latest`,
+    `/api/v1/documents/${documentId}/revisions/latest`,
   ).then((payload) => payload.revision)
 
 export const appendRevision = (documentId: string, body: { content: Record<string, unknown> }) =>
-  requestJSON<DocumentRevision>(`/api/documents/${documentId}/revisions`, { method: 'POST', body })
+  requestJSON<DocumentRevision>(`/api/v1/documents/${documentId}/revisions`, { method: 'POST', body })
 
 export const createDocument = (workspaceId: string, body: DocumentCreateInput) =>
-  requestJSON<DocumentSummary>(`/api/workspaces/${workspaceId}/documents`, { method: 'POST', body })
+  requestJSON<DocumentSummary>(`/api/v1/workspaces/${workspaceId}/documents`, { method: 'POST', body })
 
 export const deleteDocument = (documentId: string) =>
-  requestJSON<void>(`/api/documents/${documentId}`, { method: 'DELETE' })
+  requestJSON<void>(`/api/v1/documents/${documentId}`, { method: 'DELETE' })
 
 export const renameDocument = (documentId: string, body: { title: string }) =>
-  requestJSON<DocumentSummary>(`/api/documents/${documentId}`, { method: 'PATCH', body })
+  requestJSON<DocumentSummary>(`/api/v1/documents/${documentId}`, { method: 'PATCH', body })
 
 export const createFolder = (workspaceId: string, body: FolderCreateInput) =>
-  requestJSON<FolderSummary>(`/api/workspaces/${workspaceId}/folders`, { method: 'POST', body })
+  requestJSON<FolderSummary>(`/api/v1/workspaces/${workspaceId}/folders`, { method: 'POST', body })
 
 export const deleteFolder = (folderId: string) =>
-  requestJSON<void>(`/api/folders/${folderId}`, { method: 'DELETE' })
+  requestJSON<void>(`/api/v1/folders/${folderId}`, { method: 'DELETE' })
 
 export const renameFolder = (folderId: string, body: { name: string }) =>
-  requestJSON<FolderSummary>(`/api/folders/${folderId}`, { method: 'PATCH', body })
+  requestJSON<FolderSummary>(`/api/v1/folders/${folderId}`, { method: 'PATCH', body })
 
 export const moveFolder = (folderId: string, body: { parentId: string | null }) =>
-  requestJSON<FolderSummary>(`/api/folders/${folderId}/move`, { method: 'PUT', body })
+  requestJSON<FolderSummary>(`/api/v1/folders/${folderId}/move`, { method: 'PUT', body })
 
 export const getFolder = (folderId: string) =>
-  requestJSON<{ folder: FolderSummary; ancestors: FolderSummary[] }>(`/api/folders/${folderId}`)
+  requestJSON<{ folder: FolderSummary; ancestors: FolderSummary[] }>(`/api/v1/folders/${folderId}`)
 
 export const addDocumentTag = (documentId: string, tag: string) =>
-  requestJSON<{ name: string }>(`/api/documents/${documentId}/tags`, { method: 'POST', body: { name: tag } })
+  requestJSON<{ name: string }>(`/api/v1/documents/${documentId}/tags`, { method: 'POST', body: { name: tag } })
 
 export const removeDocumentTag = (documentId: string, tag: string) =>
-  requestJSON<void>(`/api/documents/${documentId}/tags/${encodeURIComponent(tag)}`, {
+  requestJSON<void>(`/api/v1/documents/${documentId}/tags/${encodeURIComponent(tag)}`, {
     method: 'DELETE',
   })
 
 export const addFolderTag = (folderId: string, tag: string) =>
-  requestJSON<{ name: string }>(`/api/folders/${folderId}/tags`, { method: 'POST', body: { name: tag } })
+  requestJSON<{ name: string }>(`/api/v1/folders/${folderId}/tags`, { method: 'POST', body: { name: tag } })
 
 export const removeFolderTag = (folderId: string, tag: string) =>
-  requestJSON<void>(`/api/folders/${folderId}/tags/${encodeURIComponent(tag)}`, {
+  requestJSON<void>(`/api/v1/folders/${folderId}/tags/${encodeURIComponent(tag)}`, {
     method: 'DELETE',
   })
 
 export const toggleDocumentStarred = (documentId: string, isStarred: boolean) =>
-  requestJSON<DocumentSummary>(`/api/documents/${documentId}/starred`, {
+  requestJSON<DocumentSummary>(`/api/v1/documents/${documentId}/starred`, {
     method: 'PATCH',
     body: { isStarred },
   })
 
 export const toggleFolderStarred = (folderId: string, isStarred: boolean) =>
-  requestJSON<FolderSummary>(`/api/folders/${folderId}/starred`, {
+  requestJSON<FolderSummary>(`/api/v1/folders/${folderId}/starred`, {
     method: 'PATCH',
     body: { isStarred },
   })
 
 export const getStarredDocuments = (workspaceId: string) =>
-  requestJSON<{ documents: DocumentSummary[]; folders: FolderSummary[] }>(`/api/workspaces/${workspaceId}/starred`)
+  requestJSON<{ documents: DocumentSummary[]; folders: FolderSummary[] }>(`/api/v1/workspaces/${workspaceId}/starred`)
 
 export const createShareLink = (documentId: string, payload?: { isPublic?: boolean; password?: string }) =>
-  requestJSON<ShareLinkResponse>(`/api/documents/${documentId}/share-links`, {
+  requestJSON<ShareLinkResponse>(`/api/v1/documents/${documentId}/share-links`, {
     method: 'POST',
     body: { accessLevel: 'viewer', ...payload },
   })
 
 export const getShareLinks = (documentId: string) =>
-  requestJSON<{ shareLinks: ShareLinkResponse['shareLink'][] }>(`/api/documents/${documentId}/share-links`).then((payload) => payload.shareLinks)
+  requestJSON<{ shareLinks: ShareLinkResponse['shareLink'][] }>(`/api/v1/documents/${documentId}/share-links`).then((payload) => payload.shareLinks)
 
 export const revokeShareLink = (shareLinkId: string) =>
-  requestJSON<void>(`/api/share-links/${shareLinkId}`, { method: 'DELETE' })
+  requestJSON<void>(`/api/v1/share-links/${shareLinkId}`, { method: 'DELETE' })
 
 export const updateShareLink = (shareLinkId: string, body: { allowExternalEdit?: boolean; isPublic?: boolean }) =>
-  requestJSON<ShareLinkResponse['shareLink']>(`/api/share-links/${shareLinkId}`, {
+  requestJSON<ShareLinkResponse['shareLink']>(`/api/v1/share-links/${shareLinkId}`, {
     method: 'PATCH',
     body,
   })
@@ -431,7 +431,7 @@ export const resolveShareLink = (token: string, password?: string) =>
     revision: DocumentRevision | null
     accessLevel: string
     createdByMembershipId: string
-  }>(`/api/share-links/${token}/access`, {
+  }>(`/api/v1/share-links/${token}/access`, {
     method: 'POST',
     body: { password },
   })
@@ -450,22 +450,22 @@ export interface AuthorDocument {
 }
 
 export const getAuthorPublicDocuments = (token: string) =>
-  requestJSON<{ documents: AuthorDocument[] }>(`/api/share-links/${token}/author/documents`)
+  requestJSON<{ documents: AuthorDocument[] }>(`/api/v1/share-links/${token}/author/documents`)
 
 export const getWorkspaceMemberPublicProfile = (workspaceId: string, profileId: string) =>
-  requestJSON<MembershipSummary>(`/api/workspaces/${workspaceId}/public-profiles/${profileId}`)
+  requestJSON<MembershipSummary>(`/api/v1/workspaces/${workspaceId}/public-profiles/${profileId}`)
 
 export const getWorkspaceMemberPublicDocuments = (workspaceId: string, profileId: string) =>
-  requestJSON<{ items: DocumentSummary[] }>(`/api/workspaces/${workspaceId}/public-profiles/${profileId}/documents`)
+  requestJSON<{ items: DocumentSummary[] }>(`/api/v1/workspaces/${workspaceId}/public-profiles/${profileId}/documents`)
 
 export const updateWorkspace = (workspaceId: string, body: { name?: string; description?: string }) =>
-  requestJSON<WorkspaceSummary>(`/api/workspaces/${workspaceId}`, { method: 'PATCH', body })
+  requestJSON<WorkspaceSummary>(`/api/v1/workspaces/${workspaceId}`, { method: 'PATCH', body })
 
 export const closeWorkspace = (workspaceId: string) =>
-  requestJSON<void>(`/api/workspaces/${workspaceId}`, { method: 'DELETE' })
+  requestJSON<void>(`/api/v1/workspaces/${workspaceId}`, { method: 'DELETE' })
 
 export const createWorkspace = (body: { name: string }) =>
-  requestJSON<WorkspaceSummary>('/api/workspaces', { method: 'POST', body })
+  requestJSON<WorkspaceSummary>('/api/v1/workspaces', { method: 'POST', body })
 
 export const checkDocumentTitle = (
   workspaceId: string,
@@ -474,7 +474,7 @@ export const checkDocumentTitle = (
   excludeId?: string,
 ) =>
   requestJSON<{ isDuplicate: boolean }>(
-    `/api/workspaces/${workspaceId}/documents/check-title?title=${encodeURIComponent(title)}${folderId ? `&folderId=${folderId}` : ''}${excludeId ? `&excludeId=${excludeId}` : ''}`,
+    `/api/v1/workspaces/${workspaceId}/documents/check-title?title=${encodeURIComponent(title)}${folderId ? `&folderId=${folderId}` : ''}${excludeId ? `&excludeId=${excludeId}` : ''}`,
   )
 
 export const updateDocument = (
@@ -488,10 +488,10 @@ export const updateDocument = (
     summary?: string
     sortOrder?: number
   },
-) => requestJSON<DocumentSummary>(`/api/documents/${documentId}`, { method: 'PATCH', body })
+) => requestJSON<DocumentSummary>(`/api/v1/documents/${documentId}`, { method: 'PATCH', body })
 
 export const downloadDocument = async (documentId: string) => {
-  const url = `${API_BASE_URL}/api/documents/${documentId}/download`
+  const url = `${API_BASE_URL}/api/v1/documents/${documentId}/download`
 
   const response = await fetch(url, {
     method: 'GET',
@@ -524,7 +524,7 @@ export const downloadDocument = async (documentId: string) => {
 
 // Trash management
 export const listTrash = async (workspaceId: string, options?: { sortBy?: string; sortOrder?: 'asc' | 'desc' }) => {
-  return requestJSON<{ documents: DocumentSummary[]; folders: FolderSummary[] }>(`/api/workspaces/${workspaceId}/trash`, {
+  return requestJSON<{ documents: DocumentSummary[]; folders: FolderSummary[] }>(`/api/v1/workspaces/${workspaceId}/trash`, {
     method: 'GET',
     query: {
       sortBy: options?.sortBy,
@@ -534,25 +534,25 @@ export const listTrash = async (workspaceId: string, options?: { sortBy?: string
 }
 
 export const restoreDocument = async (documentId: string) => {
-  return requestJSON(`/api/trash/restore/document/${documentId}`, {
+  return requestJSON(`/api/v1/trash/restore/document/${documentId}`, {
     method: 'POST',
   })
 }
 
 export const permanentlyDeleteDocument = async (documentId: string) => {
-  return requestJSON(`/api/trash/document/${documentId}`, {
+  return requestJSON(`/api/v1/trash/document/${documentId}`, {
     method: 'DELETE',
   })
 }
 
 export const restoreFolder = async (folderId: string) => {
-  return requestJSON(`/api/trash/restore/folder/${folderId}`, {
+  return requestJSON(`/api/v1/trash/restore/folder/${folderId}`, {
     method: 'POST',
   })
 }
 
 export const permanentlyDeleteFolder = async (folderId: string) => {
-  return requestJSON(`/api/trash/folder/${folderId}`, {
+  return requestJSON(`/api/v1/trash/folder/${folderId}`, {
     method: 'DELETE',
   })
 }

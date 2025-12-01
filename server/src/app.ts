@@ -655,7 +655,7 @@ async function buildServer() {
             id: true,
             token: true,
             accessLevel: true,
-            accessType: 'public',
+            accessType: true,
             expiresAt: true,
             createdAt: true,
             passwordHash: true,

@@ -1,4 +1,5 @@
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useLocation, useSearchParams, useParams } from 'react-router-dom';
+import { Box, CircularProgress } from '@mui/material';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { UploadProvider } from '../context/UploadContext';
 import UploadManager from './upload/UploadManager';
@@ -37,8 +38,16 @@ const BlogDocumentDispatcher = () => {
 };
 
 const ProtectedRoute = () => {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const location = useLocation();
+
+  if (isLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   if (!isAuthenticated) {
     // Check if this is a manual logout (user clicked logout button)

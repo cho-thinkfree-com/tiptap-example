@@ -59,13 +59,10 @@ const CollapsibleBreadcrumbs = ({
     let visibleAncestors: FileSystemEntry[] = [];
     let collapsedAncestors: FileSystemEntry[] = [];
 
-    console.log('CollapsibleBreadcrumbs - ancestors:', ancestors.length, ancestors.map(a => a.name));
-
     if (ancestors.length <= COLLAPSE_THRESHOLD) {
         // Show all ancestors
         visibleAncestors = ancestors;
         collapsedAncestors = [];
-        console.log('Showing all ancestors (count <= 3)');
     } else {
         // Show first and last, collapse middle ones
         visibleAncestors = [
@@ -73,7 +70,6 @@ const CollapsibleBreadcrumbs = ({
             ancestors[ancestors.length - 1], // Last ancestor
         ];
         collapsedAncestors = ancestors.slice(1, -1); // Middle ancestors
-        console.log('Collapsing ancestors - visible:', visibleAncestors.map(a => a.name), 'collapsed:', collapsedAncestors.map(a => a.name));
     }
 
     return (

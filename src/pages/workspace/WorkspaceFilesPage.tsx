@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import {
     Box,
@@ -19,6 +19,7 @@ import {
     ListItemIcon,
     ListItemText,
     TableSortLabel,
+    Divider,
 } from '@mui/material';
 import {
     Add as AddIcon,
@@ -32,12 +33,13 @@ import {
     Edit as EditIcon,
     Delete as DeleteIcon,
     Download as DownloadIcon,
+    CheckCircle as CheckCircleIcon,
+    Error as ErrorIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import { useI18n } from '../../lib/i18n';
 import CollapsibleBreadcrumbs from '../../components/workspace/CollapsibleBreadcrumbs';
 import {
-    getWorkspace,
     getWorkspaceFiles,
     getFileSystemEntry,
     createFolder,
@@ -58,6 +60,7 @@ import FileShareIndicator from '../../components/workspace/FileShareIndicator';
 import SelectionToolbar from '../../components/workspace/SelectionToolbar';
 import { useFileEvents } from '../../hooks/useFileEvents';
 import { useDragAndDrop } from '../../hooks/useDragAndDrop';
+import { validateOdocsFile } from '../../lib/odocsValidator';
 
 const WorkspaceFilesPage = () => {
     const { strings } = useI18n();
@@ -68,7 +71,7 @@ const WorkspaceFilesPage = () => {
     const navigate = useNavigate();
     const { isAuthenticated } = useAuth();
 
-    const [workspace, setWorkspace] = useState<WorkspaceSummary | null>(null);
+
     const [items, setItems] = useState<FileSystemEntry[]>([]);
     const [currentFolder, setCurrentFolder] = useState<FileSystemEntry | null>(null);
     const [ancestors, setAncestors] = useState<FileSystemEntry[]>([]);
@@ -88,12 +91,30 @@ const WorkspaceFilesPage = () => {
     const [orderBy, setOrderBy] = useState<'name' | 'updatedAt' | 'size'>('name');
     const [order, setOrder] = useState<'asc' | 'desc'>('asc');
 
+    // Drag and drop state for upload
+    const [dragOver, setDragOver] = useState<string | null>(null);
+
+    // Upload tasks tracking
+    interface UploadTask {
+        id: string;
+        fileName: string;
+        status: 'uploading' | 'success' | 'error';
+        error?: string;
+    }
+    const [uploadTasks, setUploadTasks] = useState<UploadTask[]>([]);
+
     // Context menu
     const [contextMenu, setContextMenu] = useState<{
         mouseX: number;
         mouseY: number;
         item: FileSystemEntry;
     } | null>(null);
+
+    // Keep track of the last valid context menu item to prevent UI flickering during close animation
+    const lastContextMenuItem = useRef<FileSystemEntry | null>(null);
+    if (contextMenu?.item) {
+        lastContextMenuItem.current = contextMenu.item;
+    }
 
     const fetchData = useCallback(async () => {
         if (!isAuthenticated || !workspaceId) return;
@@ -102,14 +123,12 @@ const WorkspaceFilesPage = () => {
         setError(null);
 
         try {
-            const [workspaceData, itemsData, folderData, ancestorsData] = await Promise.all([
-                getWorkspace(workspaceId),
+            const [itemsData, folderData, ancestorsData] = await Promise.all([
                 getWorkspaceFiles(workspaceId, folderId || null),
                 folderId ? getFileSystemEntry(folderId) : Promise.resolve(null),
                 folderId ? getFileAncestors(folderId) : Promise.resolve([]),
             ]);
 
-            setWorkspace(workspaceData);
             setItems(itemsData);
             setCurrentFolder(folderData);
 
@@ -244,7 +263,7 @@ const WorkspaceFilesPage = () => {
             let name = 'Untitled Document';
             let counter = 1;
             while (existingNames.has(name)) {
-                name = `Untitled Document (${counter})`;
+                name = `Untitled Document(${counter})`;
                 counter++;
             }
 
@@ -262,29 +281,60 @@ const WorkspaceFilesPage = () => {
     };
 
     const handleRowClick = (event: React.MouseEvent, item: FileSystemEntry) => {
-        if (event.shiftKey && lastSelectedId) {
-            const currentIndex = items.findIndex(i => i.id === item.id);
-            const lastIndex = items.findIndex(i => i.id === lastSelectedId);
+        // Prevent default to avoid text selection
+        event.preventDefault();
+
+        if (event.shiftKey && lastSelectedId && items.length > 0) {
+            // Shift+Click: Select range
+            // IMPORTANT: Use display order (folders first, then documents)
+            const sortedItems = [...items].sort((a, b) => {
+                if (orderBy === 'name') {
+                    return order === 'asc'
+                        ? a.name.localeCompare(b.name)
+                        : b.name.localeCompare(a.name);
+                } else if (orderBy === 'updatedAt') {
+                    const dateA = new Date(a.updatedAt).getTime();
+                    const dateB = new Date(b.updatedAt).getTime();
+                    return order === 'asc'
+                        ? dateA - dateB
+                        : dateB - dateA;
+                } else if (orderBy === 'size') {
+                    return order === 'asc'
+                        ? (a.size || 0) - (b.size || 0)
+                        : (b.size || 0) - (a.size || 0);
+                }
+                return 0;
+            });
+            const folders = sortedItems.filter((i) => i.type === 'folder');
+            const documents = sortedItems.filter((i) => i.type !== 'folder');
+            const displayItems = [...folders, ...documents];
+
+            const currentIndex = displayItems.findIndex(i => i.id === item.id);
+            const lastIndex = displayItems.findIndex(i => i.id === lastSelectedId);
 
             if (currentIndex !== -1 && lastIndex !== -1) {
                 const start = Math.min(currentIndex, lastIndex);
                 const end = Math.max(currentIndex, lastIndex);
-                const range = items.slice(start, end + 1);
+                const rangeIds = displayItems.slice(start, end + 1).map(i => i.id);
 
-                const newSelected = new Set(selectedIds);
-                range.forEach(i => newSelected.add(i.id));
-                setSelectedIds(newSelected);
+                setSelectedIds(new Set(rangeIds));
             }
         } else if (event.ctrlKey || event.metaKey) {
-            const newSelected = new Set(selectedIds);
-            if (newSelected.has(item.id)) {
-                newSelected.delete(item.id);
-            } else {
-                newSelected.add(item.id);
-                setLastSelectedId(item.id);
-            }
-            setSelectedIds(newSelected);
+            // Ctrl+Click (Cmd+Click on Mac): Toggle selection
+            setSelectedIds(prev => {
+                const newSet = new Set(prev);
+                if (newSet.has(item.id)) {
+                    newSet.delete(item.id);
+                    // Don't update lastSelectedId when removing
+                } else {
+                    newSet.add(item.id);
+                    // Only update lastSelectedId when adding
+                    setLastSelectedId(item.id);
+                }
+                return newSet;
+            });
         } else {
+            // Normal click: Select only this item
             setSelectedIds(new Set([item.id]));
             setLastSelectedId(item.id);
         }
@@ -304,6 +354,13 @@ const WorkspaceFilesPage = () => {
     const handleContextMenu = (event: React.MouseEvent, item: FileSystemEntry) => {
         event.preventDefault();
         event.stopPropagation();
+
+        // If the right-clicked item is not selected, select only that item
+        if (!selectedIds.has(item.id)) {
+            setSelectedIds(new Set([item.id]));
+            setLastSelectedId(item.id);
+        }
+
         setContextMenu({
             mouseX: event.clientX - 2,
             mouseY: event.clientY - 4,
@@ -385,8 +442,11 @@ const WorkspaceFilesPage = () => {
             setDeletedItemIds(idsToDelete);
             setShowUndo(true);
             setSelectedIds(new Set());
-            fetchData();
 
+            // Remove deleted items from state instead of refreshing
+            setItems(prev => prev.filter(item => !idsToDelete.includes(item.id)));
+
+            // Auto-hide undo after 5 seconds
             if (undoTimer) clearTimeout(undoTimer);
             const timer = setTimeout(() => {
                 setShowUndo(false);
@@ -428,11 +488,18 @@ const WorkspaceFilesPage = () => {
     const handleRenameSubmit = async (newName: string) => {
         if (!selectedItem) return;
 
+        const itemId = selectedItem.id;
+
         try {
-            await renameFileSystemEntry(selectedItem.id, newName);
+            await renameFileSystemEntry(itemId, newName);
+
+            // Update item name in state instead of refreshing
+            setItems(prev => prev.map(item =>
+                item.id === itemId ? { ...item, name: newName } : item
+            ));
+
             setRenameDialogOpen(false);
             setSelectedItem(null);
-            fetchData();
         } catch (err: any) {
             alert('Failed to rename: ' + err.message);
         }
@@ -441,10 +508,23 @@ const WorkspaceFilesPage = () => {
     const handleDelete = async () => {
         if (!contextMenu) return;
 
+        // If multiple items are selected and the context menu item is one of them, delete all selected
+        // Otherwise, delete only the context menu item
+        const idsToDelete = selectedIds.size > 0 && selectedIds.has(contextMenu.item.id)
+            ? Array.from(selectedIds)
+            : [contextMenu.item.id];
+
         try {
-            await deleteFileSystemEntry(contextMenu.item.id);
+            await Promise.all(idsToDelete.map(id => deleteFileSystemEntry(id)));
+
+            // Remove deleted items from state instead of refreshing
+            setItems(prev => prev.filter(item => !idsToDelete.includes(item.id)));
+
+            if (selectedIds.size > 0) {
+                setSelectedIds(new Set());
+            }
+
             handleCloseContextMenu();
-            fetchData();
         } catch (err: any) {
             alert('Failed to delete: ' + err.message);
         }
@@ -453,10 +533,18 @@ const WorkspaceFilesPage = () => {
     const handleToggleStar = async () => {
         if (!contextMenu) return;
 
+        const itemId = contextMenu.item.id;
+        const currentStarred = contextMenu.item.isStarred;
+
         try {
-            await toggleFileStar(contextMenu.item.id);
+            await toggleFileStar(itemId);
+
+            // Update item's star status in state instead of refreshing
+            setItems(prev => prev.map(item =>
+                item.id === itemId ? { ...item, isStarred: !currentStarred } : item
+            ));
+
             handleCloseContextMenu();
-            fetchData();
         } catch (err: any) {
             alert('Failed to toggle star: ' + err.message);
         }
@@ -516,6 +604,174 @@ const WorkspaceFilesPage = () => {
         }
 
         handleCloseContextMenu();
+    };
+
+    // Drag and drop handlers for .odocs upload
+    const handleDragOverUpload = (e: React.DragEvent, dropTarget: string) => {
+        // Check if this is external files or internal drag
+        const types = e.dataTransfer.types;
+        const hasFiles = types.includes('Files');
+
+        if (hasFiles) {
+            // External file drag - prevent default and show feedback
+            e.preventDefault();
+            e.stopPropagation();
+            setDragOver(dropTarget);
+        }
+        // If no files, let it bubble to existing handleDragOver for internal file move
+    };
+
+    const handleDragLeaveUpload = (e: React.DragEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setDragOver(null);
+    };
+
+    const handleDropUpload = async (e: React.DragEvent, targetFolderId?: string) => {
+        // Check if this is an external file drop (not internal drag&drop)
+        const files = e.dataTransfer.files;
+
+        if (files.length === 0) {
+            // No files means this is internal drag&drop for moving files
+            // Let the existing handleDrop handle it
+            return;
+        }
+
+        // This is an external file drop, handle it and stop propagation
+        e.preventDefault();
+        e.stopPropagation();
+        setDragOver(null);
+
+        const odocsFiles = Array.from(files).filter(f => f.name.endsWith('.odocs'));
+
+        if (odocsFiles.length === 0) {
+            alert('Please drop .odocs files only');
+            return;
+        }
+
+        // Add all files to the upload queue first
+        const taskIds = odocsFiles.map(file => {
+            const taskId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            setUploadTasks(prev => [...prev, {
+                id: taskId,
+                fileName: file.name,
+                status: 'uploading',
+            }]);
+            return { taskId, file };
+        });
+
+        // Then process all files in parallel
+        await Promise.all(
+            taskIds.map(({ taskId, file }) =>
+                uploadOdocsFile(file, targetFolderId, taskId)
+            )
+        );
+
+        // Don't refresh entire list - files are added individually in uploadOdocsFile
+    };
+
+    const uploadOdocsFile = async (file: File, targetFolderId?: string, taskId?: string) => {
+        if (!workspaceId) return;
+
+        // Use provided taskId or generate new one
+        const uploadTaskId = taskId || `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+        // Add upload task only if not already added
+        if (!taskId) {
+            setUploadTasks(prev => [...prev, {
+                id: uploadTaskId,
+                fileName: file.name,
+                status: 'uploading',
+            }]);
+        }
+
+        try {
+            // Validate format on frontend first
+            const validation = await validateOdocsFile(file);
+            if (!validation.valid) {
+                setUploadTasks(prev => prev.map(t =>
+                    t.id === uploadTaskId ? { ...t, status: 'error', error: validation.error } : t
+                ));
+                return;
+            }
+
+            const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:9920';
+
+            // Step 1: Request presigned URL
+            const initResponse = await fetch(`${API_BASE_URL}/api/workspaces/${workspaceId}/files/upload`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    name: file.name,
+                    mimeType: 'application/x-odocs',
+                    size: file.size,
+                    folderId: targetFolderId || folderId || null,
+                }),
+            });
+
+            if (!initResponse.ok) {
+                throw new Error('Failed to initialize upload');
+            }
+
+            const { uploadUrl, uploadKey } = await initResponse.json();
+
+            // Step 2: Upload to S3
+            const uploadResponse = await fetch(uploadUrl, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/x-odocs' },
+                body: file,
+            });
+
+            if (!uploadResponse.ok) {
+                throw new Error('Failed to upload file to S3');
+            }
+
+            // Step 3: Confirm upload (backend will validate here too)
+            const confirmResponse = await fetch(`${API_BASE_URL}/api/workspaces/${workspaceId}/files/confirm`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    uploadKey,
+                    name: file.name,
+                    mimeType: 'application/x-odocs',
+                    size: file.size,
+                    folderId: targetFolderId || folderId || null,
+                }),
+            });
+
+            if (!confirmResponse.ok) {
+                const error = await confirmResponse.json();
+                throw new Error(error.details || error.error || 'Upload confirmation failed');
+            }
+
+            const createdFile = await confirmResponse.json();
+
+            // Mark as success
+            setUploadTasks(prev => prev.map(t =>
+                t.id === uploadTaskId ? { ...t, status: 'success' } : t
+            ));
+
+            // Add the new file to the items list
+            setItems(prev => [...prev, createdFile]);
+
+            // Remove success notification after 5 seconds
+            setTimeout(() => {
+                setUploadTasks(prev => prev.filter(t => t.id !== uploadTaskId));
+            }, 5000);
+
+            // No need to refresh - file added directly
+        } catch (error) {
+            console.error('Upload error:', error);
+            setUploadTasks(prev => prev.map(t =>
+                t.id === uploadTaskId ? {
+                    ...t,
+                    status: 'error',
+                    error: error instanceof Error ? error.message : 'Unknown error'
+                } : t
+            ));
+        }
     };
 
     const formatBytes = (bytes?: string | null) => {
@@ -702,169 +958,230 @@ const WorkspaceFilesPage = () => {
                         </Typography>
                     </Paper>
                 ) : (
-                    <TableContainer component={Paper} variant="outlined" sx={{ border: 'none' }}>
-                        <Table>
-                            <TableHead>
-                                <TableRow>
-                                    <TableCell width="40%">
-                                        <TableSortLabel
-                                            active={orderBy === 'name'}
-                                            direction={orderBy === 'name' ? order : 'asc'}
-                                            onClick={() => handleRequestSort('name')}
-                                        >
-                                            Name
-                                        </TableSortLabel>
-                                    </TableCell>
-                                    <TableCell width="20%">
-                                        <TableSortLabel
-                                            active={orderBy === 'updatedAt'}
-                                            direction={orderBy === 'updatedAt' ? order : 'asc'}
-                                            onClick={() => handleRequestSort('updatedAt')}
-                                        >
-                                            Modified
-                                        </TableSortLabel>
-                                    </TableCell>
-                                    <TableCell width="15%">
-                                        <TableSortLabel
-                                            active={orderBy === 'size'}
-                                            direction={orderBy === 'size' ? order : 'asc'}
-                                            onClick={() => handleRequestSort('size')}
-                                        >
-                                            Size
-                                        </TableSortLabel>
-                                    </TableCell>
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {/* Folders first */}
-                                {folders.map((item) => (
-                                    <TableRow
-                                        key={item.id}
-                                        hover
-                                        selected={selectedIds.has(item.id)}
-                                        draggable
-                                        onDragStart={(e) => handleDragStart(e, item.id, selectedIds)}
-                                        onDragEnd={handleDragEnd}
-                                        onDragOver={(e) => handleDragOver(e, item.id)}
-                                        onDragLeave={handleDragLeave}
-                                        onDrop={(e) => handleDrop(e, item.id, items as Array<{ id: string; type: string; parentId: string | null }>, selectedIds)}
-                                        sx={{
-                                            cursor: 'pointer',
-                                            userSelect: 'none',
-                                            opacity: draggedItemIds.includes(item.id) ? 0.5 : 1,
-                                            bgcolor: dragOverId === item.id ? 'action.hover' : 'inherit',
-                                            borderLeft: dragOverId === item.id ? '3px solid' : '3px solid transparent',
-                                            borderColor: dragOverId === item.id ? 'primary.main' : 'transparent',
-                                            transition: 'all 0.2s',
-                                        }}
-                                        onClick={(e) => handleRowClick(e, item)}
-                                        onDoubleClick={() => handleRowDoubleClick(item)}
-                                        onContextMenu={(e) => handleContextMenu(e, item)}
-                                    >
-                                        <TableCell>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                <FolderIcon color="action" />
-                                                {item.name}
-                                                {item.isStarred && <StarIcon sx={{ fontSize: 16, color: 'warning.main' }} />}
-                                            </Box>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Typography variant="body2" color="text.secondary">
-                                                {formatRelativeDate(item.updatedAt)}
-                                            </Typography>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Typography variant="body2" color="text.secondary">
-                                                -
-                                            </Typography>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
+                    <Box
+                        onDragOver={(e) => {
+                            // Support both external file upload and internal file move
+                            const types = e.dataTransfer.types;
+                            const hasFiles = types.includes('Files');
 
-                                {/* Documents */}
-                                {documents.map((item) => (
-                                    <TableRow
-                                        key={item.id}
-                                        hover
-                                        selected={selectedIds.has(item.id)}
-                                        draggable
-                                        onDragStart={(e) => handleDragStart(e, item.id, selectedIds)}
-                                        onDragEnd={handleDragEnd}
-                                        sx={{
-                                            cursor: 'pointer',
-                                            userSelect: 'none',
-                                            opacity: draggedItemIds.includes(item.id) ? 0.5 : 1,
-                                            transition: 'opacity 0.2s',
-                                        }}
-                                        onClick={(e) => handleRowClick(e, item)}
-                                        onDoubleClick={() => handleRowDoubleClick(item)}
-                                        onContextMenu={(e) => handleContextMenu(e, item)}
-                                    >
-                                        <TableCell>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                <FileIcon color="primary" />
-                                                {item.name}
-                                                {item.isStarred && <StarIcon sx={{ fontSize: 16, color: 'warning.main' }} />}
-                                                <FileShareIndicator fileId={item.id} shareLinks={item.shareLinks} />
-                                            </Box>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Typography variant="body2" color="text.secondary">
-                                                {formatRelativeDate(item.updatedAt)}
-                                            </Typography>
-                                        </TableCell>
-                                        <TableCell>
-                                            <Typography variant="body2" color="text.secondary">
-                                                {formatBytes(item.size)}
-                                            </Typography>
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
+                            if (hasFiles) {
+                                // External file drag
+                                handleDragOverUpload(e, 'main');
+                            } else {
+                                // Internal file move
+                                handleDragOver(e);
+                            }
+                        }}
+                        onDragLeave={(e) => {
+                            handleDragLeaveUpload(e);
+                            handleDragLeave(e);
+                        }}
+                        onDrop={async (e) => {
+                            const files = e.dataTransfer.files;
 
-                                {/* Other files */}
-                                {files.map((item) => (
-                                    <TableRow
-                                        key={item.id}
-                                        hover
-                                        selected={selectedIds.has(item.id)}
-                                        draggable
-                                        onDragStart={(e) => handleDragStart(e, item.id, selectedIds)}
-                                        onDragEnd={handleDragEnd}
-                                        sx={{
-                                            cursor: 'pointer',
-                                            userSelect: 'none',
-                                            opacity: draggedItemIds.includes(item.id) ? 0.5 : 1,
-                                            transition: 'opacity 0.2s',
-                                        }}
-                                        onClick={(e) => handleRowClick(e, item)}
-                                        onDoubleClick={() => handleRowDoubleClick(item)}
-                                        onContextMenu={(e) => handleContextMenu(e, item)}
-                                    >
-                                        <TableCell>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                <FileIcon color="action" />
-                                                {item.name}
-                                                {item.isStarred && <StarIcon sx={{ fontSize: 16, color: 'warning.main' }} />}
-                                                <FileShareIndicator fileId={item.id} shareLinks={item.shareLinks} />
-                                            </Box>
+                            if (files.length > 0) {
+                                // External file upload
+                                await handleDropUpload(e, folderId || undefined);
+                            } else {
+                                // Internal file move
+                                await handleDrop(e, folderId || null, items as Array<{ id: string; type: string; parentId: string | null }>, selectedIds);
+                            }
+                        }}
+                        sx={{
+                            position: 'relative',
+                            backgroundColor: dragOver === 'main' ? 'action.hover' : 'transparent',
+                            border: dragOver === 'main' ? '2px dashed' : '2px dashed transparent',
+                            borderColor: dragOver === 'main' ? 'primary.main' : 'transparent',
+                            transition: 'all 0.2s',
+                            borderRadius: 1,
+                        }}
+                    >
+                        <TableContainer component={Paper} variant="outlined" sx={{ border: 'none' }}>
+                            <Table>
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell width="40%">
+                                            <TableSortLabel
+                                                active={orderBy === 'name'}
+                                                direction={orderBy === 'name' ? order : 'asc'}
+                                                onClick={() => handleRequestSort('name')}
+                                            >
+                                                Name
+                                            </TableSortLabel>
                                         </TableCell>
-                                        <TableCell>
-                                            <Typography variant="body2" color="text.secondary">
-                                                {formatRelativeDate(item.updatedAt)}
-                                            </Typography>
+                                        <TableCell width="20%">
+                                            <TableSortLabel
+                                                active={orderBy === 'updatedAt'}
+                                                direction={orderBy === 'updatedAt' ? order : 'asc'}
+                                                onClick={() => handleRequestSort('updatedAt')}
+                                            >
+                                                Modified
+                                            </TableSortLabel>
                                         </TableCell>
-                                        <TableCell>
-                                            <Typography variant="body2" color="text.secondary">
-                                                {formatBytes(item.size)}
-                                            </Typography>
+                                        <TableCell width="15%">
+                                            <TableSortLabel
+                                                active={orderBy === 'size'}
+                                                direction={orderBy === 'size' ? order : 'asc'}
+                                                onClick={() => handleRequestSort('size')}
+                                            >
+                                                Size
+                                            </TableSortLabel>
                                         </TableCell>
                                     </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
+                                </TableHead>
+                                <TableBody>
+                                    {/* Folders first */}
+                                    {folders.map((item) => (
+                                        <TableRow
+                                            key={item.id}
+                                            hover
+                                            selected={selectedIds.has(item.id)}
+                                            draggable
+                                            onDragStart={(e) => handleDragStart(e, item.id, selectedIds)}
+                                            onDragEnd={handleDragEnd}
+                                            onDragOver={(e) => {
+                                                const types = e.dataTransfer.types;
+                                                const hasFiles = types.includes('Files');
+
+                                                if (hasFiles) {
+                                                    // External file drag
+                                                    handleDragOverUpload(e, item.id);
+                                                } else {
+                                                    // Internal file move  
+                                                    handleDragOver(e, item.id);
+                                                }
+                                            }}
+                                            onDragLeave={handleDragLeave}
+                                            onDrop={async (e) => {
+                                                const files = e.dataTransfer.files;
+
+                                                if (files.length > 0) {
+                                                    // External file upload to this folder
+                                                    await handleDropUpload(e, item.id);
+                                                } else {
+                                                    // Internal file move
+                                                    await handleDrop(e, item.id, items as Array<{ id: string; type: string; parentId: string | null }>, selectedIds);
+                                                }
+                                            }}
+                                            sx={{
+                                                cursor: 'pointer',
+                                                userSelect: 'none',
+                                                opacity: draggedItemIds.includes(item.id) ? 0.5 : 1,
+                                                bgcolor: (dragOverId === item.id || dragOver === item.id) ? 'action.hover' : 'inherit',
+                                                borderLeft: (dragOverId === item.id || dragOver === item.id) ? '3px solid' : '3px solid transparent',
+                                                borderColor: (dragOverId === item.id || dragOver === item.id) ? 'primary.main' : 'transparent',
+                                                transition: 'all 0.2s',
+                                            }}
+                                            onClick={(e) => handleRowClick(e, item)}
+                                            onDoubleClick={() => handleRowDoubleClick(item)}
+                                            onContextMenu={(e) => handleContextMenu(e, item)}
+                                        >
+                                            <TableCell>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                    <FolderIcon color="action" />
+                                                    {item.name}
+                                                    {item.isStarred && <StarIcon sx={{ fontSize: 16, color: 'warning.main' }} />}
+                                                </Box>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Typography variant="body2" color="text.secondary">
+                                                    {formatRelativeDate(item.updatedAt)}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Typography variant="body2" color="text.secondary">
+                                                    -
+                                                </Typography>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+
+                                    {/* Documents */}
+                                    {documents.map((item) => (
+                                        <TableRow
+                                            key={item.id}
+                                            hover
+                                            selected={selectedIds.has(item.id)}
+                                            draggable
+                                            onDragStart={(e) => handleDragStart(e, item.id, selectedIds)}
+                                            onDragEnd={handleDragEnd}
+                                            sx={{
+                                                cursor: 'pointer',
+                                                userSelect: 'none',
+                                                opacity: draggedItemIds.includes(item.id) ? 0.5 : 1,
+                                                transition: 'opacity 0.2s',
+                                            }}
+                                            onClick={(e) => handleRowClick(e, item)}
+                                            onDoubleClick={() => handleRowDoubleClick(item)}
+                                            onContextMenu={(e) => handleContextMenu(e, item)}
+                                        >
+                                            <TableCell>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                    <FileIcon color="primary" />
+                                                    {item.name}
+                                                    {item.isStarred && <StarIcon sx={{ fontSize: 16, color: 'warning.main' }} />}
+                                                    <FileShareIndicator fileId={item.id} shareLinks={item.shareLinks} />
+                                                </Box>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Typography variant="body2" color="text.secondary">
+                                                    {formatRelativeDate(item.updatedAt)}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Typography variant="body2" color="text.secondary">
+                                                    {formatBytes(item.size)}
+                                                </Typography>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+
+                                    {/* Other files */}
+                                    {files.map((item) => (
+                                        <TableRow
+                                            key={item.id}
+                                            hover
+                                            selected={selectedIds.has(item.id)}
+                                            draggable
+                                            onDragStart={(e) => handleDragStart(e, item.id, selectedIds)}
+                                            onDragEnd={handleDragEnd}
+                                            sx={{
+                                                cursor: 'pointer',
+                                                userSelect: 'none',
+                                                opacity: draggedItemIds.includes(item.id) ? 0.5 : 1,
+                                                transition: 'opacity 0.2s',
+                                            }}
+                                            onClick={(e) => handleRowClick(e, item)}
+                                            onDoubleClick={() => handleRowDoubleClick(item)}
+                                            onContextMenu={(e) => handleContextMenu(e, item)}
+                                        >
+                                            <TableCell>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                    <FileIcon color="action" />
+                                                    {item.name}
+                                                    {item.isStarred && <StarIcon sx={{ fontSize: 16, color: 'warning.main' }} />}
+                                                    <FileShareIndicator fileId={item.id} shareLinks={item.shareLinks} />
+                                                </Box>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Typography variant="body2" color="text.secondary">
+                                                    {formatRelativeDate(item.updatedAt)}
+                                                </Typography>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Typography variant="body2" color="text.secondary">
+                                                    {formatBytes(item.size)}
+                                                </Typography>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    </Box>
                 )}
             </Box>
+
             {/* Context Menu */}
             <Menu
                 open={contextMenu !== null}
@@ -881,32 +1198,42 @@ const WorkspaceFilesPage = () => {
                 }}
                 hideBackdrop
             >
-                {contextMenu?.item.type === 'file' && (
-                    <MenuItem onClick={handleDownload}>
-                        <ListItemIcon>
-                            <DownloadIcon fontSize="small" />
-                        </ListItemIcon>
-                        <ListItemText>Download</ListItemText>
-                    </MenuItem>
-                )}
-                <MenuItem onClick={handleShare}>
-                    <ListItemIcon>
-                        <ShareIcon fontSize="small" />
-                    </ListItemIcon>
-                    <ListItemText>{strings.editor.title.share || 'Share'}</ListItemText>
-                </MenuItem>
-                <MenuItem onClick={handleRename}>
+                {/* Rename - only for single selection */}
+                <MenuItem onClick={handleRename} disabled={selectedIds.size > 1}>
                     <ListItemIcon>
                         <EditIcon fontSize="small" />
                     </ListItemIcon>
                     <ListItemText>{strings.workspace.rename}</ListItemText>
                 </MenuItem>
+
+                {/* Share - only for single selection */}
+                <MenuItem onClick={handleShare} disabled={selectedIds.size > 1}>
+                    <ListItemIcon>
+                        <ShareIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText>{strings.editor.title.share || 'Share'}</ListItemText>
+                </MenuItem>
+
+                {/* Download - only for single selection and files only */}
+                <MenuItem
+                    onClick={handleDownload}
+                    disabled={selectedIds.size > 1 || contextMenu?.item.type === 'folder'}
+                >
+                    <ListItemIcon>
+                        <DownloadIcon fontSize="small" />
+                    </ListItemIcon>
+                    <ListItemText>Download</ListItemText>
+                </MenuItem>
+
+                <Divider />
+
                 <MenuItem onClick={handleToggleStar}>
                     <ListItemIcon>
-                        {contextMenu?.item.isStarred ? <StarIcon fontSize="small" /> : <StarBorderIcon fontSize="small" />}
+                        {(contextMenu?.item || lastContextMenuItem.current)?.isStarred ? <StarIcon fontSize="small" /> : <StarBorderIcon fontSize="small" />}
                     </ListItemIcon>
-                    <ListItemText>{contextMenu?.item.isStarred ? 'Unstar' : 'Star'}</ListItemText>
+                    <ListItemText>{(contextMenu?.item || lastContextMenuItem.current)?.isStarred ? 'Unstar' : 'Star'}</ListItemText>
                 </MenuItem>
+                {/* Delete - works for both single and multiple */}
                 <MenuItem onClick={handleDelete}>
                     <ListItemIcon>
                         <DeleteIcon fontSize="small" />
@@ -918,9 +1245,96 @@ const WorkspaceFilesPage = () => {
             <ShareDialog
                 open={shareDialogOpen}
                 onClose={() => setShareDialogOpen(false)}
-                documentId={selectedItem?.id || ''}
-                document={selectedItem as any}
+                file={selectedItem}
             />
+
+            {/* Upload Status Panel - Bottom Right */}
+            {uploadTasks.length > 0 && (
+                <Box
+                    sx={{
+                        position: 'fixed',
+                        bottom: 24,
+                        right: 24,
+                        maxWidth: 400,
+                        zIndex: 1300,
+                    }}
+                >
+                    <Paper
+                        elevation={8}
+                        sx={{
+                            bgcolor: 'background.paper',
+                            borderRadius: 2,
+                            overflow: 'hidden',
+                        }}
+                    >
+                        <Box sx={{ bgcolor: '#1a1a1a', color: '#ffffff', px: 2.5, py: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <Typography variant="subtitle1" fontWeight="600" sx={{ color: '#ffffff' }}>
+                                File Uploads
+                            </Typography>
+                            <Typography variant="body2" sx={{ bgcolor: '#333333', color: '#ffffff', px: 1.5, py: 0.5, borderRadius: 1, fontWeight: '500' }}>
+                                {uploadTasks.filter(t => t.status === 'uploading').length} / {uploadTasks.length}
+                            </Typography>
+                        </Box>
+                        <Box sx={{ maxHeight: 300, overflow: 'auto' }}>
+                            {uploadTasks.map((task) => (
+                                <Box
+                                    key={task.id}
+                                    sx={{
+                                        px: 2,
+                                        py: 1.5,
+                                        borderBottom: '1px solid',
+                                        borderColor: 'divider',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 1.5,
+                                        bgcolor: task.status === 'success' ? 'success.50' :
+                                            task.status === 'error' ? 'error.50' : 'transparent',
+                                        '&:last-child': {
+                                            borderBottom: 'none',
+                                        },
+                                    }}
+                                >
+                                    {task.status === 'uploading' && (
+                                        <CircularProgress size={24} thickness={4} />
+                                    )}
+                                    {task.status === 'success' && (
+                                        <CheckCircleIcon sx={{ color: 'success.main', fontSize: 28 }} />
+                                    )}
+                                    {task.status === 'error' && (
+                                        <ErrorIcon sx={{ color: 'error.main', fontSize: 28 }} />
+                                    )}
+                                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                                        <Typography
+                                            variant="body2"
+                                            noWrap
+                                            sx={{
+                                                fontWeight: task.status === 'uploading' ? '500' : 'normal',
+                                            }}
+                                        >
+                                            {task.fileName}
+                                        </Typography>
+                                        {task.status === 'uploading' && (
+                                            <Typography variant="caption" color="text.secondary">
+                                                업로드 중...
+                                            </Typography>
+                                        )}
+                                        {task.status === 'success' && (
+                                            <Typography variant="caption" sx={{ color: 'success.main', fontWeight: '500' }}>
+                                                ✓ 업로드 완료
+                                            </Typography>
+                                        )}
+                                        {task.status === 'error' && (
+                                            <Typography variant="caption" sx={{ color: 'error.main', fontWeight: '500' }}>
+                                                ✗ {task.error || '업로드 실패'}
+                                            </Typography>
+                                        )}
+                                    </Box>
+                                </Box>
+                            ))}
+                        </Box>
+                    </Paper>
+                </Box>
+            )}
 
             {/* Dialogs */}
             <CreateFolderDialog

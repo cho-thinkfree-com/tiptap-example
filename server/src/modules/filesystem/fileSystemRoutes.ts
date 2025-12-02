@@ -1,6 +1,7 @@
 import { FastifyInstance, FastifyRequest } from 'fastify';
 import { FileSystemService } from './fileSystemService.js';
 import { PrismaClient } from '@prisma/client';
+import { validateOdocsContent } from '../../lib/odocsValidator.js';
 
 export async function fileSystemRoutes(
     fastify: FastifyInstance,
@@ -257,6 +258,32 @@ export async function fileSystemRoutes(
 
             // Detect extension
             const extension = name.includes('.') ? name.substring(name.lastIndexOf('.')) : '';
+
+            // Validate .odocs files
+            if (extension === '.odocs' || mimeType === 'application/x-odocs' || mimeType === 'application/vnd.odocs') {
+                try {
+                    const content = JSON.parse(buffer.toString('utf-8'));
+                    const validation = validateOdocsContent(content);
+
+                    if (!validation.valid) {
+                        // Delete temp upload
+                        await fileSystemService['storageService'].deleteObject(uploadKey);
+
+                        return reply.status(400).send({
+                            error: 'Invalid .odocs file format',
+                            details: validation.error,
+                        });
+                    }
+                } catch (e) {
+                    // Delete temp upload
+                    await fileSystemService['storageService'].deleteObject(uploadKey);
+
+                    return reply.status(400).send({
+                        error: 'Invalid .odocs file',
+                        details: e instanceof Error ? e.message : 'Failed to parse JSON',
+                    });
+                }
+            }
 
             // Create file entry
             const file = await fileSystemService.createFile(

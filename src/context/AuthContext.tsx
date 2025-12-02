@@ -7,6 +7,7 @@ import { login as loginRequest, signup as signupRequest, logout as logoutRequest
 interface AuthContextValue {
   user: AccountResponse | null
   isAuthenticated: boolean
+  isLoading: boolean
   login: (input: LoginInput) => Promise<LoginResult>
   signup: (input: SignupInput) => Promise<LoginResult>
   logout: () => Promise<void>
@@ -20,6 +21,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined)
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<AccountResponse | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
   const [logoutMessage, setLogoutMessage] = useState<string | null>(null)
 
   const refreshProfile = useCallback(async () => {
@@ -29,6 +31,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       // console.error('Failed to fetch user profile:', error)
       setUser(null)
+    } finally {
+      setIsLoading(false)
     }
   }, [])
 
@@ -95,13 +99,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     () => ({
       user,
       isAuthenticated: Boolean(user),
+      isLoading,
       login,
       signup,
       logout,
       logoutMessage,
       refreshProfile,
     }),
-    [user, login, signup, logout, logoutMessage, refreshProfile],
+    [user, isLoading, login, signup, logout, logoutMessage, refreshProfile],
   )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

@@ -25,6 +25,7 @@ import {
     updateFileSystemEntry,
     updateShareLink,
     type DocumentSummary,
+    type FileSystemEntry,
 } from '../../lib/api'
 import { useAuth } from '../../context/AuthContext'
 import { generateShareUrl } from '../../lib/shareUtils'
@@ -39,12 +40,16 @@ import { useFileEvents } from '../../hooks/useFileEvents'
 interface ShareDialogProps {
     open: boolean
     onClose: () => void
-    documentId: string
+    documentId?: string
     document?: DocumentSummary
+    file?: FileSystemEntry
     onVisibilityChange?: (visibility: string) => void
 }
 
-export default function ShareDialog({ open, onClose, documentId, document, onVisibilityChange }: ShareDialogProps) {
+export default function ShareDialog({ open, onClose, documentId: propDocumentId, document: propDocument, file, onVisibilityChange }: ShareDialogProps) {
+    // Resolve document ID and object from either props
+    const documentId = propDocumentId || file?.id || '';
+    const document = propDocument || (file as unknown as DocumentSummary) || null;
     const { isAuthenticated, user } = useAuth()
     const [loading, setLoading] = useState(false)
     const [shareLink, setShareLink] = useState<any | null>(null)
@@ -349,7 +354,6 @@ export default function ShareDialog({ open, onClose, documentId, document, onVis
 
         // If both are enabled, also check if the date changed
         if (expirationEnabled && originalHasExpiration && expiresAt && shareLink.expiresAt) {
-            const userTimezone = user?.preferredTimezone || Intl.DateTimeFormat().resolvedOptions().timeZone
             const currentDate = new Date(expiresAt)
             const originalDate = new Date(shareLink.expiresAt)
 
@@ -577,7 +581,7 @@ export default function ShareDialog({ open, onClose, documentId, document, onVis
                                                         disabled={
                                                             updating ||
                                                             !hasChanges ||
-                                                            (passwordEnabled && password && password !== DUMMY_PASSWORD && !!validatePassword(password))
+                                                            (passwordEnabled && !!password && password !== DUMMY_PASSWORD && !!validatePassword(password))
                                                         }
                                                     >
                                                         Update Settings

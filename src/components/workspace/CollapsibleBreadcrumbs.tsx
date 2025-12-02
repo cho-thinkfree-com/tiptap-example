@@ -106,6 +106,38 @@ const CollapsibleBreadcrumbs = ({
                 </Link>
             </Tooltip>
 
+            {/* First visible ancestor (when collapsing) */}
+            {collapsedAncestors.length > 0 && visibleAncestors[0] && (
+                <Tooltip title={visibleAncestors[0].name} arrow>
+                    <Link
+                        component="button"
+                        underline="hover"
+                        color="inherit"
+                        onClick={() => onNavigate(visibleAncestors[0].id)}
+                        onDragOver={onDragOver ? (e) => onDragOver(e, visibleAncestors[0].id) : undefined}
+                        onDragLeave={onDragLeave}
+                        onDrop={onDrop ? (e) => onDrop(e, visibleAncestors[0].id, items, selectedIds) : undefined}
+                        sx={{
+                            cursor: 'pointer',
+                            borderRadius: 1,
+                            px: 0.5,
+                            py: 0.25,
+                            border: '2px solid transparent',
+                            borderColor: dragOverId === visibleAncestors[0].id ? 'primary.main' : 'transparent',
+                            bgcolor: dragOverId === visibleAncestors[0].id ? 'action.hover' : 'transparent',
+                            transition: 'all 0.2s',
+                            maxWidth: '200px',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis',
+                            whiteSpace: 'nowrap',
+                            display: 'block',
+                        }}
+                    >
+                        {visibleAncestors[0].name}
+                    </Link>
+                </Tooltip>
+            )}
+
             {/* Collapsed ancestors dropdown */}
             {collapsedAncestors.length > 0 && (
                 <>
@@ -193,27 +225,27 @@ const CollapsibleBreadcrumbs = ({
                 </>
             )}
 
-            {/* Visible ancestors */}
-            {visibleAncestors.map((ancestor) => (
-                <Tooltip key={ancestor.id} title={ancestor.name} arrow>
+            {/* Last visible ancestor (when collapsing) or all visible ancestors (when not collapsing) */}
+            {collapsedAncestors.length > 0 && visibleAncestors[1] ? (
+                // When collapsing, show only the last one (second element)
+                <Tooltip title={visibleAncestors[1].name} arrow>
                     <Link
                         component="button"
                         underline="hover"
                         color="inherit"
-                        onClick={() => onNavigate(ancestor.id)}
-                        onDragOver={onDragOver ? (e) => onDragOver(e, ancestor.id) : undefined}
+                        onClick={() => onNavigate(visibleAncestors[1].id)}
+                        onDragOver={onDragOver ? (e) => onDragOver(e, visibleAncestors[1].id) : undefined}
                         onDragLeave={onDragLeave}
-                        onDrop={onDrop ? (e) => onDrop(e, ancestor.id, items, selectedIds) : undefined}
+                        onDrop={onDrop ? (e) => onDrop(e, visibleAncestors[1].id, items, selectedIds) : undefined}
                         sx={{
                             cursor: 'pointer',
                             borderRadius: 1,
                             px: 0.5,
                             py: 0.25,
                             border: '2px solid transparent',
-                            borderColor: dragOverId === ancestor.id ? 'primary.main' : 'transparent',
-                            bgcolor: dragOverId === ancestor.id ? 'action.hover' : 'transparent',
+                            borderColor: dragOverId === visibleAncestors[1].id ? 'primary.main' : 'transparent',
+                            bgcolor: dragOverId === visibleAncestors[1].id ? 'action.hover' : 'transparent',
                             transition: 'all 0.2s',
-                            // Truncate long folder names
                             maxWidth: '200px',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
@@ -221,10 +253,42 @@ const CollapsibleBreadcrumbs = ({
                             display: 'block',
                         }}
                     >
-                        {ancestor.name}
+                        {visibleAncestors[1].name}
                     </Link>
                 </Tooltip>
-            ))}
+            ) : (
+                // When not collapsing, show all visible ancestors
+                visibleAncestors.map((ancestor) => (
+                    <Tooltip key={ancestor.id} title={ancestor.name} arrow>
+                        <Link
+                            component="button"
+                            underline="hover"
+                            color="inherit"
+                            onClick={() => onNavigate(ancestor.id)}
+                            onDragOver={onDragOver ? (e) => onDragOver(e, ancestor.id) : undefined}
+                            onDragLeave={onDragLeave}
+                            onDrop={onDrop ? (e) => onDrop(e, ancestor.id, items, selectedIds) : undefined}
+                            sx={{
+                                cursor: 'pointer',
+                                borderRadius: 1,
+                                px: 0.5,
+                                py: 0.25,
+                                border: '2px solid transparent',
+                                borderColor: dragOverId === ancestor.id ? 'primary.main' : 'transparent',
+                                bgcolor: dragOverId === ancestor.id ? 'action.hover' : 'transparent',
+                                transition: 'all 0.2s',
+                                maxWidth: '200px',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                display: 'block',
+                            }}
+                        >
+                            {ancestor.name}
+                        </Link>
+                    </Tooltip>
+                ))
+            )}
 
             {/* Current folder - Always visible */}
             {currentFolder && (

@@ -13,6 +13,7 @@ import { usePageTitle } from '../../hooks/usePageTitle';
 import SelectionToolbar from '../../components/workspace/SelectionToolbar';
 import FileShareIndicator from '../../components/workspace/FileShareIndicator';
 import { useNavigate } from 'react-router-dom';
+import { useFileEvents } from '../../hooks/useFileEvents';
 
 const ImportantFilesPage = () => {
     const { workspaceId } = useParams<{ workspaceId: string }>();
@@ -53,6 +54,38 @@ const ImportantFilesPage = () => {
     useEffect(() => {
         fetchData();
     }, [isAuthenticated, workspaceId]);
+
+    // Real-time file events via WebSocket - handle star/unstar
+    useFileEvents({
+        workspaceId,
+        onFileUpdated: (event) => {
+            // Check if isStarred changed
+            if (event.updates.isStarred !== undefined) {
+                if (event.updates.isStarred) {
+                    // File was starred - fetch to add to list (or re-fetch all)
+                    fetchData();
+                } else {
+                    // File was unstarred - remove from list
+                    setItems((prevItems) => prevItems.filter((item) => item.id !== event.fileId));
+                }
+            } else {
+                // Other updates (like name, size, etc.) - update the item
+                setItems((prevItems) => {
+                    const index = prevItems.findIndex((item) => item.id === event.fileId);
+                    if (index !== -1) {
+                        const updated = [...prevItems];
+                        updated[index] = { ...updated[index], ...event.updates };
+                        return updated;
+                    }
+                    return prevItems;
+                });
+            }
+        },
+        onFileDeleted: (event) => {
+            // Remove deleted file from list
+            setItems((prevItems) => prevItems.filter((item) => item.id !== event.fileId));
+        },
+    });
 
     const handleRowClick = (event: React.MouseEvent, item: FileSystemEntry) => {
         if (event.shiftKey && lastSelectedId) {

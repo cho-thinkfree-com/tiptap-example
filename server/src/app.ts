@@ -145,7 +145,8 @@ async function buildServer() {
   const revisionRepository = new RevisionRepository(db)
   const shareLinkRepository = new ShareLinkRepository(db)
 
-  const fileSystemService = new FileSystemService(
+  // Note: SocketService will be injected after server starts
+  let fileSystemService = new FileSystemService(
     fileSystemRepository,
     revisionRepository,
     shareLinkRepository,
@@ -708,17 +709,30 @@ async function buildServer() {
     await db.$disconnect()
   })
 
-  return app
+  return { app, fileSystemService, workspaceService }
 }
 
 async function start() {
   try {
-    const app = await buildServer()
+    const { app: fastifyApp, fileSystemService, workspaceService } = await buildServer()
     const port = Number(process.env.PORT) || 9920
     const host = process.env.HOST || '0.0.0.0'
 
-    await app.listen({ port, host })
+    // Start Fastify server and get the HTTP server instance
+    await fastifyApp.listen({ port, host })
+    const httpServer = fastifyApp.server
+
+    // Initialize Socket.IO
+    const { SocketService } = await import('./lib/socket.js')
+    const db = await createPrismaClient()
+    const socketService = new SocketService(httpServer, db)
+
+    // Inject SocketService into services
+    fileSystemService.setSocketService(socketService)
+    workspaceService.setSocketService(socketService)
+
     console.log(`Server listening on ${host}:${port}`)
+    console.log('WebSocket server initialized')
   } catch (err) {
     console.error('Failed to start server:', err)
     process.exit(1)

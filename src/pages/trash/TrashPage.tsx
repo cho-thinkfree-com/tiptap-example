@@ -24,8 +24,6 @@ import {
     TableSortLabel,
     CircularProgress,
 } from '@mui/material'
-import RestoreIcon from '@mui/icons-material/Restore'
-import DeleteForeverIcon from '@mui/icons-material/DeleteForever'
 import FolderIcon from '@mui/icons-material/Folder'
 import ArticleIcon from '@mui/icons-material/Article'
 import HomeIcon from '@mui/icons-material/Home'
@@ -34,6 +32,7 @@ import { useAuth } from '../../context/AuthContext'
 import { listTrash, restoreDocument, permanentlyDeleteDocument, restoreFolder, permanentlyDeleteFolder } from '../../lib/api'
 import { useNavigate } from 'react-router-dom'
 import TrashSelectionToolbar from '../../components/trash/TrashSelectionToolbar'
+import { useFileEvents } from '../../hooks/useFileEvents'
 
 interface TrashDocument {
     id: string
@@ -147,6 +146,19 @@ export default function TrashPage() {
     useEffect(() => {
         loadTrash()
     }, [workspaceId, isAuthenticated, orderBy, order])
+
+    // Real-time file events via WebSocket - handle delete and restore
+    useFileEvents({
+        workspaceId,
+        onFileDeleted: (event) => {
+            // File moved to trash - add to trash list
+            loadTrash(); // Refetch to get full item data
+        },
+        onFileRestored: (event) => {
+            // File restored - remove from trash list
+            setItems((prevItems) => prevItems.filter((item) => item.id !== event.file.id));
+        },
+    });
 
     const handleRestore = async (item: TrashItem) => {
         if (!isAuthenticated) {

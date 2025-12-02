@@ -34,6 +34,7 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import ExpandLessIcon from '@mui/icons-material/ExpandLess'
 import { Collapse } from '@mui/material'
 import { formatInTimeZone, fromZonedTime } from 'date-fns-tz'
+import { useFileEvents } from '../../hooks/useFileEvents'
 
 interface ShareDialogProps {
     open: boolean
@@ -103,6 +104,18 @@ export default function ShareDialog({ open, onClose, documentId, document, onVis
             setExpanded(false)
         }
     }, [open, documentId, isAuthenticated])
+
+    // Listen for real-time share link updates
+    useFileEvents({
+        workspaceId: document?.workspaceId,
+        onFileUpdated: (event) => {
+            // Only refetch if this is the file being shown in the dialog
+            if (event.fileId === documentId && event.updates.shareLinks) {
+                console.log('[ShareDialog] Received shareLinks update, refetching');
+                fetchLink();
+            }
+        },
+    });
 
     const validatePassword = (pwd: string) => {
         if (pwd.length < 4 || pwd.length > 32) {

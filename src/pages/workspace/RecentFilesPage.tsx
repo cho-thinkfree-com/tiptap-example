@@ -11,6 +11,7 @@ import StarIcon from '@mui/icons-material/Star';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import SelectionToolbar from '../../components/workspace/SelectionToolbar';
 import FileShareIndicator from '../../components/workspace/FileShareIndicator';
+import { useFileEvents } from '../../hooks/useFileEvents';
 
 const RecentFilesPage = () => {
     const { workspaceId } = useParams<{ workspaceId: string }>();
@@ -51,6 +52,32 @@ const RecentFilesPage = () => {
     useEffect(() => {
         fetchData();
     }, [isAuthenticated]);
+
+    // Real-time file events via WebSocket
+    useFileEvents({
+        onFileCreated: (event) => {
+            // If it's a document in this workspace, refetch
+            if (event.file.type === 'file' && event.file.mimeType === 'application/x-odocs' && event.file.workspaceId === workspaceId) {
+                fetchData();
+            }
+        },
+        onFileUpdated: (event) => {
+            // Update items in list
+            setFiles((prevFiles) => {
+                const index = prevFiles.findIndex((f) => f.id === event.fileId);
+                if (index !== -1) {
+                    const updated = [...prevFiles];
+                    updated[index] = { ...updated[index], ...event.updates };
+                    return updated;
+                }
+                return prevFiles;
+            });
+        },
+        onFileDeleted: (event) => {
+            // Remove from list
+            setFiles((prevFiles) => prevFiles.filter((f) => f.id !== event.fileId));
+        },
+    });
 
     const handleRowClick = (event: React.MouseEvent, item: FileSystemEntry) => {
         if (event.shiftKey && lastSelectedId) {

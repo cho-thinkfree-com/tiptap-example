@@ -59,6 +59,7 @@ import RenameDialog from '../../components/workspace/RenameDialog';
 import ShareDialog from '../../components/editor/ShareDialog';
 import FileShareIndicator from '../../components/workspace/FileShareIndicator';
 import SelectionToolbar from '../../components/workspace/SelectionToolbar';
+import { useFileEvents } from '../../hooks/useFileEvents';
 
 const WorkspaceFilesPage = () => {
     const { strings } = useI18n();
@@ -135,6 +136,73 @@ const WorkspaceFilesPage = () => {
         setSelectedIds(new Set());
         setLastSelectedId(null);
     }, [folderId]);
+
+    // Real-time file events via WebSocket
+    useFileEvents({
+        workspaceId,
+        onFileCreated: (event) => {
+            // Only add if the file is in the current folder
+            if (event.file.parentId === (folderId || null)) {
+                setItems((prevItems) => {
+                    // Check if file already exists (防止重복)
+                    if (prevItems.some((item) => item.id === event.file.id)) {
+                        return prevItems;
+                    }
+                    return [...prevItems, event.file];
+                });
+            }
+        },
+        onFileUpdated: (event) => {
+            setItems((prevItems) => {
+                // Find the file in current list
+                const fileIndex = prevItems.findIndex((item) => item.id === event.fileId);
+
+                // Handle Move operation
+                if (event.oldParentId !== undefined && event.newParentId !== undefined) {
+                    const currentFolderId = folderId || null;
+
+                    // File moved OUT of current folder
+                    if (event.oldParentId === currentFolderId && event.newParentId !== currentFolderId) {
+                        return prevItems.filter((item) => item.id !== event.fileId);
+                    }
+
+                    // File moved INTO current folder (need to fetch full data)
+                    if (event.oldParentId !== currentFolderId && event.newParentId === currentFolderId) {
+                        // Trigger re-fetch to get the full file object
+                        fetchData();
+                        return prevItems;
+                    }
+                }
+
+                // Update existing file in list
+                if (fileIndex !== -1) {
+                    const updatedItems = [...prevItems];
+                    updatedItems[fileIndex] = {
+                        ...updatedItems[fileIndex],
+                        ...event.updates,
+                    };
+                    return updatedItems;
+                }
+
+                return prevItems;
+            });
+        },
+        onFileDeleted: (event) => {
+            setItems((prevItems) => prevItems.filter((item) => item.id !== event.fileId));
+        },
+        onFileRestored: (event) => {
+            // If restored to current folder, add it
+            if (event.file.parentId === (folderId || null)) {
+                setItems((prevItems) => {
+                    // Check if file already exists
+                    if (prevItems.some((item) => item.id === event.file.id)) {
+                        return prevItems;
+                    }
+                    return [...prevItems, event.file];
+                });
+            }
+        },
+    });
 
     const handleCreateFolder = async (name: string) => {
         if (!workspaceId) return;
@@ -360,8 +428,6 @@ const WorkspaceFilesPage = () => {
 
     const handleDelete = async () => {
         if (!contextMenu) return;
-
-        if (!confirm(`Delete "${contextMenu.item.name}"?`)) return;
 
         try {
             await deleteFileSystemEntry(contextMenu.item.id);

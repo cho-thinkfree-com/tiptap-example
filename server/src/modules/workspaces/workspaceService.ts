@@ -5,6 +5,7 @@ import { MembershipRepository } from './membershipRepository.js'
 import { ensureUniqueSlug } from '../../lib/slug.js'
 import { WorkspaceAccessService } from './workspaceAccess.js'
 import { AccountRepository } from '../accounts/accountRepository.js'
+import type { SocketService } from '../../lib/socket.js'
 
 const visibilityEnum: [WorkspaceVisibility, ...WorkspaceVisibility[]] = ['private', 'listed', 'public']
 
@@ -49,7 +50,15 @@ export class WorkspaceService {
     private readonly membershipRepository: MembershipRepository,
     private readonly workspaceAccess: WorkspaceAccessService,
     private readonly accountRepository: AccountRepository,
+    private socketService?: SocketService,
   ) { }
+
+  /**
+   * Set the socket service after initialization (for dependency injection)
+   */
+  public setSocketService(socketService: SocketService): void {
+    this.socketService = socketService;
+  }
 
   async create(ownerAccountId: string, rawInput: z.input<typeof createWorkspaceSchema>): Promise<WorkspaceEntity> {
     const input = createWorkspaceSchema.parse(rawInput)
@@ -111,13 +120,30 @@ export class WorkspaceService {
     await this.workspaceAccess.assertAdminOrOwner(actorAccountId, workspaceId)
     const input = updateWorkspaceSchema.parse(rawInput)
 
-    return this.repository.update(workspaceId, {
+    const updated = await this.repository.update(workspaceId, {
       name: input.name,
       description: input.description,
       defaultLanguage: input.defaultLocale,
       visibility: input.visibility,
       handle: input.handle,
     })
+
+    // Emit socket event for workspace updates
+    if (this.socketService) {
+      this.socketService.emitToWorkspace(workspaceId, {
+        type: 'workspace:updated',
+        workspaceId,
+        updates: {
+          name: input.name,
+          description: input.description,
+          defaultLanguage: input.defaultLocale,
+          visibility: input.visibility,
+          handle: input.handle,
+        },
+      });
+    }
+
+    return updated;
   }
 
   async softDelete(ownerAccountId: string, workspaceId: string): Promise<void> {

@@ -6,18 +6,18 @@ import SettingsIcon from '@mui/icons-material/Settings';
 
 import { useNavigate, Outlet, useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { getWorkspaceMemberProfile, getWorkspace, type MembershipSummary, type WorkspaceSummary } from '../../lib/api';
+import { getWorkspaceMemberProfile, getWorkspace, type WorkspaceSummary } from '../../lib/api';
 import { useI18n, type Locale } from '../../lib/i18n';
 import WorkspaceLanguageSync from '../common/WorkspaceLanguageSync';
+import { useWorkspaceEvents } from '../../hooks/useWorkspaceEvents';
 
 const DashboardLayout = () => {
     const theme = useTheme();
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-    const { logout, user, isAuthenticated, refreshProfile } = useAuth();
+    const { logout, user, isAuthenticated } = useAuth();
     const navigate = useNavigate();
     const { workspaceId } = useParams<{ workspaceId: string }>();
     const [workspaceDisplayName, setWorkspaceDisplayName] = useState<string | null>(null);
-    const [workspaceMember, setWorkspaceMember] = useState<MembershipSummary | null>(null);
     const [workspace, setWorkspace] = useState<WorkspaceSummary | null>(null);
     const { strings, locale, setLocale } = useI18n();
 
@@ -28,14 +28,12 @@ const DashboardLayout = () => {
             getWorkspaceMemberProfile(workspaceId)
                 .then((profile) => {
                     setWorkspaceDisplayName(profile.displayName || null);
-                    setWorkspaceMember(profile);
                     if (profile.preferredLocale && profile.preferredLocale !== locale) {
                         setLocale(profile.preferredLocale as Locale);
                     }
                 })
                 .catch(() => {
                     setWorkspaceDisplayName(null);
-                    setWorkspaceMember(null);
                 });
 
             getWorkspace(workspaceId)
@@ -47,26 +45,24 @@ const DashboardLayout = () => {
                 });
         } else {
             setWorkspaceDisplayName(null);
-            setWorkspaceMember(null);
             setWorkspace(null);
         }
     }, [isAuthenticated, workspaceId, locale, setLocale]);
 
     useEffect(() => {
         fetchWorkspaceData();
+    }, [fetchWorkspaceData]);
 
-        const handleWorkspaceUpdate = (event: Event) => {
-            const customEvent = event as CustomEvent;
-            if (customEvent.detail?.workspaceId === workspaceId) {
-                fetchWorkspaceData();
+    // Real-time workspace updates via WebSocket
+    useWorkspaceEvents({
+        workspaceId,
+        onWorkspaceUpdated: (event) => {
+            // Update workspace name if changed
+            if (event.updates.name !== undefined) {
+                setWorkspace((prev) => prev ? { ...prev, name: event.updates.name } : null);
             }
-        };
-
-        window.addEventListener('workspace-updated', handleWorkspaceUpdate);
-        return () => {
-            window.removeEventListener('workspace-updated', handleWorkspaceUpdate);
-        };
-    }, [fetchWorkspaceData, workspaceId]);
+        },
+    });
 
 
 

@@ -56,7 +56,7 @@ export default function FileShareIndicator({ fileId, shareLinks: initialShareLin
                     hasActiveLink: true,
                     accessType: activeLink.accessType || 'link',
                     isExpired: !!isExpired,
-                    hasPassword: !!activeLink.requiresPassword,
+                    hasPassword: !!(activeLink.requiresPassword || activeLink.passwordHash),
                     hasExpiration: !!activeLink.expiresAt,
                 });
 

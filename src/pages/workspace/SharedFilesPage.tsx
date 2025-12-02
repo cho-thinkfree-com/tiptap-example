@@ -13,6 +13,7 @@ import { usePageTitle } from '../../hooks/usePageTitle';
 import { useI18n } from '../../lib/i18n';
 import SelectionToolbar from '../../components/workspace/SelectionToolbar';
 import FileShareIndicator from '../../components/workspace/FileShareIndicator';
+import { useFileEvents } from '../../hooks/useFileEvents';
 
 const SharedFilesPage = () => {
     const { workspaceId } = useParams<{ workspaceId: string }>();
@@ -223,6 +224,43 @@ const SharedFilesPage = () => {
     useEffect(() => {
         fetchDocuments();
     }, [fetchDocuments]);
+
+    // Real-time file events via WebSocket
+    useFileEvents({
+        workspaceId,
+        onFileCreated: (event) => {
+            // If a new file with shareLinks is created, refetch
+            if (event.file.shareLinks && event.file.shareLinks.length > 0) {
+                fetchDocuments();
+            }
+        },
+        onFileUpdated: (event) => {
+            // Update the document's shareLinks in the list
+            setDocuments((prevDocs) => {
+                const index = prevDocs.findIndex((doc) => doc.id === event.fileId);
+                if (index !== -1) {
+                    const updated = [...prevDocs];
+                    updated[index] = { ...updated[index], ...event.updates };
+
+                    // If shareLinks are now empty or file is unpublished, remove from list
+                    if (event.updates.shareLinks && event.updates.shareLinks.length === 0) {
+                        return prevDocs.filter((doc) => doc.id !== event.fileId);
+                    }
+
+                    return updated;
+                }
+                // If file not in list but has shareLinks, refetch to add it
+                if (event.updates.shareLinks && event.updates.shareLinks.length > 0) {
+                    fetchDocuments();
+                }
+                return prevDocs;
+            });
+        },
+        onFileDeleted: (event) => {
+            // Remove from list if deleted
+            setDocuments((prevDocs) => prevDocs.filter((doc) => doc.id !== event.fileId));
+        },
+    });
 
     const renderDocuments = () => {
         if (loading) return <CircularProgress />;

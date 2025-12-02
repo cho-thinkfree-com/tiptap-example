@@ -4,6 +4,7 @@ import { RevisionRepository } from './revisionRepository.js';
 import { ShareLinkRepository } from './shareLinkRepository.js';
 import { StorageService } from '../storage/storageService.js';
 import { WorkspaceAccessService } from '../workspaces/workspaceAccess.js';
+import type { SocketService } from '../../lib/socket.js';
 
 const ODOCS_MIME_TYPE = 'application/x-odocs';
 
@@ -13,8 +14,16 @@ export class FileSystemService {
         private revisionRepo: RevisionRepository,
         private shareLinkRepo: ShareLinkRepository,
         private storageService: StorageService,
-        private workspaceAccess: WorkspaceAccessService
+        private workspaceAccess: WorkspaceAccessService,
+        private socketService?: SocketService
     ) { }
+
+    /**
+     * Set the socket service after initialization (for dependency injection)
+     */
+    public setSocketService(socketService: SocketService): void {
+        this.socketService = socketService;
+    }
 
     // ============================================================================
     // CREATE OPERATIONS
@@ -34,7 +43,7 @@ export class FileSystemService {
 
         const fileIndex = await this.getNextFileIndex(workspaceId);
 
-        return this.fileSystemRepo.create({
+        const folder = await this.fileSystemRepo.create({
             name,
             type: 'folder',
             workspaceId,
@@ -42,6 +51,17 @@ export class FileSystemService {
             createdBy: membershipId,
             fileIndex,
         });
+
+        // Emit socket event
+        if (this.socketService) {
+            this.socketService.emitToWorkspace(workspaceId, {
+                type: 'file:created',
+                workspaceId,
+                file: folder,
+            });
+        }
+
+        return folder;
     }
 
     async createDocument(
@@ -95,7 +115,18 @@ export class FileSystemService {
             size,
         });
 
-        return this.fileSystemRepo.findById(file.id) as Promise<FileSystemEntry>;
+        const createdFile = await this.fileSystemRepo.findById(file.id) as FileSystemEntry;
+
+        // Emit socket event
+        if (this.socketService) {
+            this.socketService.emitToWorkspace(workspaceId, {
+                type: 'file:created',
+                workspaceId,
+                file: createdFile,
+            });
+        }
+
+        return createdFile;
     }
 
     async createFile(
@@ -251,7 +282,23 @@ export class FileSystemService {
             lastModifiedBy: membershipId,
         });
 
-        return this.fileSystemRepo.findById(file.id) as Promise<FileSystemEntry>;
+        const updatedFile = await this.fileSystemRepo.findById(file.id) as FileSystemEntry;
+
+        // Emit socket event for metadata changes (size, updatedAt, lastModifiedBy)
+        if (this.socketService) {
+            this.socketService.emitToWorkspace(file.workspaceId, {
+                type: 'file:updated',
+                workspaceId: file.workspaceId,
+                fileId: file.id,
+                updates: {
+                    size,
+                    updatedAt: updatedFile.updatedAt,
+                    lastModifiedBy: membershipId,
+                },
+            });
+        }
+
+        return updatedFile;
     }
 
     async updateMetadata(
@@ -265,12 +312,27 @@ export class FileSystemService {
             isStarred?: boolean;
         }
     ): Promise<FileSystemEntry> {
-        await this.getById(membershipId, fileId); // Verify access
+        const file = await this.getById(membershipId, fileId); // Verify access
 
-        return this.fileSystemRepo.update(fileId, {
+        const updated = await this.fileSystemRepo.update(fileId, {
             ...updates,
             lastModifiedBy: membershipId,
         });
+
+        // Emit socket event
+        if (this.socketService) {
+            this.socketService.emitToWorkspace(file.workspaceId, {
+                type: 'file:updated',
+                workspaceId: file.workspaceId,
+                fileId,
+                updates: {
+                    ...updates,
+                    lastModifiedBy: membershipId,
+                },
+            });
+        }
+
+        return updated;
     }
 
     async rename(
@@ -278,12 +340,24 @@ export class FileSystemService {
         fileId: string,
         newName: string
     ): Promise<FileSystemEntry> {
-        await this.getById(membershipId, fileId); // Verify access
+        const file = await this.getById(membershipId, fileId); // Verify access
 
-        return this.fileSystemRepo.update(fileId, {
+        const updated = await this.fileSystemRepo.update(fileId, {
             name: newName,
             lastModifiedBy: membershipId,
         });
+
+        // Emit socket event
+        if (this.socketService) {
+            this.socketService.emitToWorkspace(file.workspaceId, {
+                type: 'file:updated',
+                workspaceId: file.workspaceId,
+                fileId,
+                updates: { name: newName },
+            });
+        }
+
+        return updated;
     }
 
     async move(
@@ -291,21 +365,49 @@ export class FileSystemService {
         fileId: string,
         newParentId: string | null
     ): Promise<FileSystemEntry> {
-        await this.getById(membershipId, fileId); // Verify access
+        const file = await this.getById(membershipId, fileId); // Verify access
+        const oldParentId = file.parentId;
 
-        return this.fileSystemRepo.update(fileId, {
+        const updated = await this.fileSystemRepo.update(fileId, {
             parentId: newParentId,
             lastModifiedBy: membershipId,
         });
+
+        // Emit socket event with move information
+        if (this.socketService) {
+            this.socketService.emitToWorkspace(file.workspaceId, {
+                type: 'file:updated',
+                workspaceId: file.workspaceId,
+                fileId,
+                updates: { parentId: newParentId },
+                oldParentId,
+                newParentId,
+            });
+        }
+
+        return updated;
     }
 
     async toggleStar(membershipId: string, fileId: string): Promise<FileSystemEntry> {
         const file = await this.getById(membershipId, fileId);
+        const newIsStarred = !file.isStarred;
 
-        return this.fileSystemRepo.update(fileId, {
-            isStarred: !file.isStarred,
+        const updated = await this.fileSystemRepo.update(fileId, {
+            isStarred: newIsStarred,
             lastModifiedBy: membershipId,
         });
+
+        // Emit socket event
+        if (this.socketService) {
+            this.socketService.emitToWorkspace(file.workspaceId, {
+                type: 'file:updated',
+                workspaceId: file.workspaceId,
+                fileId,
+                updates: { isStarred: newIsStarred },
+            });
+        }
+
+        return updated;
     }
 
     // ============================================================================
@@ -313,8 +415,18 @@ export class FileSystemService {
     // ============================================================================
 
     async softDelete(membershipId: string, fileId: string): Promise<void> {
-        await this.getById(membershipId, fileId); // Verify access
+        const file = await this.getById(membershipId, fileId); // Verify access
         await this.fileSystemRepo.softDelete(fileId, membershipId);
+
+        // Emit socket event
+        if (this.socketService) {
+            this.socketService.emitToWorkspace(file.workspaceId, {
+                type: 'file:deleted',
+                workspaceId: file.workspaceId,
+                fileId,
+                deletedAt: new Date(),
+            });
+        }
     }
 
     async restore(membershipId: string, fileId: string): Promise<FileSystemEntry> {
@@ -325,7 +437,18 @@ export class FileSystemService {
 
         // Membership validated by resolveMembership middleware
 
-        return this.fileSystemRepo.restore(fileId);
+        const restored = await this.fileSystemRepo.restore(fileId);
+
+        // Emit socket event
+        if (this.socketService) {
+            this.socketService.emitToWorkspace(file.workspaceId, {
+                type: 'file:restored',
+                workspaceId: file.workspaceId,
+                file: restored,
+            });
+        }
+
+        return restored;
     }
 
     async hardDelete(membershipId: string, fileId: string): Promise<void> {
@@ -396,7 +519,22 @@ export class FileSystemService {
                 updates.passwordHash = null;
             }
 
-            return this.shareLinkRepo.update(existingLink.id, updates);
+            const updated = await this.shareLinkRepo.update(existingLink.id, updates);
+
+            // Emit socket event - refetch file to get updated shareLinks
+            if (this.socketService) {
+                const updatedFile = await this.fileSystemRepo.findById(fileId);
+                if (updatedFile) {
+                    this.socketService.emitToWorkspace(file.workspaceId, {
+                        type: 'file:updated',
+                        workspaceId: file.workspaceId,
+                        fileId,
+                        updates: { shareLinks: updatedFile.shareLinks } as any,
+                    });
+                }
+            }
+
+            return updated;
         }
 
         let passwordHash: string | undefined;
@@ -405,7 +543,7 @@ export class FileSystemService {
             passwordHash = await bcrypt.hash(options.password, 10);
         }
 
-        return this.shareLinkRepo.create({
+        const created = await this.shareLinkRepo.create({
             fileId: file.id,
             workspaceId: file.workspaceId,
             createdBy: membershipId,
@@ -413,6 +551,21 @@ export class FileSystemService {
             passwordHash,
             expiresAt: options.expiresAt,
         });
+
+        // Emit socket event - refetch file to get updated shareLinks
+        if (this.socketService) {
+            const updatedFile = await this.fileSystemRepo.findById(fileId);
+            if (updatedFile) {
+                this.socketService.emitToWorkspace(file.workspaceId, {
+                    type: 'file:updated',
+                    workspaceId: file.workspaceId,
+                    fileId,
+                    updates: { shareLinks: updatedFile.shareLinks } as any,
+                });
+            }
+        }
+
+        return created;
     }
 
     async getByShareToken(token: string, password?: string): Promise<any> {
@@ -543,7 +696,24 @@ export class FileSystemService {
     }
 
     async revokeShareLink(membershipId: string, linkId: string): Promise<void> {
-        await this.shareLinkRepo.revoke(linkId);
+        // Revoke the link - the revoke method returns the updated ShareLink
+        const revokedLink = await this.shareLinkRepo.revoke(linkId);
+
+        const fileId = revokedLink.fileId;
+        const file = await this.fileSystemRepo.findById(fileId);
+
+        // Emit socket event - refetch file to get updated shareLinks
+        if (this.socketService && file) {
+            const updatedFile = await this.fileSystemRepo.findById(fileId);
+            if (updatedFile) {
+                this.socketService.emitToWorkspace(file.workspaceId, {
+                    type: 'file:updated',
+                    workspaceId: file.workspaceId,
+                    fileId,
+                    updates: { shareLinks: updatedFile.shareLinks } as any,
+                });
+            }
+        }
     }
 
     async updateShareLink(membershipId: string, linkId: string, body: any): Promise<any> {
@@ -563,7 +733,26 @@ export class FileSystemService {
             updates.passwordHash = null;
         }
 
-        return this.shareLinkRepo.update(linkId, updates);
+        // Update returns the updated ShareLink with fileId
+        const updated = await this.shareLinkRepo.update(linkId, updates);
+
+        const fileId = updated.fileId;
+        const file = await this.fileSystemRepo.findById(fileId);
+
+        // Emit socket event - refetch file to get updated shareLinks
+        if (this.socketService && file) {
+            const updatedFile = await this.fileSystemRepo.findById(fileId);
+            if (updatedFile) {
+                this.socketService.emitToWorkspace(file.workspaceId, {
+                    type: 'file:updated',
+                    workspaceId: file.workspaceId,
+                    fileId,
+                    updates: { shareLinks: updatedFile.shareLinks } as any,
+                });
+            }
+        }
+
+        return updated;
     }
 
     async resolveShareLink(token: string, password?: string): Promise<any> {

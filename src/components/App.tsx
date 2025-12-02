@@ -136,6 +136,7 @@ const AppRoutes = () => {
 };
 
 import LanguageSync from './common/LanguageSync';
+import { SocketProvider } from '../context/SocketContext';
 
 // ...
 
@@ -144,9 +145,11 @@ const App = () => {
     <AuthProvider>
       <UploadProvider>
         <BrowserRouter>
-          <LanguageSync />
-          <AppRoutes />
-          <UploadManager />
+          <SocketProvider>
+            <LanguageSync />
+            <AppRoutes />
+            <UploadManager />
+          </SocketProvider>
         </BrowserRouter>
       </UploadProvider>
     </AuthProvider>

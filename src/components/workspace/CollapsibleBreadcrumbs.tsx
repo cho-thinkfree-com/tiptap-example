@@ -297,12 +297,11 @@ const CollapsibleBreadcrumbs = ({
                         color="text.primary"
                         fontWeight="600"
                         sx={{
-                            display: 'flex',
-                            alignItems: 'center',
                             maxWidth: '200px',
                             overflow: 'hidden',
                             textOverflow: 'ellipsis',
                             whiteSpace: 'nowrap',
+                            display: 'block',
                         }}
                     >
                         {currentFolder.name}

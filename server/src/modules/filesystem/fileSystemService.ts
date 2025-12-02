@@ -232,8 +232,14 @@ export class FileSystemService {
             throw new Error('File has no content');
         }
 
+        // Ensure odocs files have .odocs extension in download filename
+        let filename = file.name;
+        if (file.mimeType === ODOCS_MIME_TYPE && !filename.endsWith('.odocs')) {
+            filename += '.odocs';
+        }
+
         const latestKey = `workspaces/${file.workspaceId}/files/${file.id}/latest`;
-        return this.storageService.getPresignedGetUrl(latestKey, file.name);
+        return this.storageService.getPresignedGetUrl(latestKey, filename);
     }
 
     // ============================================================================
@@ -646,8 +652,14 @@ export class FileSystemService {
     async getSharedFileDownloadUrl(token: string, password?: string): Promise<string> {
         const { file } = await this.getByShareToken(token, password);
 
+        // Ensure odocs files have .odocs extension in download filename
+        let filename = file.name;
+        if (file.mimeType === ODOCS_MIME_TYPE && !filename.endsWith('.odocs')) {
+            filename += '.odocs';
+        }
+
         const latestKey = `workspaces/${file.workspaceId}/files/${file.id}/latest`;
-        return this.storageService.getPresignedGetUrl(latestKey, file.name);
+        return this.storageService.getPresignedGetUrl(latestKey, filename);
     }
 
     // ============================================================================

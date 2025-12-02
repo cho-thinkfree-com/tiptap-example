@@ -50,7 +50,8 @@ export async function fileRoutes(
             const accountId = req.accountId!
 
             const url = await fileService.getDownloadUrl(accountId, fileId)
-            return reply.redirect(url)
+            // Return JSON instead of redirect so frontend can use fetch with credentials
+            return { downloadUrl: url }
         },
     })
 

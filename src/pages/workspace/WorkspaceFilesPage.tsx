@@ -31,6 +31,7 @@ import {
     Share as ShareIcon,
     Edit as EditIcon,
     Delete as DeleteIcon,
+    Download as DownloadIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import { useI18n } from '../../lib/i18n';
@@ -461,6 +462,62 @@ const WorkspaceFilesPage = () => {
         }
     };
 
+    const handleDownload = async () => {
+        if (!contextMenu) return;
+
+        const item = contextMenu.item;
+
+        // Use API_BASE_URL to ensure request goes to backend server (9920), not frontend (9910)
+        const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:9920';
+
+        try {
+            // Get download URL from backend (with authentication)
+            const response = await fetch(`${API_BASE_URL}/api/files/${item.id}/download`, {
+                credentials: 'include',
+            });
+
+            if (!response.ok) {
+                throw new Error(`Download failed: ${response.statusText}`);
+            }
+
+            const data = await response.json();
+
+            // Download from S3 presigned URL (no authentication needed)
+            const downloadResponse = await fetch(data.downloadUrl);
+
+            if (!downloadResponse.ok) {
+                throw new Error(`Download failed: ${downloadResponse.statusText}`);
+            }
+
+            // Get the blob
+            const blob = await downloadResponse.blob();
+
+            // Create download link
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+
+            // Set filename - ensure odocs files have .odocs extension
+            let filename = item.name;
+            if (item.mimeType === 'application/x-odocs' && !filename.endsWith('.odocs')) {
+                filename += '.odocs';
+            }
+            link.download = filename;
+
+            // Trigger download
+            document.body.appendChild(link);
+            link.click();
+
+            // Cleanup
+            document.body.removeChild(link);
+            window.URL.revokeObjectURL(url);
+        } catch (err: any) {
+            alert('Failed to download file: ' + err.message);
+        }
+
+        handleCloseContextMenu();
+    };
+
     const formatBytes = (bytes?: string | null) => {
         if (!bytes) return '-';
         const numBytes = parseInt(bytes, 10);
@@ -608,23 +665,29 @@ const WorkspaceFilesPage = () => {
                     ) : showUndo ? (
                         <Paper
                             elevation={0}
-                            variant="outlined"
                             sx={{
-                                height: '100%',
+                                width: '100%',
+                                px: 2,
+                                py: 0.5,
                                 display: 'flex',
                                 alignItems: 'center',
-                                px: 2,
-                                gap: 2,
-                                bgcolor: 'text.primary',
-                                color: 'background.paper',
-                                borderColor: 'divider',
-                                width: '100%'
+                                gap: 1,
+                                bgcolor: 'grey.300',
+                                border: '1px solid',
+                                borderColor: 'grey.500',
+                                borderRadius: 1,
                             }}
                         >
-                            <Typography variant="subtitle2" sx={{ mr: 'auto', color: 'inherit' }}>
-                                Deleted {deletedItemIds.length} items
-                            </Typography>
-                            <Button size="small" onClick={handleUndo} sx={{ color: 'inherit', fontWeight: 'bold' }}>
+                            <Box sx={{ fontSize: '0.875rem', fontWeight: 600, color: 'text.primary' }}>
+                                Deleted {deletedItemIds.length} {deletedItemIds.length === 1 ? 'item' : 'items'}
+                            </Box>
+                            <Box sx={{ flexGrow: 1 }} />
+                            <Button
+                                size="small"
+                                onClick={handleUndo}
+                                variant="text"
+                                sx={{ fontWeight: 600 }}
+                            >
                                 Undo
                             </Button>
                         </Paper>
@@ -818,6 +881,14 @@ const WorkspaceFilesPage = () => {
                 }}
                 hideBackdrop
             >
+                {contextMenu?.item.type === 'file' && (
+                    <MenuItem onClick={handleDownload}>
+                        <ListItemIcon>
+                            <DownloadIcon fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText>Download</ListItemText>
+                    </MenuItem>
+                )}
                 <MenuItem onClick={handleShare}>
                     <ListItemIcon>
                         <ShareIcon fontSize="small" />

@@ -47,9 +47,14 @@ export class StorageService {
         const command = new GetObjectCommand({
             Bucket: this.bucket,
             Key: key,
-            ResponseCacheControl: 'private, max-age=3600', // Cache for 1 hour
+            // For downloads, prevent caching to ensure fresh download every time
+            // For previews (no downloadName), allow caching
+            ResponseCacheControl: downloadName
+                ? 'no-cache, no-store, must-revalidate'
+                : 'private, max-age=3600',
             ...(downloadName && {
                 ResponseContentDisposition: `attachment; filename="${encodeURIComponent(downloadName)}"`,
+                ResponseContentType: 'application/octet-stream', // Force download
             }),
         })
         return getSignedUrl(this.s3, command, { expiresIn: expiresInSeconds })

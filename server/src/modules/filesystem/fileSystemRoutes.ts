@@ -281,13 +281,20 @@ export async function fileSystemRoutes(
 
     // Get file download URL
     fastify.get('/api/files/:fileId/download', {
-        preHandler: [authenticate, resolveMembership],
+        preHandler: [authenticate, resolveMembershipByFileId],
         handler: async (req, reply) => {
+            console.log('[DOWNLOAD] Endpoint hit with fileId:', req.params);
             const { fileId } = req.params as { fileId: string };
             const membershipId = (req as any).membershipId;
+            console.log('[DOWNLOAD] MembershipId:', membershipId);
 
             const url = await fileSystemService.getFileDownloadUrl(membershipId, fileId);
-            return reply.redirect(url);
+            console.log('[DOWNLOAD] Generated presigned URL, length:', url.length);
+
+            // Return JSON instead of redirect so frontend can use fetch with credentials
+            const response = { downloadUrl: url };
+            console.log('[DOWNLOAD] Returning JSON response');
+            return response;
         },
     });
 

@@ -72,12 +72,23 @@ const RenameDialog = ({ open, onClose, onRename, currentName, itemType }: Rename
           variant="standard"
           value={name}
           onChange={(e) => setName(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !loading) {
+              e.preventDefault();
+              handleRename();
+            }
+          }}
           disabled={loading}
         />
       </DialogContent>
       <DialogActions>
         <Button onClick={handleClose} disabled={loading}>Cancel</Button>
-        <Button onClick={handleRename} disabled={loading}>
+        <Button
+          onClick={handleRename}
+          disabled={loading}
+          variant="contained"
+          color="primary"
+        >
           {loading ? 'Renaming...' : 'Rename'}
         </Button>
       </DialogActions>

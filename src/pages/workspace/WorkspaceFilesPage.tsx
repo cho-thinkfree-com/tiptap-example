@@ -471,7 +471,10 @@ const WorkspaceFilesPage = () => {
     // Keyboard shortcuts and Undo logic
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
-            if (e.key === 'F2' && selectedIds.size === 1) {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+                e.preventDefault();
+                setSelectedIds(new Set(items.map(i => i.id)));
+            } else if (e.key === 'F2' && selectedIds.size === 1) {
                 e.preventDefault();
                 const id = Array.from(selectedIds)[0];
                 const item = items.find(i => i.id === id);

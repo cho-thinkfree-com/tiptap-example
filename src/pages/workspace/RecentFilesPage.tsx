@@ -53,6 +53,17 @@ const RecentFilesPage = () => {
         fetchData();
     }, [isAuthenticated]);
 
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+                e.preventDefault();
+                setSelectedItems(new Set(files.map(f => f.id)));
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [files]);
+
     // Real-time file events via WebSocket
     useFileEvents({
         onFileCreated: (event) => {

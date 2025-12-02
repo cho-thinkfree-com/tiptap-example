@@ -195,26 +195,7 @@ const WorkspaceSettingsPage = () => {
           </Stack>
         </Paper>
 
-        {/* Subscription Section */}
-        <Paper variant="outlined" sx={{ p: 3 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h6">Subscription</Typography>
-            <Button variant="outlined" disabled size="small">
-              Manage Subscription
-            </Button>
-          </Box>
 
-          <Box sx={{
-            p: 4,
-            bgcolor: 'action.hover',
-            borderRadius: 1,
-            textAlign: 'center'
-          }}>
-            <Typography variant="body1" color="text.secondary" paragraph>
-              Subscription management features will be available soon.
-            </Typography>
-          </Box>
-        </Paper>
       </Stack>
     </Container>
   );

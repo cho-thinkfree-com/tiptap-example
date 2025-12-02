@@ -147,6 +147,17 @@ export default function TrashPage() {
         loadTrash()
     }, [workspaceId, isAuthenticated, orderBy, order])
 
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+                e.preventDefault();
+                setSelectedItems(new Set(items.map(i => i.id)));
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [items]);
+
     // Real-time file events via WebSocket - handle delete and restore
     useFileEvents({
         workspaceId,

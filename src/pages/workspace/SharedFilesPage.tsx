@@ -225,6 +225,17 @@ const SharedFilesPage = () => {
         fetchDocuments();
     }, [fetchDocuments]);
 
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if ((e.ctrlKey || e.metaKey) && e.key === 'a') {
+                e.preventDefault();
+                setSelectedItems(new Set(documents.map(d => d.id)));
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [documents]);
+
     // Real-time file events via WebSocket
     useFileEvents({
         workspaceId,

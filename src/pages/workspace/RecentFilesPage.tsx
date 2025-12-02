@@ -218,7 +218,12 @@ const RecentFilesPage = () => {
                                     >
                                         <TableCell>
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                <FileIcon color="primary" />
+                                                <Box
+                                                    component="img"
+                                                    src="/odocs-file-icon-small.png"
+                                                    alt="document"
+                                                    sx={{ width: 24, height: 24 }}
+                                                />
                                                 {doc.name}
                                                 {doc.isStarred && <StarIcon sx={{ fontSize: 16, color: 'warning.main' }} />}
                                                 <FileShareIndicator fileId={doc.id} shareLinks={doc.shareLinks} />

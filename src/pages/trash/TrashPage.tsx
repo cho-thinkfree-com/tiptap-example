@@ -476,7 +476,14 @@ export default function TrashPage() {
                                     >
                                         <TableCell>
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                {item.type === 'folder' ? <FolderIcon color="action" /> : <ArticleIcon color="action" />}
+                                                {item.type === 'folder' ? <FolderIcon color="action" /> : (
+                                                    <Box
+                                                        component="img"
+                                                        src="/odocs-file-icon-small.png"
+                                                        alt="document"
+                                                        sx={{ width: 24, height: 24 }}
+                                                    />
+                                                )}
                                                 {item.name}
                                             </Box>
                                         </TableCell>

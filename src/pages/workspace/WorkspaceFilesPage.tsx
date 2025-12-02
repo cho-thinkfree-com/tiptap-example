@@ -1048,7 +1048,12 @@ const WorkspaceFilesPage = () => {
                                         >
                                             <TableCell>
                                                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                    <FileIcon color="primary" />
+                                                    <Box
+                                                        component="img"
+                                                        src="/odocs-file-icon-small.png"
+                                                        alt="document"
+                                                        sx={{ width: 24, height: 24 }}
+                                                    />
                                                     {item.name}
                                                     {item.isStarred && <StarIcon sx={{ fontSize: 16, color: 'warning.main' }} />}
                                                     <FileShareIndicator fileId={item.id} shareLinks={item.shareLinks} />

@@ -230,8 +230,15 @@ const ImportantFilesPage = () => {
                                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                                                 {item.type === 'folder' ? (
                                                     <FolderIcon color="action" />
+                                                ) : item.mimeType === 'application/x-odocs' ? (
+                                                    <Box
+                                                        component="img"
+                                                        src="/odocs-file-icon-small.png"
+                                                        alt="document"
+                                                        sx={{ width: 24, height: 24 }}
+                                                    />
                                                 ) : (
-                                                    <FileIcon color={item.mimeType === 'application/x-odocs' ? 'primary' : 'action'} />
+                                                    <FileIcon color="action" />
                                                 )}
                                                 {item.name}
                                                 <StarIcon sx={{ fontSize: 16, color: 'warning.main' }} />

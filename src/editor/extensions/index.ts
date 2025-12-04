@@ -149,6 +149,22 @@ export const createBaseExtensions = (strings: AppStrings, _options?: BaseExtensi
           'data-odocs-url': {
             default: null,
           },
+          textAlign: {
+            default: 'center', // Default to center alignment
+            parseHTML: element => element.getAttribute('data-text-align') || 'center',
+            renderHTML: attributes => {
+              if (!attributes.textAlign) return {}
+              return { 'data-text-align': attributes.textAlign }
+            },
+          },
+          display: {
+            default: 'block', // Default to block display
+            parseHTML: element => element.getAttribute('data-display') || 'block',
+            renderHTML: attributes => {
+              if (!attributes.display) return {}
+              return { 'data-display': attributes.display }
+            },
+          },
         }
       },
     }),

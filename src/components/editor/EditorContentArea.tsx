@@ -80,6 +80,22 @@ const EditorContentArea = ({ readOnly, initialWidth = '950px', overrideWidth, vi
               // Ensure white background for the content area
               backgroundColor: 'white',
               border: '1px solid rgba(0, 0, 0, 0.05)', // Subtle border
+              // Image alignment based on data-text-align attribute
+              '& img[data-text-align="left"]': {
+                display: 'block',
+                marginLeft: 0,
+                marginRight: 'auto',
+              },
+              '& img[data-text-align="center"]': {
+                display: 'block',
+                marginLeft: 'auto',
+                marginRight: 'auto',
+              },
+              '& img[data-text-align="right"]': {
+                display: 'block',
+                marginLeft: 'auto',
+                marginRight: 0,
+              },
               // Apply base document styles
               ...baseDocumentStyles,
               // Apply template styles in viewer mode (overrides base styles)

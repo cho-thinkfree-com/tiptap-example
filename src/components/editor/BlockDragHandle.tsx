@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { DragHandle } from '@tiptap/extension-drag-handle-react'
 import { offset, shift } from '@floating-ui/dom'
 import { useRichTextEditorContext } from 'mui-tiptap'
@@ -180,4 +181,5 @@ const BlockDragHandle = () => {
   )
 }
 
-export default BlockDragHandle
+// Memoize to prevent re-renders when parent state changes (e.g., saveStatus)
+export default memo(BlockDragHandle)

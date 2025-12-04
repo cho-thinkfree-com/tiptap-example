@@ -1,6 +1,7 @@
 ﻿import { Paper, Popper } from '@mui/material'
-import { useEffect, useRef, useState } from 'react'
-import { TableMenuControls, useRichTextEditorContext } from 'mui-tiptap'
+import { memo, useEffect, useRef, useState } from 'react'
+import { useRichTextEditorContext } from 'mui-tiptap'
+import CustomTableControls from './CustomTableControls'
 
 const TableFloatingToolbar = () => {
   const editor = useRichTextEditorContext()
@@ -66,10 +67,11 @@ const TableFloatingToolbar = () => {
       modifiers={[{ name: 'offset', options: { offset: [0, 8] } }]}
     >
       <Paper elevation={2} sx={{ p: 1, display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
-        <TableMenuControls />
+        <CustomTableControls />
       </Paper>
     </Popper>
   )
 }
 
-export default TableFloatingToolbar
+// Memoize to prevent re-renders when parent state changes (e.g., saveStatus)
+export default memo(TableFloatingToolbar)

@@ -36,4 +36,18 @@ export const baseDocumentStyles: SxProps<Theme> = {
         // padding: '0.75em 1em',
         // borderRadius: '4px',
     },
+
+    // Image border styles (thin: 얇은 테두리, medium: 굵은 테두리)
+    '& img[data-border="thin"]': {
+        border: '1px solid #ccc',
+    },
+    '& img[data-border="medium"]': {
+        border: '3px solid #666',
+    },
+    '& img[data-border-radius="rounded"]': {
+        borderRadius: '8px',
+    },
+    '& img[data-border-radius="circle"]': {
+        borderRadius: '9999px',
+    },
 };

@@ -66,7 +66,7 @@ const TableFloatingToolbar = () => {
       placement='top'
       modifiers={[{ name: 'offset', options: { offset: [0, 8] } }]}
     >
-      <Paper elevation={2} sx={{ p: 1, display: 'inline-flex', alignItems: 'center', gap: 0.5 }}>
+      <Paper elevation={3} sx={{ p: 1, display: 'inline-flex', alignItems: 'center', gap: 0.5, border: '1px solid', borderColor: 'divider' }}>
         <CustomTableControls />
       </Paper>
     </Popper>

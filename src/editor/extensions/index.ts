@@ -26,7 +26,8 @@ import TextAlign from '@tiptap/extension-text-align'
 import { TextStyle } from '@tiptap/extension-text-style'
 import StarterKit from '@tiptap/starter-kit'
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
-import { FontSize, ResizableImage, TableImproved } from 'mui-tiptap'
+import { FontSize, TableImproved } from 'mui-tiptap'
+import Image from '@tiptap/extension-image'
 import type { AppStrings } from '../../lib/i18n'
 import { CalloutExtension } from './callout'
 import { ReactNodeViewRenderer } from '@tiptap/react'
@@ -142,7 +143,7 @@ export const createBaseExtensions = (strings: AppStrings, _options?: BaseExtensi
     CodeBlockLowlight.configure({
       lowlight,
     }),
-    ResizableImage.extend({
+    Image.extend({
       addAttributes() {
         return {
           ...this.parent?.(),
@@ -150,19 +151,27 @@ export const createBaseExtensions = (strings: AppStrings, _options?: BaseExtensi
             default: null,
           },
           textAlign: {
-            default: 'center', // Default to center alignment
+            default: 'center',
             parseHTML: element => element.getAttribute('data-text-align') || 'center',
             renderHTML: attributes => {
               if (!attributes.textAlign) return {}
               return { 'data-text-align': attributes.textAlign }
             },
           },
-          display: {
-            default: 'block', // Default to block display
-            parseHTML: element => element.getAttribute('data-display') || 'block',
+          border: {
+            default: 'none',
+            parseHTML: element => element.getAttribute('data-border') || 'none',
             renderHTML: attributes => {
-              if (!attributes.display) return {}
-              return { 'data-display': attributes.display }
+              if (!attributes.border || attributes.border === 'none') return {}
+              return { 'data-border': attributes.border }
+            },
+          },
+          borderRadius: {
+            default: 'none',
+            parseHTML: element => element.getAttribute('data-border-radius') || 'none',
+            renderHTML: attributes => {
+              if (!attributes.borderRadius || attributes.borderRadius === 'none') return {}
+              return { 'data-border-radius': attributes.borderRadius }
             },
           },
         }

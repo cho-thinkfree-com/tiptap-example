@@ -2,6 +2,7 @@ import { Box } from '@mui/material'
 import { RichTextField, useRichTextEditorContext } from 'mui-tiptap'
 import BlockDragHandle from './BlockDragHandle'
 import TableFloatingToolbar from './TableFloatingToolbar'
+import ImageFloatingToolbar from './ImageFloatingToolbar'
 import { memo, useEffect, useState } from 'react'
 import type { ViewerTemplate } from '../../lib/viewerTemplates'
 import { getTemplateStyles } from '../../lib/viewerTemplates'
@@ -146,6 +147,7 @@ const EditorContentArea = ({ readOnly, initialWidth = '950px', overrideWidth, vi
         <>
           <BlockDragHandle />
           <TableFloatingToolbar />
+          <ImageFloatingToolbar />
         </>
       )}
     </Box>

@@ -1,5 +1,5 @@
 import { memo, useEffect, useRef, useState } from 'react'
-import { Paper, Popper, IconButton, Tooltip, Divider, ToggleButtonGroup, ToggleButton, SvgIcon } from '@mui/material'
+import { Paper, Popper, IconButton, Tooltip, Divider, ToggleButtonGroup, ToggleButton, SvgIcon, Button, ButtonGroup } from '@mui/material'
 import { useRichTextEditorContext } from 'mui-tiptap'
 import FormatAlignLeftIcon from '@mui/icons-material/FormatAlignLeft'
 import FormatAlignCenterIcon from '@mui/icons-material/FormatAlignCenter'
@@ -33,6 +33,8 @@ const ImageFloatingToolbar = () => {
     const [currentBorder, setCurrentBorder] = useState<string>('none')
     const [currentBorderRadius, setCurrentBorderRadius] = useState<string>('none')
     const [currentAlign, setCurrentAlign] = useState<string>('center')
+    const [currentWidth, setCurrentWidth] = useState<string>('100%')
+    const [naturalWidth, setNaturalWidth] = useState<number>(0)
     const rafRef = useRef<number | null>(null)
 
     useEffect(() => {
@@ -51,11 +53,18 @@ const ImageFloatingToolbar = () => {
                 if (selectedNode) {
                     setAnchorEl(selectedNode as HTMLElement)
 
+                    // Get natural width from the image element
+                    const imgElement = selectedNode.querySelector('img') || selectedNode as HTMLImageElement
+                    if (imgElement && imgElement.tagName === 'IMG') {
+                        setNaturalWidth((imgElement as HTMLImageElement).naturalWidth)
+                    }
+
                     // Get current attributes
                     const attrs = editor.getAttributes('image')
                     setCurrentBorder(attrs.border || 'none')
                     setCurrentBorderRadius(attrs.borderRadius || 'none')
                     setCurrentAlign(attrs.textAlign || 'center')
+                    setCurrentWidth(attrs.width || '100%')
                 } else {
                     setAnchorEl(null)
                 }
@@ -115,6 +124,13 @@ const ImageFloatingToolbar = () => {
         refreshAnchor()
     }
 
+    const handleWidthChange = (width: string) => {
+        if (!editor) return
+        editor.commands.updateAttributes('image', { width })
+        setCurrentWidth(width)
+        refreshAnchor()
+    }
+
     const handleDelete = () => {
         if (!editor) return
         editor.commands.deleteSelection()
@@ -123,6 +139,36 @@ const ImageFloatingToolbar = () => {
     // Validate anchorEl is still in document
     const isValidAnchor = Boolean(anchorEl && document.body.contains(anchorEl))
     const open = isValidAnchor && Boolean(editor?.isEditable)
+
+    const widthPresets = ['50%', '75%', '100%', '150%']
+
+    // Calculate current percentage from stored width (using floor for consistency)
+    const getCurrentPercent = (): number | null => {
+        if (!currentWidth || !naturalWidth) return null
+
+        if (currentWidth.endsWith('px')) {
+            const pxValue = parseInt(currentWidth, 10)
+            if (!isNaN(pxValue)) {
+                // Use floor to match the saving logic
+                return Math.floor((pxValue / naturalWidth) * 100)
+            }
+        } else if (currentWidth.endsWith('%')) {
+            const percentValue = parseInt(currentWidth, 10)
+            if (!isNaN(percentValue)) {
+                return percentValue
+            }
+        }
+        return null
+    }
+
+    const currentPercent = getCurrentPercent()
+
+    // Check if a preset is selected (allow ±1% tolerance for rounding differences)
+    const isPresetSelected = (preset: string): boolean => {
+        if (currentPercent === null) return false
+        const presetValue = parseInt(preset, 10)
+        return Math.abs(currentPercent - presetValue) <= 1
+    }
 
     return (
         <Popper
@@ -133,6 +179,23 @@ const ImageFloatingToolbar = () => {
             sx={{ zIndex: 1300 }}
         >
             <Paper elevation={3} sx={{ p: 1, display: 'inline-flex', alignItems: 'center', gap: 0.5, border: '1px solid', borderColor: 'divider' }}>
+                {/* Width presets */}
+                <ButtonGroup size="small" variant="outlined" sx={{ '& .MuiButton-root': { minWidth: 36, px: 1, py: 0.5, fontSize: '0.75rem' } }}>
+                    {widthPresets.map((width) => (
+                        <Tooltip key={width} title={`너비 ${width}`}>
+                            <Button
+                                onClick={() => handleWidthChange(width)}
+                                variant={isPresetSelected(width) ? 'contained' : 'outlined'}
+                                sx={{ fontWeight: isPresetSelected(width) ? 'bold' : 'normal' }}
+                            >
+                                {width}
+                            </Button>
+                        </Tooltip>
+                    ))}
+                </ButtonGroup>
+
+                <Divider orientation="vertical" flexItem sx={{ mx: 0.5 }} />
+
                 {/* Alignment */}
                 <ToggleButtonGroup
                     value={currentAlign}
@@ -229,3 +292,4 @@ const ImageFloatingToolbar = () => {
 
 // Memoize to prevent re-renders when parent state changes
 export default memo(ImageFloatingToolbar)
+

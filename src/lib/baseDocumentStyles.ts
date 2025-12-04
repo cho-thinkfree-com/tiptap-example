@@ -50,4 +50,32 @@ export const baseDocumentStyles: SxProps<Theme> = {
     '& img[data-border-radius="circle"]': {
         borderRadius: '9999px',
     },
+
+    // Resizable image styles
+    '& .image-resizer': {
+        display: 'inline-flex',
+        position: 'relative',
+        flexGrow: 0,
+        '& img': {
+            display: 'block',
+        },
+    },
+    '& .image-resizer .resize-trigger': {
+        position: 'absolute',
+        right: -6,
+        bottom: -6,
+        width: 12,
+        height: 12,
+        background: '#1976d2',
+        borderRadius: '50%',
+        cursor: 'nwse-resize',
+        opacity: 0,
+        transition: 'opacity 0.2s',
+    },
+    '& .image-resizer:hover .resize-trigger': {
+        opacity: 1,
+    },
+    '& .image-resizer.resizing .resize-trigger': {
+        opacity: 1,
+    },
 };

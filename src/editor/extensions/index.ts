@@ -32,6 +32,7 @@ import type { AppStrings } from '../../lib/i18n'
 import { CalloutExtension } from './callout'
 import { ReactNodeViewRenderer } from '@tiptap/react'
 import CalloutNodeView from './CalloutNodeView.tsx'
+import ResizableImageView from './ResizableImageView'
 import { DocumentLayout } from './DocumentLayout'
 
 const lowlight = createLowlight()
@@ -150,6 +151,17 @@ export const createBaseExtensions = (strings: AppStrings, _options?: BaseExtensi
           'data-odocs-url': {
             default: null,
           },
+          width: {
+            default: null,
+            parseHTML: element => element.getAttribute('width') || element.style.width || null,
+            renderHTML: attributes => {
+              if (!attributes.width) return {}
+              return {
+                width: attributes.width,
+                style: `width: ${attributes.width}`,
+              }
+            },
+          },
           textAlign: {
             default: 'center',
             parseHTML: element => element.getAttribute('data-text-align') || 'center',
@@ -175,6 +187,9 @@ export const createBaseExtensions = (strings: AppStrings, _options?: BaseExtensi
             },
           },
         }
+      },
+      addNodeView() {
+        return ReactNodeViewRenderer(ResizableImageView)
       },
     }),
     TableImproved.configure({

@@ -5,7 +5,7 @@ import App from './components/App.tsx'
 import { I18nProvider } from './lib/i18n'
 import { premiumTheme } from './theme/premiumTheme.ts'
 import './styles/global.css'
-import 'highlight.js/styles/github.css'
+import 'highlight.js/styles/atom-one-light.css'
 
 createRoot(document.getElementById('root')!).render(
   <ThemeProvider theme={premiumTheme}>

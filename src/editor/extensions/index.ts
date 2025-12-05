@@ -36,6 +36,7 @@ import TaskList from '@tiptap/extension-task-list'
 import TextAlign from '@tiptap/extension-text-align'
 import { TextStyle } from '@tiptap/extension-text-style'
 import StarterKit from '@tiptap/starter-kit'
+import Code from '@tiptap/extension-code'
 import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight'
 import { FontSize, TableImproved } from 'mui-tiptap'
 import Image from '@tiptap/extension-image'
@@ -134,6 +135,23 @@ export const createBaseExtensions = (strings: AppStrings, _options?: BaseExtensi
       horizontalRule: false,
       link: false,
       codeBlock: false,
+      code: false,
+    }),
+    // Custom Code mark with backtick shortcut for wrapping selection
+    Code.extend({
+      addKeyboardShortcuts() {
+        return {
+          ...this.parent?.(),
+          '`': () => {
+            const { empty } = this.editor.state.selection
+            if (!empty) {
+              // If there's a selection, toggle code mark
+              return this.editor.commands.toggleCode()
+            }
+            return false
+          },
+        }
+      },
     }),
     Heading.configure({
       levels: [...HEADING_LEVELS],

@@ -5,6 +5,7 @@ import FormatAlignLeftIcon from '@mui/icons-material/FormatAlignLeft'
 import FormatAlignCenterIcon from '@mui/icons-material/FormatAlignCenter'
 import FormatAlignRightIcon from '@mui/icons-material/FormatAlignRight'
 import RoundedCornerIcon from '@mui/icons-material/RoundedCorner'
+import { useFloatingToolbarBoundary } from '../../hooks/useFloatingToolbarVisibility'
 
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutline'
 
@@ -138,7 +139,8 @@ const ImageFloatingToolbar = () => {
 
     // Validate anchorEl is still in document
     const isValidAnchor = Boolean(anchorEl && document.body.contains(anchorEl))
-    const open = isValidAnchor && Boolean(editor?.isEditable)
+    const { boundaryEl, isInViewport } = useFloatingToolbarBoundary(anchorEl)
+    const open = isValidAnchor && isInViewport && Boolean(editor?.isEditable)
 
     const widthPresets = ['50%', '100%', '150%']
 
@@ -175,7 +177,11 @@ const ImageFloatingToolbar = () => {
             open={open}
             anchorEl={isValidAnchor ? anchorEl : null}
             placement="top"
-            modifiers={[{ name: 'offset', options: { offset: [0, 8] } }]}
+            modifiers={[
+                { name: 'offset', options: { offset: [0, 8] } },
+                { name: 'flip', enabled: true, options: { boundary: boundaryEl || 'clippingParents' } },
+                { name: 'preventOverflow', enabled: true, options: { boundary: boundaryEl || 'clippingParents', padding: 8 } },
+            ]}
             sx={{ zIndex: 1300 }}
         >
             <Paper elevation={3} sx={{ p: 1, display: 'inline-flex', alignItems: 'center', gap: 0.5, border: '1px solid', borderColor: 'divider' }}>

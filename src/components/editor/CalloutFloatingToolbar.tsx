@@ -7,6 +7,7 @@ import ReportIcon from '@mui/icons-material/Report'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import ArticleIcon from '@mui/icons-material/Article'
 import DeleteIcon from '@mui/icons-material/DeleteOutline'
+import { useFloatingToolbarBoundary } from '../../hooks/useFloatingToolbarVisibility'
 
 const CalloutFloatingToolbar = () => {
     const editor = useRichTextEditorContext()
@@ -89,15 +90,20 @@ const CalloutFloatingToolbar = () => {
         }
     }
 
-    const open = Boolean(anchorEl) && Boolean(editor?.isEditable)
+    const { boundaryEl, isInViewport } = useFloatingToolbarBoundary(anchorEl)
+    const open = Boolean(anchorEl) && isInViewport && Boolean(editor?.isEditable)
 
     return (
         <Popper
             open={open}
             anchorEl={anchorEl}
             placement='top'
-            modifiers={[{ name: 'offset', options: { offset: [0, 8] } }]}
-            style={{ zIndex: 10 }} // Ensure it's above other elements
+            modifiers={[
+                { name: 'offset', options: { offset: [0, 8] } },
+                { name: 'flip', enabled: true, options: { boundary: boundaryEl || 'clippingParents' } },
+                { name: 'preventOverflow', enabled: true, options: { boundary: boundaryEl || 'clippingParents', padding: 8 } },
+            ]}
+            style={{ zIndex: 10 }}
         >
             <Paper elevation={3} sx={{ p: 1, display: 'inline-flex', alignItems: 'center', gap: 0.5, border: '1px solid', borderColor: 'divider' }}>
                 <Tooltip title="Info">

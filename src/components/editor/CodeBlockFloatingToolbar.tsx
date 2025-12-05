@@ -4,6 +4,7 @@ import { useRichTextEditorContext } from 'mui-tiptap'
 import DeleteIcon from '@mui/icons-material/DeleteOutline'
 import CodeIcon from '@mui/icons-material/Code'
 import ContentCopyIcon from '@mui/icons-material/ContentCopy'
+import { useFloatingToolbarBoundary } from '../../hooks/useFloatingToolbarVisibility'
 
 // Supported languages with display names
 const LANGUAGES = [
@@ -150,14 +151,19 @@ const CodeBlockFloatingToolbar = () => {
 
     // Validate anchorEl is still in document before rendering Popper
     const isValidAnchor = anchorEl && document.body.contains(anchorEl)
-    const open = Boolean(isValidAnchor) && Boolean(editor?.isEditable)
+    const { boundaryEl, isInViewport } = useFloatingToolbarBoundary(anchorEl)
+    const open = Boolean(isValidAnchor) && isInViewport && Boolean(editor?.isEditable)
 
     return (
         <Popper
             open={open}
             anchorEl={anchorEl}
             placement='top'
-            modifiers={[{ name: 'offset', options: { offset: [0, 8] } }]}
+            modifiers={[
+                { name: 'offset', options: { offset: [0, 8] } },
+                { name: 'flip', enabled: true, options: { boundary: boundaryEl || 'clippingParents' } },
+                { name: 'preventOverflow', enabled: true, options: { boundary: boundaryEl || 'clippingParents', padding: 8 } },
+            ]}
             style={{ zIndex: 10 }}
         >
             <Paper elevation={3} sx={{ p: 1, display: 'inline-flex', alignItems: 'center', gap: 0.5, border: '1px solid', borderColor: 'divider' }}>

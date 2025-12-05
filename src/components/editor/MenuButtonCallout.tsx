@@ -1,14 +1,15 @@
 import React, { useCallback, useState } from 'react'
 import { IconButton, Popover, Tooltip, Box } from '@mui/material'
-import InfoIcon from '@mui/icons-material/InfoOutlined'
-import WarningIcon from '@mui/icons-material/WarningAmberOutlined'
-import ErrorIcon from '@mui/icons-material/ErrorOutline'
-import CheckCircleIcon from '@mui/icons-material/CheckCircleOutline'
+import InfoIcon from '@mui/icons-material/Info'
+import WarningIcon from '@mui/icons-material/Warning'
+import ReportIcon from '@mui/icons-material/Report'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import ArticleIcon from '@mui/icons-material/Article'
 import CloseIcon from '@mui/icons-material/Close'
 import { useRichTextEditorContext } from 'mui-tiptap'
 import { useI18n } from '../../lib/i18n'
 
-type CalloutType = 'info' | 'warning' | 'error' | 'success'
+type CalloutType = 'info' | 'warning' | 'error' | 'success' | 'memo'
 
 const MenuButtonCallout: React.FC = () => {
   const { strings } = useI18n()
@@ -57,25 +58,30 @@ const MenuButtonCallout: React.FC = () => {
         anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
         transformOrigin={{ vertical: 'top', horizontal: 'left' }}
       >
-        <Box sx={{ display: 'flex', flexDirection: 'row', p: 1 }}>
-          <Tooltip title={toolbarStrings.calloutInfo}>
-            <IconButton size='small' onClick={() => handleSetCallout('info')}>
+        <Box sx={{ display: 'flex', flexDirection: 'row', p: 1, gap: 0.5 }}>
+          <Tooltip title="Info">
+            <IconButton size='small' onClick={() => handleSetCallout('info')} sx={{ color: '#1565c0' }}>
               <InfoIcon fontSize='small' />
             </IconButton>
           </Tooltip>
-          <Tooltip title={toolbarStrings.calloutWarning}>
-            <IconButton size='small' onClick={() => handleSetCallout('warning')}>
+          <Tooltip title="Memo">
+            <IconButton size='small' onClick={() => handleSetCallout('memo')} sx={{ color: '#757575' }}>
+              <ArticleIcon fontSize='small' />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Success">
+            <IconButton size='small' onClick={() => handleSetCallout('success')} sx={{ color: '#2e7d32' }}>
+              <CheckCircleIcon fontSize='small' />
+            </IconButton>
+          </Tooltip>
+          <Tooltip title="Warning">
+            <IconButton size='small' onClick={() => handleSetCallout('warning')} sx={{ color: '#f57c00' }}>
               <WarningIcon fontSize='small' />
             </IconButton>
           </Tooltip>
-          <Tooltip title={toolbarStrings.calloutError}>
-            <IconButton size='small' onClick={() => handleSetCallout('error')}>
-              <ErrorIcon fontSize='small' />
-            </IconButton>
-          </Tooltip>
-          <Tooltip title={toolbarStrings.calloutSuccess}>
-            <IconButton size='small' onClick={() => handleSetCallout('success')}>
-              <CheckCircleIcon fontSize='small' />
+          <Tooltip title="Error">
+            <IconButton size='small' onClick={() => handleSetCallout('error')} sx={{ color: '#c62828' }}>
+              <ReportIcon fontSize='small' />
             </IconButton>
           </Tooltip>
           {isCalloutActive && (

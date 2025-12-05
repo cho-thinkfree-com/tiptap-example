@@ -1,10 +1,11 @@
 import React from 'react'
 import { NodeViewWrapper, NodeViewContent, type NodeViewProps } from '@tiptap/react'
 import { Box, IconButton, Tooltip } from '@mui/material'
-import InfoIcon from '@mui/icons-material/InfoOutlined'
-import WarningIcon from '@mui/icons-material/WarningAmberOutlined'
-import ErrorIcon from '@mui/icons-material/ErrorOutline'
-import CheckCircleIcon from '@mui/icons-material/CheckCircleOutline'
+import InfoIcon from '@mui/icons-material/Info'
+import WarningIcon from '@mui/icons-material/Warning'
+import ReportIcon from '@mui/icons-material/Report'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import ArticleIcon from '@mui/icons-material/Article'
 import CloseIcon from '@mui/icons-material/Close'
 
 const CalloutNodeView: React.FC<NodeViewProps> = ({ node, getPos, deleteNode, editor }) => {
@@ -13,14 +14,16 @@ const CalloutNodeView: React.FC<NodeViewProps> = ({ node, getPos, deleteNode, ed
   const getIcon = (calloutType: string) => {
     switch (calloutType) {
       case 'warning':
-        return <WarningIcon fontSize="small" />
+        return <WarningIcon fontSize="small" sx={{ color: '#f57c00' }} /> // Darker Orange
       case 'error':
-        return <ErrorIcon fontSize="small" />
+        return <ReportIcon fontSize="small" sx={{ color: '#c62828' }} /> // Darker Red
       case 'success':
-        return <CheckCircleIcon fontSize="small" />
+        return <CheckCircleIcon fontSize="small" sx={{ color: '#2e7d32' }} /> // Darker Green
+      case 'memo':
+        return <ArticleIcon fontSize="small" sx={{ color: '#757575' }} /> // Grey 600
       case 'info':
       default:
-        return <InfoIcon fontSize="small" />
+        return <InfoIcon fontSize="small" sx={{ color: '#1565c0' }} /> // Darker Blue
     }
   }
 
@@ -32,40 +35,12 @@ const CalloutNodeView: React.FC<NodeViewProps> = ({ node, getPos, deleteNode, ed
   }
 
   return (
-    <NodeViewWrapper className={`callout-block callout-${type}`} style={{ height: '100px' }}>
-      <Box sx={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-start' }}>
-        <Box className="callout-header">
-          <Box className="callout-icon">
-            {getIcon(type)}
-          </Box>
-          <Box className="callout-type-selector">
-            <Tooltip title="Info">
-              <IconButton size="small" onClick={() => handleTypeChange('info')} color={type === 'info' ? 'primary' : 'default'}>
-                <InfoIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Warning">
-              <IconButton size="small" onClick={() => handleTypeChange('warning')} color={type === 'warning' ? 'warning' : 'default'}>
-                <WarningIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Error">
-              <IconButton size="small" onClick={() => handleTypeChange('error')} color={type === 'error' ? 'error' : 'default'}>
-                <ErrorIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="Success">
-              <IconButton size="small" onClick={() => handleTypeChange('success')} color={type === 'success' ? 'success' : 'default'}>
-                <CheckCircleIcon fontSize="small" />
-              </IconButton>
-            </Tooltip>
-          </Box>
-          <Tooltip title="Remove callout">
-            <IconButton size="small" onClick={deleteNode} className="callout-delete-button">
-              <CloseIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
+    <NodeViewWrapper className={`callout-block callout-${type}`}>
+      <Box sx={{ display: 'flex', gap: '0.75rem', alignItems: 'flex-start' }}>
+        <Box className="callout-icon">
+          {getIcon(type)}
         </Box>
+
         <NodeViewContent className="callout-content" />
       </Box>
     </NodeViewWrapper>

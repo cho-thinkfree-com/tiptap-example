@@ -10,6 +10,7 @@ export type HeadingSlashCommandDefinition = {
 export type HeadingSlashCommand = HeadingSlashCommandDefinition & {
   title: string
   description: string
+  aliases: string[]
 }
 
 const headingCommandDefinitions: HeadingSlashCommandDefinition[] = [
@@ -60,6 +61,7 @@ export const createHeadingSlashCommands = (strings: AppStrings): HeadingSlashCom
     ...definition,
     title: titles[definition.level],
     description: descriptions[definition.level],
+    aliases: [definition.alias],
   }))
 }
 

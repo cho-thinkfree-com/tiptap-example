@@ -33,6 +33,7 @@ import { CalloutExtension } from './callout'
 import { ReactNodeViewRenderer } from '@tiptap/react'
 import CalloutNodeView from './CalloutNodeView.tsx'
 import ResizableImageView from './ResizableImageView'
+import { SlashCommand } from './slashCommand'
 import { DocumentLayout } from './DocumentLayout'
 import {
   addRowBeforeWithAttrs,
@@ -241,8 +242,11 @@ export const createBaseExtensions = (strings: AppStrings, _options?: BaseExtensi
     }),
     Gapcursor,
 
-    CalloutExtension.configure({
-      addNodeView: () => ReactNodeViewRenderer(CalloutNodeView),
+    CalloutExtension,
+    SlashCommand.configure({
+      suggestion: {
+        char: '/',
+      }
     }),
     DocumentLayout,
   ] as Extension[]

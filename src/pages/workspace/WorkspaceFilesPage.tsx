@@ -35,6 +35,7 @@ import {
     Download as DownloadIcon,
     CheckCircle as CheckCircleIcon,
     Error as ErrorIcon,
+    People as PeopleIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
 import { useUpload } from '../../context/UploadContext';
@@ -1152,6 +1153,24 @@ const WorkspaceFilesPage = () => {
                     </ListItemIcon>
                     <ListItemText>{strings.editor.title.share || 'Share'}</ListItemText>
                 </MenuItem>
+
+                {/* Collaborative Edit - only for .odocs files */}
+                {contextMenu?.item.mimeType === 'application/x-odocs' && (
+                    <MenuItem
+                        onClick={() => {
+                            if (contextMenu) {
+                                window.open(`/workspace/${workspaceId}/files/${contextMenu.item.id}/edit?mode=collaboration`, '_blank');
+                                handleCloseContextMenu();
+                            }
+                        }}
+                        disabled={selectedIds.size > 1}
+                    >
+                        <ListItemIcon>
+                            <PeopleIcon fontSize="small" />
+                        </ListItemIcon>
+                        <ListItemText>Collaborative Edit</ListItemText>
+                    </MenuItem>
+                )}
 
                 {/* Download - only for single selection and files only */}
                 <MenuItem

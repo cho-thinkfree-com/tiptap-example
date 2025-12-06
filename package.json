@@ -11,7 +11,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "server:dev": "tsx --watch --tsconfig tsconfig.server.json server/src/app.ts",
-    "server:cleanup-trash": "tsx --tsconfig tsconfig.server.json server/src/scripts/cleanupTrash.ts"
+    "server:cleanup-trash": "tsx --tsconfig tsconfig.server.json server/src/scripts/cleanupTrash.ts",
+    "hopo:dev": "tsx --watch --tsconfig tsconfig.server.json server/src/hocuspocus.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.940.0",
@@ -25,6 +26,7 @@
     "@hocuspocus/extension-redis": "^3.4.0",
     "@hocuspocus/provider": "^3.4.0",
     "@hocuspocus/server": "^3.4.0",
+    "@hocuspocus/transformer": "^3.4.0",
     "@mui/icons-material": "^7.3.5",
     "@mui/material": "^7.3.5",
     "@prisma/client": "^6.19.0",
@@ -33,6 +35,7 @@
     "@tiptap/extension-bubble-menu": "^3.12.0",
     "@tiptap/extension-code-block-lowlight": "^3.10.1",
     "@tiptap/extension-collaboration": "^3.10.1",
+    "@tiptap/extension-collaboration-cursor": "^3.0.0",
     "@tiptap/extension-color": "^3.10.1",
     "@tiptap/extension-drag-handle": "^3.10.1",
     "@tiptap/extension-drag-handle-react": "^3.10.1",
@@ -89,6 +92,7 @@
     "socket.io-client": "^4.8.1",
     "tippy.js": "^6.3.7",
     "uuid": "^13.0.0",
+    "y-prosemirror": "^1.3.7",
     "y-protocols": "^1.0.6",
     "yjs": "^13.6.27",
     "zod": "^4.1.12"

@@ -1,15 +1,25 @@
-import { Alert, Box, Button, CircularProgress, Snackbar } from '@mui/material';
-import { useCallback, useState, useEffect } from 'react';
+import { Alert, Box, CircularProgress, Snackbar, Avatar, Tooltip } from '@mui/material';
+import { useCallback, useState, useEffect, useMemo, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom'; // Import useSearchParams
 import { useAuth } from '../../context/AuthContext';
-import { updateDocumentContent, renameFileSystemEntry, type FileSystemEntry, getFileSystemEntry } from '../../lib/api';
+import { renameFileSystemEntry, type FileSystemEntry, getFileSystemEntry, updateDocumentContent } from '../../lib/api';
 import EditorLayout from '../../components/layout/EditorLayout';
 import useEditorInstance from '../../editor/useEditorInstance';
 import { useDebouncedCallback } from '../../lib/useDebounce';
 import { broadcastSync } from '../../lib/syncEvents';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import CloseOverlay from '../../components/editor/CloseOverlay';
-import { processContentForLoad, processContentForSave } from '../../lib/editorUtils';
 import { useFileEvents } from '../../hooks/useFileEvents';
+import { HocuspocusProvider } from '@hocuspocus/provider';
+import Collaboration from '@tiptap/extension-collaboration';
+// import CollaborationCursor from '@tiptap/extension-collaboration-cursor';
+import * as Y from 'yjs';
+
+// Random color generator for cursors
+const getRandomColor = () => {
+    const colors = ['#958DF1', '#F98181', '#FBBC88', '#FAF594', '#70CFF8', '#94FADB', '#B9F18D'];
+    return colors[Math.floor(Math.random() * colors.length)];
+};
 
 type ConnectedEditorProps = {
     document: FileSystemEntry;
@@ -18,49 +28,179 @@ type ConnectedEditorProps = {
 
 type CloseFlowState = null | 'saving' | 'success' | 'error';
 
-const ConnectedEditor = ({ document, initialContent }: ConnectedEditorProps) => {
-    const { isAuthenticated } = useAuth();
+// Standard Editor (REST API based)
+const StandardEditorInternal = ({
+    document: initialDocument,
+    initialContent,
+    onBlockLimitReached
+}: {
+    document: FileSystemEntry,
+    initialContent: any,
+    onBlockLimitReached: () => void
+}) => {
     const [saveStatus, setSaveStatus] = useState<'saved' | 'unsaved' | 'saving'>('saved');
-    const [blockLimitSnackbar, setBlockLimitSnackbar] = useState(false);
-
-    const [currentDocument, setCurrentDocument] = useState(document);
-    const [editorError, setEditorError] = useState<string | null>(null);
+    const [currentDocument, setCurrentDocument] = useState(initialDocument);
     const [closeFlowState, setCloseFlowState] = useState<CloseFlowState>(null);
-    const [resolvedContent, setResolvedContent] = useState<any>(null);
-    const [isResolving, setIsResolving] = useState(true);
+
+    usePageTitle(currentDocument.name, saveStatus === 'unsaved' || saveStatus === 'saving');
+
+    const handleSave = useCallback(async (content: any) => {
+        setSaveStatus('saving');
+        try {
+            await updateDocumentContent(currentDocument.id, content);
+            setSaveStatus('saved');
+        } catch (err) {
+            console.error('Save failed:', err);
+            setSaveStatus('unsaved');
+        }
+    }, [currentDocument.id]);
+
+    const debouncedSave = useDebouncedCallback(handleSave, 2000);
+
+    const handleContentChange = useCallback((editor: any) => {
+        setSaveStatus('unsaved');
+        debouncedSave(editor.getJSON());
+    }, [debouncedSave]);
+
+    const editor = useEditorInstance({
+        content: initialContent,
+        shouldSetInitialContent: true,
+        extensionOptions: {
+            onBlockLimitReached,
+        },
+        onError: (err) => {
+            console.error('Editor Error', err);
+        }
+    });
+
+    const handleTitleSave = useCallback(async (newTitle: string) => {
+        if (!newTitle.trim()) return;
+        try {
+            await renameFileSystemEntry(currentDocument.id, newTitle);
+            setCurrentDocument(prev => ({ ...prev, name: newTitle }));
+
+            broadcastSync({
+                type: 'document-updated',
+                workspaceId: currentDocument.workspaceId,
+                folderId: currentDocument.parentId,
+                documentId: currentDocument.id,
+                data: { title: newTitle }
+            });
+        } catch (err) {
+            console.error(err);
+        }
+    }, [currentDocument]);
+
+    const debouncedTitleSave = useDebouncedCallback(handleTitleSave, 2000);
+
+    const handleTitleChange = (newTitle: string) => {
+        debouncedTitleSave(newTitle);
+    };
+
+    const handleClose = async () => {
+        if (saveStatus === 'saved') {
+            window.close();
+            return;
+        }
+
+        setCloseFlowState('saving');
+        // Force immediate save if needed, but for now rely on debounce or prompt
+        // Ideally we would flush the debounce here.
+        if (editor) {
+            try {
+                await updateDocumentContent(currentDocument.id, editor.getJSON());
+                setCloseFlowState('success');
+                setTimeout(() => window.close(), 500);
+            } catch (e) {
+                setCloseFlowState('error');
+            }
+        }
+    };
+
+    if (!editor) {
+        return (
+            <Box sx={{ height: '100dvh', minHeight: '100dvh', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <CircularProgress />
+            </Box>
+        );
+    }
+
+    return (
+        <>
+            <EditorLayout
+                editor={editor}
+                document={currentDocument}
+                onContentChange={() => handleContentChange(editor)}
+                onTitleChange={handleTitleChange}
+                onClose={handleClose}
+                saveStatus={saveStatus}
+                initialWidth={'950px'}
+            />
+            <CloseOverlay
+                open={closeFlowState !== null}
+                state={closeFlowState || 'saving'}
+                onCloseNow={() => window.close()}
+                onDismiss={() => setCloseFlowState(null)}
+            />
+        </>
+    );
+};
+
+// Collaborative Editor (Hocuspocus + Yjs)
+const CollaborativeEditorInternal = ({
+    document: initialDocument,
+    provider,
+    user,
+    onBlockLimitReached
+}: {
+    document: FileSystemEntry,
+    provider: HocuspocusProvider,
+    user: any,
+    onBlockLimitReached: () => void
+}) => {
+    const [saveStatus, setSaveStatus] = useState<'saved' | 'unsaved' | 'saving'>('saved');
+    const [currentDocument, setCurrentDocument] = useState(initialDocument);
+    const [activeUsers, setActiveUsers] = useState<any[]>([]);
+    const [closeFlowState, setCloseFlowState] = useState<CloseFlowState>(null);
 
     // Update page title when document name changes
     usePageTitle(currentDocument.name, saveStatus === 'unsaved' || saveStatus === 'saving');
 
-    // Resolve assets on mount
+    // Provider Status & Awareness
     useEffect(() => {
-        const resolve = async () => {
-            if (initialContent) {
-                const resolved = await processContentForLoad(initialContent, document.workspaceId, document.id);
-                setResolvedContent(resolved);
-            } else {
-                setResolvedContent(undefined); // Let editor use default
-            }
-            setIsResolving(false);
-        };
-        resolve();
-    }, [initialContent, document.workspaceId, document.id]);
+        if (!provider) return;
 
-    // Listen for file updates to keep document metadata (like share links) in sync
+        const updateStatus = (data: { status: string }) => {
+            if (data.status === 'connected') setSaveStatus('saved');
+            else if (data.status === 'connecting') setSaveStatus('saving');
+            else if (data.status === 'disconnected') setSaveStatus('unsaved');
+        };
+
+        const updateAwareness = ({ states }: { states: any[] }) => {
+            const users = states
+                .filter((state: any) => state.clientId !== provider.document.clientID)
+                .map((state: any) => state.user)
+                .filter(Boolean);
+            setActiveUsers(users);
+        };
+
+        provider.on('status', updateStatus);
+        provider.on('awarenessUpdate', updateAwareness);
+
+        return () => {
+            provider.off('status', updateStatus);
+            provider.off('awarenessUpdate', updateAwareness);
+        };
+    }, [provider]);
+
+    // Listen for file updates
     useFileEvents({
-        workspaceId: document.workspaceId,
+        workspaceId: currentDocument.workspaceId,
         onFileUpdated: async (event) => {
-            if (event.fileId === document.id) {
+            if (event.fileId === currentDocument.id) {
                 try {
-                    // Fetch latest document data to get updated share links, etc.
-                    const updatedDoc = await getFileSystemEntry(document.id);
-                    setCurrentDocument(prev => ({
-                        ...prev,
-                        ...updatedDoc,
-                        // Preserve local name if it's being edited, though usually it syncs fast enough
-                        // For now just taking server truth for metadata is safer
-                        shareLinks: updatedDoc.shareLinks
-                    }));
+                    const updatedDoc = await getFileSystemEntry(currentDocument.id);
+                    setCurrentDocument(prev => ({ ...prev, ...updatedDoc, shareLinks: updatedDoc.shareLinks }));
                 } catch (error) {
                     console.error('Failed to update document metadata from event:', error);
                 }
@@ -68,70 +208,42 @@ const ConnectedEditor = ({ document, initialContent }: ConnectedEditorProps) => 
         }
     });
 
-    // Handle block limit reached
-    const handleBlockLimitReached = useCallback(() => {
-        setBlockLimitSnackbar(true);
-    }, []);
+    // Collaborative Extensions
+    const collaborationExtensions = useMemo(() => {
+        return [
+            Collaboration.configure({
+                document: provider.document,
+                field: 'default',
+            }),
+            // CollaborationCursor.configure({
+            //     provider: provider,
+            //     user: {
+            //         name: user?.legalName || 'User',
+            //         color: getRandomColor(),
+            //     }
+            // }),
+        ];
+    }, [provider, user]);
 
-    // This hook is now called ONLY when ConnectedEditor mounts, which happens after data is loaded.
+    // Editor Instance
     const editor = useEditorInstance({
-        content: resolvedContent,
-        waitForContent: true,
+        waitForContent: false,
+        shouldSetInitialContent: false, // Don't overwrite Yjs content
+        extensions: collaborationExtensions,
         extensionOptions: {
-            onBlockLimitReached: handleBlockLimitReached,
+            onBlockLimitReached,
         },
-        onError: () => {
-            setEditorError('The document content is invalid or corrupted.');
+        onError: (err) => {
+            console.error('Editor Error', err);
         }
     });
 
-    const handleSave = useCallback(async (isImmediateSave = false) => {
-        if (!editor || !isAuthenticated) {
-            return { success: false, error: null };
-        }
-
-        setSaveStatus('saving');
-
-        try {
-            // Save content
-            const rawContent = editor.getJSON();
-            const contentToSave = processContentForSave(rawContent);
-
-            await updateDocumentContent(currentDocument.id, contentToSave);
-
-            setSaveStatus('saved');
-            if (!isImmediateSave) {
-                // setSnackbarOpen(true);
-            }
-
-            // Broadcast document update so lists (size/modified) refresh
-            broadcastSync({
-                type: 'document-updated',
-                workspaceId: currentDocument.workspaceId,
-                folderId: currentDocument.parentId,
-                documentId: currentDocument.id,
-                data: { source: 'content-save' }
-            });
-
-            return { success: true, error: null };
-        } catch (err) {
-            console.error(err);
-            setSaveStatus('unsaved');
-            return { success: false, error: err };
-        }
-    }, [editor, currentDocument, isAuthenticated]);
-
+    // Handle Title Save (Still REST API for renaming)
     const handleTitleSave = useCallback(async (newTitle: string) => {
-        if (!isAuthenticated || !newTitle.trim()) {
-            return;
-        }
-
-        setSaveStatus('saving');
-
+        if (!newTitle.trim()) return;
         try {
             await renameFileSystemEntry(currentDocument.id, newTitle);
             setCurrentDocument({ ...currentDocument, name: newTitle });
-            setSaveStatus('saved');
 
             // Broadcast document update to other tabs
             broadcastSync({
@@ -143,93 +255,36 @@ const ConnectedEditor = ({ document, initialContent }: ConnectedEditorProps) => 
             });
         } catch (err) {
             console.error(err);
-            setSaveStatus('unsaved');
         }
-    }, [currentDocument, isAuthenticated]);
+    }, [currentDocument]);
 
-    const debouncedSave = useDebouncedCallback(() => handleSave(false), 2000);
     const debouncedTitleSave = useDebouncedCallback(handleTitleSave, 2000);
 
     const handleContentChange = () => {
-        setSaveStatus('unsaved');
-        debouncedSave();
+        // Handled by Yjs automatically
     };
 
     const handleTitleChange = (newTitle: string) => {
-        setSaveStatus('unsaved');
         debouncedTitleSave(newTitle);
     };
 
     const handleClose = async () => {
-        // If already saved, close immediately
         if (saveStatus === 'saved') {
             window.close();
             return;
         }
-
-        // If unsaved or saving, start close flow
-        setCloseFlowState('saving');
-
-        // Trigger immediate save
-        const result = await handleSave(true);
-
-        if (result.success) {
-            setCloseFlowState('success');
-        } else {
-            setCloseFlowState('error');
-        }
-    };
-
-    const handleCloseNow = () => {
         window.close();
     };
 
-    const handleCloseDismiss = () => {
-        setCloseFlowState(null);
-    };
+    const initialWidth = '950px';
 
-    // Auto-close timer after successful save
-    useEffect(() => {
-        if (closeFlowState === 'success') {
-            const timer = setTimeout(() => {
-                window.close();
-            }, 3000);
-            return () => clearTimeout(timer);
-        }
-    }, [closeFlowState]);
-
-    if (editorError) {
-        return (
-            <Box sx={{ height: '100dvh', minHeight: '100dvh', overflow: 'hidden', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 2 }}>
-                <Alert severity="error">{editorError}</Alert>
-                <Button variant="contained" onClick={handleClose}>
-                    Close
-                </Button>
-            </Box>
-        );
-    }
-
-    if (isResolving) {
+    if (!editor) {
         return (
             <Box sx={{ height: '100dvh', minHeight: '100dvh', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <CircularProgress />
             </Box>
         );
     }
-
-    // Extract initial width from content to prevent layout shift
-    const getInitialWidth = () => {
-        if (!initialContent) return '950px';
-        try {
-            // content is Tiptap JSON
-            const content = initialContent as any;
-            return content.attrs?.['x-odocs-layoutWidth'] || '950px';
-        } catch (e) {
-            return '950px';
-        }
-    };
-
-    const initialWidth = getInitialWidth();
 
     return (
         <>
@@ -241,14 +296,105 @@ const ConnectedEditor = ({ document, initialContent }: ConnectedEditorProps) => 
                 onClose={handleClose}
                 saveStatus={saveStatus}
                 initialWidth={initialWidth}
+                headerExtra={
+                    <Box sx={{ display: 'flex', gap: 1, mr: 2 }}>
+                        {activeUsers.map((u, i) => (
+                            <Tooltip key={i} title={u.name}>
+                                <Avatar
+                                    sx={{
+                                        width: 24,
+                                        height: 24,
+                                        fontSize: 12,
+                                        bgcolor: u.color,
+                                        border: '2px solid white'
+                                    }}
+                                >
+                                    {u.name[0]?.toUpperCase()}
+                                </Avatar>
+                            </Tooltip>
+                        ))}
+                    </Box>
+                }
             />
-
             <CloseOverlay
                 open={closeFlowState !== null}
                 state={closeFlowState || 'saving'}
-                onCloseNow={handleCloseNow}
-                onDismiss={handleCloseDismiss}
+                onCloseNow={() => window.close()}
+                onDismiss={() => setCloseFlowState(null)}
             />
+        </>
+    );
+};
+
+const ConnectedEditor = ({ document, initialContent }: ConnectedEditorProps) => {
+    const { isAuthenticated, user } = useAuth();
+    const [blockLimitSnackbar, setBlockLimitSnackbar] = useState(false);
+    const [provider, setProvider] = useState<HocuspocusProvider | null>(null);
+    const [searchParams] = useSearchParams();
+
+    // Check mode
+    const isCollabMode = searchParams.get('mode') === 'collaboration';
+
+    // Setup Hocuspocus Provider (Only if in collab mode)
+    useEffect(() => {
+        if (!isCollabMode) return;
+        if (!isAuthenticated || !user) return;
+        if (provider) return;
+
+        const ydoc = new Y.Doc();
+        ydoc.on('update', (update, origin) => {
+            console.log('[Client] YDoc Updated. Origin:', origin, 'Size:', update.length);
+        });
+
+        const newProvider = new HocuspocusProvider({
+            url: import.meta.env.VITE_HOCUSPOCUS_URL || 'ws://localhost:9930',
+            name: document.id,
+            document: ydoc,
+            onAuthenticationFailed: () => console.error('Authentication failed'),
+        });
+
+        newProvider.setAwarenessField('user', {
+            name: user.legalName || user.email.split('@')[0],
+            color: getRandomColor(),
+            avatar: '',
+        });
+
+        setProvider(newProvider);
+
+        return () => {
+            newProvider.destroy();
+            setProvider(null);
+        };
+    }, [isAuthenticated, document.id, user, isCollabMode]);
+
+    const handleBlockLimitReached = useCallback(() => {
+        setBlockLimitSnackbar(true);
+    }, []);
+
+    if (isCollabMode && !provider) {
+        return (
+            <Box sx={{ height: '100dvh', minHeight: '100dvh', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <CircularProgress />
+            </Box>
+        );
+    }
+
+    return (
+        <>
+            {isCollabMode ? (
+                <CollaborativeEditorInternal
+                    document={document}
+                    provider={provider!}
+                    user={user}
+                    onBlockLimitReached={handleBlockLimitReached}
+                />
+            ) : (
+                <StandardEditorInternal
+                    document={document}
+                    initialContent={initialContent}
+                    onBlockLimitReached={handleBlockLimitReached}
+                />
+            )}
 
             <Snackbar
                 open={blockLimitSnackbar}

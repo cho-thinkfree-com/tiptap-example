@@ -77,6 +77,12 @@ export class RevisionRepository {
         return latest ? latest.version + 1 : 1;
     }
 
+    async delete(id: string): Promise<void> {
+        await this.db.revision.delete({
+            where: { id },
+        });
+    }
+
     async deleteByFileId(fileId: string): Promise<void> {
         await this.db.revision.deleteMany({
             where: { fileId },

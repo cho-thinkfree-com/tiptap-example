@@ -19,6 +19,7 @@ type UseEditorInstanceOptions = Partial<EditorOptions> & {
   extensionOptions?: BaseExtensionOptions
   onError?: (error: Error) => void
   waitForContent?: boolean
+  shouldSetInitialContent?: boolean
 }
 
 const useEditorInstance = (options?: UseEditorInstanceOptions) => {
@@ -76,6 +77,14 @@ const useEditorInstance = (options?: UseEditorInstanceOptions) => {
       return
     }
 
+    // New option to skip initial content setting (for collaboration/Yjs)
+    const shouldSetContent = options?.shouldSetInitialContent ?? true;
+
+    if (!shouldSetContent) {
+      hasInitialized.current = true;
+      return;
+    }
+
     const initialContent = content ?? defaultContent
 
     // Defer content setting to avoid flushSync warning during React render phase
@@ -117,7 +126,7 @@ const useEditorInstance = (options?: UseEditorInstanceOptions) => {
 
       hasInitialized.current = true
     })
-  }, [editor, content, onError, waitForContent])
+  }, [editor, content, onError, waitForContent, options?.shouldSetInitialContent])
 
   return editor
 }

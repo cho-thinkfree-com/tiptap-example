@@ -251,6 +251,39 @@ export class FileSystemService {
         fileId: string,
         content: any
     ): Promise<FileSystemEntry> {
+        return this.createVersion(membershipId, fileId, content);
+    }
+
+    async saveDraft(
+        membershipId: string,
+        fileId: string,
+        content: any
+    ): Promise<void> {
+        // Just update MinIO 'latest' object, do not create DB revision
+        const file = await this.getById(membershipId, fileId);
+
+        if (file.mimeType !== ODOCS_MIME_TYPE) {
+            throw new Error('Not an OdoDocs document');
+        }
+
+        const contentJson = JSON.stringify(content);
+        const contentBuffer = Buffer.from(contentJson, 'utf-8');
+        const size = BigInt(contentBuffer.length);
+
+        const latestKey = `workspaces/${file.workspaceId}/files/${file.id}/latest`;
+        await this.storageService.uploadObject(latestKey, contentBuffer, ODOCS_MIME_TYPE);
+
+        // Optional: Update lastModifiedBy / size in DB without revision?
+        // For performance, we might skip DB update here and only do it in createVersion
+        // But to keep file list accurate (size/time), we might want to update it.
+        // Let's rely on createVersion for DB updates to avoid heavy DB write traffic during typing.
+    }
+
+    async createVersion(
+        membershipId: string,
+        fileId: string,
+        content: any
+    ): Promise<FileSystemEntry> {
         const file = await this.getById(membershipId, fileId);
 
         if (file.mimeType !== ODOCS_MIME_TYPE) {
@@ -270,6 +303,7 @@ export class FileSystemService {
         const latestKey = `workspaces/${file.workspaceId}/files/${file.id}/latest`;
 
         await this.storageService.uploadObject(storageKey, contentBuffer, ODOCS_MIME_TYPE);
+        // Ensure latest is also consistent
         await this.storageService.uploadObject(latestKey, contentBuffer, ODOCS_MIME_TYPE);
 
         // Create revision
@@ -287,6 +321,27 @@ export class FileSystemService {
             size,
             lastModifiedBy: membershipId,
         });
+
+        // CHECK RETENTION (Keep max 30 recent versions)
+        // This is a simplified check. Ideally done in a background job or separate queue.
+        try {
+            const versions = await this.revisionRepo.findByFileId(file.id);
+            if (versions.length > 30) {
+                // Determine versions to delete (versions sorted by version desc usually, or we can fetch sorted)
+                // Assuming findByFileId returns desc sorted.
+                const sortedVersions = versions.sort((a: any, b: any) => b.version - a.version);
+                const toKeep = sortedVersions.slice(0, 30);
+                const toDelete = sortedVersions.slice(30);
+
+                for (const oldRev of toDelete) {
+                    await this.revisionRepo.delete(oldRev.id);
+                    // Also delete from S3
+                    await this.storageService.deleteObject(oldRev.storageKey).catch(e => console.error('Failed to delete old S3 version', e));
+                }
+            }
+        } catch (err) {
+            console.error('Failed to cleanup old versions:', err);
+        }
 
         const updatedFile = await this.fileSystemRepo.findById(file.id) as FileSystemEntry;
 

@@ -31,6 +31,7 @@ interface EditorLayoutProps {
     authorHandle?: string;
     authorName?: string;
     accessType?: 'private' | 'link' | 'public';
+    headerExtra?: React.ReactNode;
 }
 
 // Adaptive title component that reduces font size when overflowing
@@ -123,7 +124,7 @@ const AdaptiveTitle = ({ title }: { title: string }) => {
     );
 };
 
-const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClose, saveStatus, readOnly = false, initialWidth = '950px', shareToken, authorHandle, authorName, accessType = 'link' }: EditorLayoutProps) => {
+const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClose, saveStatus, readOnly = false, initialWidth = '950px', shareToken, authorHandle, authorName, accessType = 'link', headerExtra }: EditorLayoutProps) => {
     const [tocOpen, setTocOpen] = useState(false);
     const [localTitle, setLocalTitle] = useState(document.name);
     const [shareOpen, setShareOpen] = useState(false);
@@ -435,6 +436,7 @@ const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClos
                                 <EditorWidthSelector editor={editor} onContentChange={onContentChange} initialWidth={initialWidth} />
                             </Box>
                         )}
+                        {!readOnly && headerExtra}
                         {!readOnly && (
                             <Button
                                 color="primary"

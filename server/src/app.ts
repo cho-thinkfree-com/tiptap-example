@@ -60,8 +60,9 @@ async function buildServer() {
   })
 
   // CORS
+  const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:9910').split(',').map(url => url.trim())
   await app.register(fastifyCors as any, {
-    origin: [process.env.FRONTEND_URL || 'http://localhost:9910'],
+    origin: allowedOrigins,
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   })
@@ -227,8 +228,9 @@ async function buildServer() {
     reply.setCookie('session_id', session.sessionId, {
       path: '/',
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: process.env.COOKIE_SECURE === 'true' || process.env.NODE_ENV === 'production',
+      sameSite: (process.env.COOKIE_SAME_SITE as 'lax' | 'strict' | 'none') || 'lax',
+      domain: process.env.COOKIE_DOMAIN || undefined,
       maxAge: 365 * 24 * 60 * 60,
     })
     return { account, session }
@@ -247,8 +249,9 @@ async function buildServer() {
     reply.setCookie('session_id', session.sessionId, {
       path: '/',
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      secure: process.env.COOKIE_SECURE === 'true' || process.env.NODE_ENV === 'production',
+      sameSite: (process.env.COOKIE_SAME_SITE as 'lax' | 'strict' | 'none') || 'lax',
+      domain: process.env.COOKIE_DOMAIN || undefined,
       maxAge: 365 * 24 * 60 * 60,
     })
     return { account, session }
@@ -259,7 +262,10 @@ async function buildServer() {
     if (sessionId) {
       await authService.logout(sessionId)
     }
-    reply.clearCookie('session_id', { path: '/' })
+    reply.clearCookie('session_id', {
+      path: '/',
+      domain: process.env.COOKIE_DOMAIN || undefined
+    })
     return { success: true }
   })
 

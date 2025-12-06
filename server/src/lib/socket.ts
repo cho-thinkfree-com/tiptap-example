@@ -18,9 +18,10 @@ export class SocketService {
 
     constructor(httpServer: HttpServer, db: DatabaseClient) {
         this.db = db;
+        const allowedOrigins = (process.env.FRONTEND_URL || 'http://localhost:9910').split(',').map(url => url.trim());
         this.io = new SocketIOServer(httpServer, {
             cors: {
-                origin: process.env.FRONTEND_URL || 'http://localhost:9910',
+                origin: allowedOrigins,
                 credentials: true,
             },
         });

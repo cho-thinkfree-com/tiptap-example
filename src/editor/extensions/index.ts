@@ -48,6 +48,9 @@ import ResizableImageView from './ResizableImageView'
 import { SlashCommand } from './slashCommand'
 import { DocumentLayout } from './DocumentLayout'
 import { BlockLimit } from './BlockLimit'
+import Youtube from '@tiptap/extension-youtube'
+import ResizableYouTubeView from './ResizableYouTubeView'
+import { Plugin, PluginKey } from '@tiptap/pm/state'
 import {
   addRowBeforeWithAttrs,
   addRowAfterWithAttrs,
@@ -368,6 +371,83 @@ export const createBaseExtensions = (strings: AppStrings, options?: BaseExtensio
       color: '#1976d2',
     }),
     Gapcursor,
+
+    // YouTube extension with custom NodeView and paste handler
+    Youtube.extend({
+      addAttributes() {
+        return {
+          ...this.parent?.(),
+          width: {
+            default: 640,
+          },
+          textAlign: {
+            default: 'center',
+            parseHTML: element => element.getAttribute('data-text-align') || 'center',
+            renderHTML: attributes => {
+              if (!attributes.textAlign) return {}
+              return { 'data-text-align': attributes.textAlign }
+            },
+          },
+          controls: {
+            default: true,
+          },
+          nocookie: {
+            default: false,
+          },
+        }
+      },
+      addNodeView() {
+        return ReactNodeViewRenderer(ResizableYouTubeView)
+      },
+      addProseMirrorPlugins() {
+        const parentPlugins = this.parent?.() || []
+
+        // YouTube URL paste handler plugin
+        const youtubeUrlRegex = /(?:https?:\/\/)?(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|v\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:[?&][^\s]*)?/
+
+        const pastePlugin = new Plugin({
+          key: new PluginKey('youtube-paste-handler'),
+          props: {
+            handlePaste: (view, event) => {
+              const clipboardData = event.clipboardData
+              if (!clipboardData) return false
+
+              const text = clipboardData.getData('text/plain')
+              if (!text) return false
+
+              const match = text.match(youtubeUrlRegex)
+              if (!match) return false
+
+              const videoId = match[1]
+              if (!videoId) return false
+
+              // Prevent default paste
+              event.preventDefault()
+
+              // Insert YouTube node
+              const { state, dispatch } = view
+              const { tr, schema } = state
+              const youtubeType = schema.nodes.youtube
+
+              if (!youtubeType) return false
+
+              const youtubeNode = youtubeType.create({
+                src: `https://www.youtube.com/embed/${videoId}`,
+                width: 640,
+              })
+
+              dispatch(tr.replaceSelectionWith(youtubeNode))
+              return true
+            },
+          },
+        })
+
+        return [...parentPlugins, pastePlugin]
+      },
+    }).configure({
+      controls: true,
+      nocookie: false,
+    }),
 
     CalloutExtension,
     SlashCommand.configure({

@@ -1,5 +1,7 @@
 import { Server as HttpServer } from 'http';
 import { Server as SocketIOServer, Socket } from 'socket.io';
+import { createAdapter } from '@socket.io/redis-adapter';
+import { createClient } from 'redis';
 import type { SocketEvent } from '../types/events.js';
 import type { DatabaseClient } from './prismaClient.js';
 
@@ -23,8 +25,31 @@ export class SocketService {
             },
         });
 
+        this.setupRedisAdapter();
         this.setupMiddleware();
         this.setupConnectionHandler();
+    }
+
+    private async setupRedisAdapter() {
+        const redisHost = process.env.REDIS_HOST || 'localhost';
+        const redisPort = parseInt(process.env.REDIS_PORT || '6379', 10);
+        const redisUrl = `redis://${redisHost}:${redisPort}`;
+
+        try {
+            const pubClient = createClient({ url: redisUrl });
+            const subClient = pubClient.duplicate();
+
+            pubClient.on('error', (err) => console.error('Redis Pub Client Error:', err));
+            subClient.on('error', (err) => console.error('Redis Sub Client Error:', err));
+
+            await Promise.all([pubClient.connect(), subClient.connect()]);
+
+            this.io.adapter(createAdapter(pubClient, subClient));
+            console.log(`Socket.IO Redis adapter connected to ${redisUrl}`);
+        } catch (error) {
+            console.warn('Redis adapter not available, using in-memory adapter. Multi-server sync disabled.', error);
+            // Continue without Redis adapter - will work for single server
+        }
     }
 
     private setupMiddleware() {
@@ -106,3 +131,4 @@ export class SocketService {
         return this.io;
     }
 }
+

@@ -21,7 +21,7 @@ import LinkIcon from '@mui/icons-material/Link';
 interface EditorLayoutProps {
     editor: Editor | null;
     document: FileSystemEntry;
-    onContentChange: () => void;
+    onContentChange: (props: { editor: Editor, transaction: any }) => void;
     onTitleChange: (newTitle: string) => void;
     onClose: () => void;
     saveStatus: 'saved' | 'unsaved' | 'saving';

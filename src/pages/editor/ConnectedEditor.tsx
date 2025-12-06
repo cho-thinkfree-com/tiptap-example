@@ -1,8 +1,8 @@
 import { Alert, Box, CircularProgress, Snackbar, Avatar, Tooltip } from '@mui/material';
 import { useCallback, useState, useEffect, useMemo, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom'; // Import useSearchParams
+import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { renameFileSystemEntry, type FileSystemEntry, getFileSystemEntry, updateDocumentContent } from '../../lib/api';
+import { renameFileSystemEntry, type FileSystemEntry, getFileSystemEntry, updateDocumentContent, getDocumentContent } from '../../lib/api';
 import EditorLayout from '../../components/layout/EditorLayout';
 import useEditorInstance from '../../editor/useEditorInstance';
 import { useDebouncedCallback } from '../../lib/useDebounce';
@@ -12,8 +12,9 @@ import CloseOverlay from '../../components/editor/CloseOverlay';
 import { useFileEvents } from '../../hooks/useFileEvents';
 import { HocuspocusProvider } from '@hocuspocus/provider';
 import Collaboration from '@tiptap/extension-collaboration';
-// import CollaborationCursor from '@tiptap/extension-collaboration-cursor';
 import * as Y from 'yjs';
+import { useDocumentLock, type LockStatus, type LockHolder } from '../../hooks/useDocumentLock';
+import { LockBanner, StealDialog } from '../../components/editor/LockComponents';
 
 // Random color generator for cursors
 const getRandomColor = () => {
@@ -32,11 +33,26 @@ type CloseFlowState = null | 'saving' | 'success' | 'error';
 const StandardEditorInternal = ({
     document: initialDocument,
     initialContent,
-    onBlockLimitReached
+    onBlockLimitReached,
+    readOnly,
+    lockBanner,
+    alertMessage,
+    countdown,
+    onEarlyRelease,
+    onRejectSteal,
+    onAlertClose
 }: {
     document: FileSystemEntry,
     initialContent: any,
-    onBlockLimitReached: () => void
+    onBlockLimitReached: () => void,
+    readOnly?: boolean,
+    lockBanner?: React.ReactNode,
+    // Props for Steal Alert & Early Release
+    alertMessage?: { title: string; message: string; type: 'warning' | 'info' | 'error' } | null,
+    countdown?: number | null,
+    onEarlyRelease?: () => void,
+    onRejectSteal?: () => void,
+    onAlertClose?: () => void
 }) => {
     const [saveStatus, setSaveStatus] = useState<'saved' | 'unsaved' | 'saving'>('saved');
     const [currentDocument, setCurrentDocument] = useState(initialDocument);
@@ -45,6 +61,7 @@ const StandardEditorInternal = ({
     usePageTitle(currentDocument.name, saveStatus === 'unsaved' || saveStatus === 'saving');
 
     const handleSave = useCallback(async (content: any) => {
+        if (readOnly) return;
         setSaveStatus('saving');
         try {
             await updateDocumentContent(currentDocument.id, content);
@@ -53,25 +70,64 @@ const StandardEditorInternal = ({
             console.error('Save failed:', err);
             setSaveStatus('unsaved');
         }
-    }, [currentDocument.id]);
+    }, [currentDocument.id, readOnly]);
 
     const debouncedSave = useDebouncedCallback(handleSave, 5000);
 
-    const handleContentChange = useCallback((editor: any) => {
+    const handleContentChange = useCallback(({ editor, transaction }: { editor: any, transaction: any }) => {
+        if (readOnly) return;
+        if (!transaction.docChanged) return;
+
         setSaveStatus('unsaved');
         debouncedSave(editor.getJSON());
-    }, [debouncedSave]);
+    }, [debouncedSave, readOnly]);
+
+    const extensionOptions = useMemo(() => ({
+        onBlockLimitReached,
+    }), [onBlockLimitReached]);
 
     const editor = useEditorInstance({
         content: initialContent,
         shouldSetInitialContent: true,
-        extensionOptions: {
-            onBlockLimitReached,
-        },
+        editable: !readOnly,
+        extensionOptions,
         onError: (err) => {
             console.error('Editor Error', err);
         }
     });
+
+    // Update editable state if readOnly prop changes
+    useEffect(() => {
+        if (editor) {
+            editor.setEditable(!readOnly);
+        }
+    }, [editor, readOnly]);
+
+    // Update content if initialContent changes (for viewers)
+    useEffect(() => {
+        if (editor && readOnly && initialContent) {
+            const currentJSON = editor.getJSON();
+            if (JSON.stringify(currentJSON) !== JSON.stringify(initialContent)) {
+                editor.commands.setContent(initialContent, { emitUpdate: false });
+            }
+        }
+    }, [editor, readOnly, initialContent]);
+
+    const handleEarlyReleaseWithSave = async () => {
+        if (editor && !readOnly) {
+            // Force immediate save
+            try {
+                setSaveStatus('saving');
+                await updateDocumentContent(currentDocument.id, editor.getJSON());
+                setSaveStatus('saved');
+            } catch (e) {
+                console.error('Failed to save before early release', e);
+            }
+        }
+        if (onEarlyRelease) {
+            onEarlyRelease();
+        }
+    };
 
     const handleTitleSave = useCallback(async (newTitle: string) => {
         if (!newTitle.trim()) return;
@@ -94,18 +150,17 @@ const StandardEditorInternal = ({
     const debouncedTitleSave = useDebouncedCallback(handleTitleSave, 5000);
 
     const handleTitleChange = (newTitle: string) => {
+        if (readOnly) return;
         debouncedTitleSave(newTitle);
     };
 
     const handleClose = async () => {
-        if (saveStatus === 'saved') {
+        if (saveStatus === 'saved' || readOnly) {
             window.close();
             return;
         }
 
         setCloseFlowState('saving');
-        // Force immediate save if needed, but for now rely on debounce or prompt
-        // Ideally we would flush the debounce here.
         if (editor) {
             try {
                 await updateDocumentContent(currentDocument.id, editor.getJSON());
@@ -125,23 +180,102 @@ const StandardEditorInternal = ({
         );
     }
 
+    // Determine banner content
+    let topBanner = lockBanner;
+
+    // Check for Steal Warning to override/append banner
+    if (alertMessage?.type === 'warning' && countdown !== null) {
+        topBanner = (
+            <Box sx={{
+                width: '100%',
+                bgcolor: '#fff4e5', // Warning orange light
+                color: '#663c00',
+                p: '10px 24px',
+                borderBottom: '1px solid #ffcca0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 2,
+                fontSize: '0.95rem',
+                fontWeight: 500,
+                zIndex: 10
+            }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <span>⚠️ 다른 사용자가 편집 권한을 요청했습니다. <strong>{countdown}초</strong> 후 권한이 넘어갑니다.</span>
+                </Box>
+                <Box sx={{ display: 'flex', gap: 1 }}>
+                    <button
+                        onClick={handleEarlyReleaseWithSave}
+                        style={{
+                            padding: '6px 12px',
+                            backgroundColor: '#ed6c02',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontWeight: 'bold'
+                        }}
+                    >
+                        지금 반납 (허용)
+                    </button>
+                    <button
+                        onClick={onRejectSteal}
+                        style={{
+                            padding: '6px 12px',
+                            backgroundColor: 'transparent',
+                            color: '#ed6c02', // Orange text
+                            border: '1px solid #ed6c02',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontWeight: 'bold'
+                        }}
+                    >
+                        거절
+                    </button>
+                </Box>
+            </Box>
+        );
+    }
+
     return (
         <>
-            <EditorLayout
-                editor={editor}
-                document={currentDocument}
-                onContentChange={() => handleContentChange(editor)}
-                onTitleChange={handleTitleChange}
-                onClose={handleClose}
-                saveStatus={saveStatus}
-                initialWidth={'950px'}
-            />
+            <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                {topBanner}
+                <EditorLayout
+                    editor={editor}
+                    document={currentDocument}
+                    onContentChange={handleContentChange}
+                    onTitleChange={handleTitleChange}
+                    onClose={handleClose}
+                    saveStatus={saveStatus}
+                    initialWidth={'950px'}
+                    readOnly={readOnly}
+                />
+            </Box>
             <CloseOverlay
                 open={closeFlowState !== null}
                 state={closeFlowState || 'saving'}
                 onCloseNow={() => window.close()}
                 onDismiss={() => setCloseFlowState(null)}
             />
+
+            <Snackbar
+                open={!!alertMessage && alertMessage.type !== 'warning'} // Hide warning from snackbar
+                autoHideDuration={6000}
+                onClose={(_e, reason) => {
+                    if (onAlertClose) onAlertClose();
+                }}
+                anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            >
+                <Alert severity={alertMessage?.type || 'info'} onClose={onAlertClose}>
+                    {alertMessage?.title && <strong>{alertMessage.title}: </strong>}
+                    {alertMessage?.title === '편집 종료 중' && countdown !== null ? (
+                        <span>편집 권한을 넘겨주는 중입니다. (저장 및 정리 중... {countdown}초)</span>
+                    ) : (
+                        alertMessage?.message
+                    )}
+                </Alert>
+            </Snackbar>
         </>
     );
 };
@@ -151,22 +285,22 @@ const CollaborativeEditorInternal = ({
     document: initialDocument,
     provider,
     user,
-    onBlockLimitReached
+    onBlockLimitReached,
+    lockBanner
 }: {
     document: FileSystemEntry,
     provider: HocuspocusProvider,
     user: any,
-    onBlockLimitReached: () => void
+    onBlockLimitReached: () => void,
+    lockBanner?: React.ReactNode
 }) => {
     const [saveStatus, setSaveStatus] = useState<'saved' | 'unsaved' | 'saving'>('saved');
     const [currentDocument, setCurrentDocument] = useState(initialDocument);
     const [activeUsers, setActiveUsers] = useState<any[]>([]);
     const [closeFlowState, setCloseFlowState] = useState<CloseFlowState>(null);
 
-    // Update page title when document name changes
     usePageTitle(currentDocument.name, saveStatus === 'unsaved' || saveStatus === 'saving');
 
-    // Provider Status & Awareness
     useEffect(() => {
         if (!provider) return;
 
@@ -193,7 +327,6 @@ const CollaborativeEditorInternal = ({
         };
     }, [provider]);
 
-    // Listen for file updates
     useFileEvents({
         workspaceId: currentDocument.workspaceId,
         onFileUpdated: async (event) => {
@@ -208,44 +341,36 @@ const CollaborativeEditorInternal = ({
         }
     });
 
-    // Collaborative Extensions
     const collaborationExtensions = useMemo(() => {
         return [
             Collaboration.configure({
                 document: provider.document,
                 field: 'default',
             }),
-            // CollaborationCursor.configure({
-            //     provider: provider,
-            //     user: {
-            //         name: user?.legalName || 'User',
-            //         color: getRandomColor(),
-            //     }
-            // }),
         ];
     }, [provider, user]);
 
-    // Editor Instance
+    const extensionOptions = useMemo(() => ({
+        onBlockLimitReached,
+        history: false,
+    }), [onBlockLimitReached]);
+
     const editor = useEditorInstance({
         waitForContent: false,
-        shouldSetInitialContent: false, // Don't overwrite Yjs content
+        shouldSetInitialContent: false,
         extensions: collaborationExtensions,
-        extensionOptions: {
-            onBlockLimitReached,
-        },
+        extensionOptions,
         onError: (err) => {
             console.error('Editor Error', err);
         }
     });
 
-    // Handle Title Save (Still REST API for renaming)
     const handleTitleSave = useCallback(async (newTitle: string) => {
         if (!newTitle.trim()) return;
         try {
             await renameFileSystemEntry(currentDocument.id, newTitle);
             setCurrentDocument({ ...currentDocument, name: newTitle });
 
-            // Broadcast document update to other tabs
             broadcastSync({
                 type: 'document-updated',
                 workspaceId: currentDocument.workspaceId,
@@ -269,10 +394,7 @@ const CollaborativeEditorInternal = ({
     };
 
     const handleClose = async () => {
-        if (saveStatus === 'saved') {
-            window.close();
-            return;
-        }
+        // In collab, just close
         window.close();
     };
 
@@ -288,34 +410,37 @@ const CollaborativeEditorInternal = ({
 
     return (
         <>
-            <EditorLayout
-                editor={editor}
-                document={currentDocument}
-                onContentChange={handleContentChange}
-                onTitleChange={handleTitleChange}
-                onClose={handleClose}
-                saveStatus={saveStatus}
-                initialWidth={initialWidth}
-                headerExtra={
-                    <Box sx={{ display: 'flex', gap: 1, mr: 2 }}>
-                        {activeUsers.map((u, i) => (
-                            <Tooltip key={i} title={u.name}>
-                                <Avatar
-                                    sx={{
-                                        width: 24,
-                                        height: 24,
-                                        fontSize: 12,
-                                        bgcolor: u.color,
-                                        border: '2px solid white'
-                                    }}
-                                >
-                                    {u.name[0]?.toUpperCase()}
-                                </Avatar>
-                            </Tooltip>
-                        ))}
-                    </Box>
-                }
-            />
+            <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                {lockBanner}
+                <EditorLayout
+                    editor={editor}
+                    document={currentDocument}
+                    onContentChange={handleContentChange}
+                    onTitleChange={handleTitleChange}
+                    onClose={handleClose}
+                    saveStatus={saveStatus}
+                    initialWidth={initialWidth}
+                    headerExtra={
+                        <Box sx={{ display: 'flex', gap: 1, mr: 2 }}>
+                            {activeUsers.map((u, i) => (
+                                <Tooltip key={i} title={u.name}>
+                                    <Avatar
+                                        sx={{
+                                            width: 24,
+                                            height: 24,
+                                            fontSize: 12,
+                                            bgcolor: u.color,
+                                            border: '2px solid white'
+                                        }}
+                                    >
+                                        {u.name[0]?.toUpperCase()}
+                                    </Avatar>
+                                </Tooltip>
+                            ))}
+                        </Box>
+                    }
+                />
+            </Box>
             <CloseOverlay
                 open={closeFlowState !== null}
                 state={closeFlowState || 'saving'}
@@ -330,24 +455,112 @@ const ConnectedEditor = ({ document, initialContent }: ConnectedEditorProps) => 
     const { isAuthenticated, user } = useAuth();
     const [blockLimitSnackbar, setBlockLimitSnackbar] = useState(false);
     const [provider, setProvider] = useState<HocuspocusProvider | null>(null);
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
 
-    // Check mode
+    // 1. Check intent from URL
     const isCollabMode = searchParams.get('mode') === 'collaboration';
 
-    // Setup Hocuspocus Provider (Only if in collab mode)
+    // State for forcing editor remount/refresh when content changes (e.g. after steal)
+    const [editorVersion, setEditorVersion] = useState(0);
+    const [editorContent, setEditorContent] = useState(initialContent);
+
+    const handleLockAcquired = useCallback(async () => {
+        // Fetch fresh content from server
+        try {
+            console.log('Lock acquired! Fetching fresh content...');
+            // Use specific endpoint for content to ensure we get the full JSON body
+            const freshContent = await getDocumentContent(document.id);
+
+            if (freshContent) {
+                setEditorContent(freshContent);
+                setEditorVersion(prev => prev + 1); // Increment version to force remount/reset
+                setAlertMessage({
+                    title: '권한 획득 성공',
+                    message: '편집 권한을 획득했습니다. 최신 내용으로 갱신되었습니다.',
+                    type: 'info'
+                });
+            }
+        } catch (e) {
+            console.error('Failed to fetch fresh content after lock acquisition', e);
+        }
+    }, [document.id]);
+
+    // 2. Setup Lock Hook
+    // If IS collab mode, we still want to 'join' status but NOT auto-acquire 'standard' lock.
+    const {
+        status,
+        lockHolder,
+        requestSteal,
+        alertMessage,
+        setAlertMessage,
+        stealState,
+        stealErrorMessage,
+        countdown,
+        earlyRelease,
+        rejectSteal,
+        cancelSteal,
+        queuePosition
+    } = useDocumentLock({
+        docId: document.id,
+        workspaceId: document.workspaceId,
+        displayName: user?.legalName || user?.email || 'Unknown User',
+        enabled: !isCollabMode, // Only acquire if NOT in collab mode
+        onLockAcquired: handleLockAcquired
+    });
+
+    // Track previous status to detect potential content updates
+    const prevStatusRef = useRef<LockStatus>(status);
+    const prevHolderRef = useRef<string | undefined>(lockHolder?.socketId);
+
+    useEffect(() => {
+        const checkContentUpdate = async () => {
+            // If we are NOT the holder (viewing), and lock changed owner or released
+            if (status !== 'acquired' && status !== 'loading') {
+                // Check if lock ownership changed (e.g. A -> B, or A -> Idle)
+                // This usually implies a save might have happened.
+                const holderChanged = prevHolderRef.current !== lockHolder?.socketId;
+                const statusChanged = prevStatusRef.current !== status;
+
+                if (holderChanged || (statusChanged && prevStatusRef.current === 'acquired')) {
+                    // Fetch latest content
+                    try {
+                        const freshContent = await getDocumentContent(document.id);
+                        if (freshContent) {
+                            console.log('Detected lock change, updating viewer content...');
+                            setEditorContent(freshContent);
+                            // We don't increment version here because we want to update IN PLACE via the new useEffect in StandardEditorInternal
+                            // But incrementing version would also work (remount). 
+                            // In-place update is smoother.
+                        }
+                    } catch (e) {
+                        console.error('Failed to update viewer content', e);
+                    }
+                }
+            }
+            prevStatusRef.current = status;
+            prevHolderRef.current = lockHolder?.socketId;
+        };
+
+        checkContentUpdate();
+    }, [status, lockHolder?.socketId, document.id]);
+
+    // 3. Setup Hocuspocus (Only if intended Collab Mode AND NOT Blocked by Standard Lock)
+    const isBlocked = status === 'locked_standard';
+
     useEffect(() => {
         if (!isCollabMode) return;
         if (!isAuthenticated || !user) return;
         if (provider) return;
 
-        const ydoc = new Y.Doc();
-        ydoc.on('update', (update, origin) => {
-            console.log('[Client] YDoc Updated. Origin:', origin, 'Size:', update.length);
-        });
+        // If locked by standard, Hocuspocus will reject connection.
+        if (isBlocked) {
+            // Don't connect yet.
+            return;
+        }
 
+        const ydoc = new Y.Doc();
         const newProvider = new HocuspocusProvider({
-            url: import.meta.env.VITE_HOCUSPOCUS_URL || 'ws://localhost:9930',
+            url: import.meta.env.VITE_HOCUSPOCUS_URL || 'http://localhost:9930', // Use HTTP/WS URL logic properly
             name: document.id,
             document: ydoc,
             onAuthenticationFailed: () => console.error('Authentication failed'),
@@ -365,53 +578,156 @@ const ConnectedEditor = ({ document, initialContent }: ConnectedEditorProps) => 
             newProvider.destroy();
             setProvider(null);
         };
-    }, [isAuthenticated, document.id, user, isCollabMode]);
+    }, [isAuthenticated, document.id, user, isCollabMode, isBlocked]);
 
     const handleBlockLimitReached = useCallback(() => {
         setBlockLimitSnackbar(true);
     }, []);
 
-    if (isCollabMode && !provider) {
+    const handleSwitchToCollab = () => {
+        setSearchParams(prev => {
+            prev.set('mode', 'collaboration');
+            return prev;
+        });
+        window.location.reload();
+    };
+
+    const handleSwitchToStandard = () => {
+        // If we want to switch to Standard AND Steal
+        setSearchParams(prev => {
+            prev.delete('mode');
+            return prev;
+        });
+        // We might want to trigger steal immediately? But simpler to reload and let user click 'Steal'.
+        window.location.reload();
+    };
+
+    // --- Decision Logic for Viewing Mode ---
+
+    // Case 1: Intended Standard Mode
+    if (!isCollabMode) {
+        // Locked by other?
+        const isLockedByStandard = status === 'locked_standard';
+        const isLockedByCollab = status === 'locked_collab';
+        const isLoading = status === 'loading';
+        const isLocked = isLockedByStandard || isLockedByCollab || isLoading;
+
+        if (isLoading && !editorContent) {
+            return (
+                <Box sx={{ height: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <CircularProgress />
+                </Box>
+            );
+        }
+
         return (
-            <Box sx={{ height: '100dvh', minHeight: '100dvh', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                <CircularProgress />
-            </Box>
+            <>
+                <StandardEditorInternal
+                    key={editorVersion}
+                    document={document}
+                    initialContent={editorContent}
+                    onBlockLimitReached={handleBlockLimitReached}
+                    readOnly={isLocked}
+                    lockBanner={
+                        isLocked ? (
+                            <LockBanner
+                                holderName={lockHolder?.displayName || 'Unknown'}
+                                mode={isLockedByCollab ? 'collab' : 'standard'}
+                                currentMode="standard"
+                                onSteal={requestSteal}
+                                onJoinCollab={handleSwitchToCollab}
+                            />
+                        ) : undefined
+                    }
+                    alertMessage={alertMessage}
+                    countdown={countdown}
+                    onEarlyRelease={earlyRelease}
+                    onRejectSteal={rejectSteal}
+                    onAlertClose={() => setAlertMessage(null)}
+                />
+
+                <StealDialog
+                    open={stealState !== 'none'}
+                    stealState={stealState}
+                    countdown={countdown}
+                    holderName={lockHolder?.displayName || 'Unknown'}
+                    errorMessage={stealErrorMessage}
+                    onCancel={cancelSteal}
+                    queuePosition={queuePosition}
+                />
+
+                <Snackbar
+                    open={blockLimitSnackbar}
+                    autoHideDuration={4000}
+                    onClose={() => setBlockLimitSnackbar(false)}
+                    anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+                >
+                    <Alert severity="error" variant="filled">
+                        문서 블록 수가 1,000개 제한에 도달했습니다. 새 블록을 추가하려면 기존 블록을 삭제해주세요.
+                    </Alert>
+                </Snackbar>
+            </>
         );
     }
 
-    return (
-        <>
-            {isCollabMode ? (
+    // Case 2: Intended Collab Mode
+    if (isCollabMode) {
+        // Locked by Standard?
+        if (status === 'locked_standard') {
+            // Blocked. Show ReadOnly Standard + Banner
+            return (
+                <>
+                    <StandardEditorInternal
+                        document={document}
+                        initialContent={initialContent}
+                        onBlockLimitReached={handleBlockLimitReached}
+                        readOnly={true}
+                        lockBanner={
+                            <LockBanner
+                                holderName={lockHolder?.displayName || 'Unknown'}
+                                mode="standard"
+                                currentMode="collab"
+                                onSteal={handleSwitchToStandard} // Switch to Standard to attempt steal
+                            />
+                        }
+                    />
+                </>
+            );
+        }
+
+        // Otherwise (idle or locked_collab), allow Hocuspocus
+        if (!provider) {
+            return (
+                <Box sx={{ height: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <CircularProgress />
+                </Box>
+            );
+        }
+
+        return (
+            <>
+                {/* Optional: Show banner if we are sole user vs joining existing? No need. */}
                 <CollaborativeEditorInternal
                     document={document}
-                    provider={provider!}
+                    provider={provider}
                     user={user}
                     onBlockLimitReached={handleBlockLimitReached}
                 />
-            ) : (
-                <StandardEditorInternal
-                    document={document}
-                    initialContent={initialContent}
-                    onBlockLimitReached={handleBlockLimitReached}
-                />
-            )}
-
-            <Snackbar
-                open={blockLimitSnackbar}
-                autoHideDuration={4000}
-                onClose={() => setBlockLimitSnackbar(false)}
-                anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-            >
-                <Alert
+                <Snackbar
+                    open={blockLimitSnackbar}
+                    autoHideDuration={4000}
                     onClose={() => setBlockLimitSnackbar(false)}
-                    severity="error"
-                    variant="filled"
+                    anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
                 >
-                    문서 블록 수가 1,000개 제한에 도달했습니다. 새 블록을 추가하려면 기존 블록을 삭제해주세요.
-                </Alert>
-            </Snackbar>
-        </>
-    );
+                    <Alert severity="error" variant="filled">
+                        문서 블록 수가 1,000개 제한에 도달했습니다.
+                    </Alert>
+                </Snackbar>
+            </>
+        );
+    }
+
+    return null;
 };
 
 export default ConnectedEditor;

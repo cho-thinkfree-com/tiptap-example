@@ -87,6 +87,7 @@ const HEADING_LEVELS = [1, 2, 3, 4, 5, 6] as const
 
 export type BaseExtensionOptions = {
   onBlockLimitReached?: () => void
+  history?: boolean
 }
 
 export const createBaseExtensions = (strings: AppStrings, options?: BaseExtensionOptions): Extension[] => {
@@ -141,7 +142,9 @@ export const createBaseExtensions = (strings: AppStrings, options?: BaseExtensio
       link: false,
       codeBlock: false,
       code: false,
-    }),
+      history: options?.history ?? true,
+      undoRedo: options?.history ?? true,
+    } as any),
     // Custom Code mark with backtick shortcut for wrapping selection
     Code.extend({
       addKeyboardShortcuts() {

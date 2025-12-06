@@ -13,6 +13,8 @@ import { StorageService } from './modules/storage/storageService.js'
 import { WorkspaceAccessService } from './modules/workspaces/workspaceAccess.js'
 import { WorkspaceRepository } from './modules/workspaces/workspaceRepository.js'
 import { MembershipRepository } from './modules/workspaces/membershipRepository.js'
+import { LockService } from './modules/locks/lockService.js'
+import { createClient } from 'redis'
 import dotenv from 'dotenv'
 
 // Tiptap Imports for Schema
@@ -204,6 +206,18 @@ async function startHocuspocus() {
         workspaceAccess
     )
 
+    // Redis client for LockService
+    const redisHost = process.env.REDIS_HOST || 'localhost';
+    const redisPort = parseInt(process.env.REDIS_PORT || '6379', 10);
+    const redisUrl = `redis://${redisHost}:${redisPort}`;
+
+    // We need a dedicated client for LockService (it might need its own connection logic if needed)
+    // Or we could reuse, but simple to create fresh one.
+    const lockRedisClient = createClient({ url: redisUrl });
+    await lockRedisClient.connect();
+
+    const lockService = new LockService(lockRedisClient, db);
+
     // 2. Configure Hocuspocus
     const server = new Server({
         port: parseInt(process.env.HOCUSPOCUS_PORT || '9930', 10),
@@ -213,9 +227,9 @@ async function startHocuspocus() {
             (() => {
                 // Manually construct Redis configuration
                 const redisConfig = {
-                    url: process.env.REDIS_URL || `redis://${process.env.REDIS_HOST || 'localhost'}:${process.env.REDIS_PORT || '6379'}`,
-                    host: process.env.REDIS_HOST || 'localhost',
-                    port: parseInt(process.env.REDIS_PORT || '6379', 10)
+                    url: redisUrl,
+                    host: redisHost,
+                    port: redisPort,
                 }
                 console.log('Redis Config:', redisConfig)
                 return new Redis(redisConfig)
@@ -289,6 +303,24 @@ async function startHocuspocus() {
 
         async onConnect(data) {
             console.log(`[Hocuspocus] New connection attempt: ${data.documentName}`)
+
+            // Check Lock State - prevent connection if standard locked
+            try {
+                const result = await lockService.incrementCollabSession(data.documentName);
+                if (!result.success && result.reason === 'locked_standard') {
+                    console.log(`[Hocuspocus] Rejecting connection: Document is locked by standard editor.`)
+                    throw new Error('Document is currently locked by another user (Standard Editing).');
+                }
+            } catch (e: any) {
+                // If error is ours, rethrow
+                if (e.message && e.message.includes('Document is currently locked')) {
+                    throw e;
+                }
+                console.error('[Hocuspocus] Lock check error:', e);
+                // Fail safe? Or block?
+                // Block to strictly prevent overwrite
+                throw new Error('Failed to verify document lock status.');
+            }
         },
 
         async onAuthenticate(data) {
@@ -351,6 +383,18 @@ async function startHocuspocus() {
 
         async onDisconnect(data) {
             console.log(`[Hocuspocus] Disconnect. Clients: ${data.clientsCount}`);
+
+            // Update Lock State
+            try {
+                if (data.clientsCount === 0) {
+                    await lockService.resetCollabLock(data.documentName);
+                    console.log(`[Hocuspocus] Lock reset for ${data.documentName} (0 clients)`);
+                } else {
+                    await lockService.decrementCollabSession(data.documentName);
+                }
+            } catch (e) {
+                console.error('[Hocuspocus] Failed to update collab session:', e);
+            }
 
             if (data.clientsCount === 0) {
                 console.log(`[Hocuspocus] Last user left ${data.documentName}. Creating version.`);

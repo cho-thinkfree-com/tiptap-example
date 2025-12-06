@@ -10,6 +10,7 @@ import { memo, useEffect, useState } from 'react'
 import type { ViewerTemplate } from '../../lib/viewerTemplates'
 import { getTemplateStyles } from '../../lib/viewerTemplates'
 import { baseDocumentStyles } from '../../lib/baseDocumentStyles'
+import ErrorBoundary from '../common/ErrorBoundary'
 
 interface EditorContentAreaProps {
   readOnly?: boolean
@@ -146,16 +147,16 @@ const EditorContentArea = ({ readOnly, initialWidth = '950px', overrideWidth, vi
           },
         }}
       />
-      {!readOnly && (
-        <>
+      <Box sx={{ display: readOnly ? 'none' : 'block' }}>
+        <ErrorBoundary>
           <BlockDragHandle />
           <TableFloatingToolbar />
           <ImageFloatingToolbar />
           <CalloutFloatingToolbar />
           <CodeBlockFloatingToolbar />
           <YouTubeFloatingToolbar />
-        </>
-      )}
+        </ErrorBoundary>
+      </Box>
     </Box>
   )
 }

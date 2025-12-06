@@ -55,7 +55,7 @@ const StandardEditorInternal = ({
         }
     }, [currentDocument.id]);
 
-    const debouncedSave = useDebouncedCallback(handleSave, 2000);
+    const debouncedSave = useDebouncedCallback(handleSave, 5000);
 
     const handleContentChange = useCallback((editor: any) => {
         setSaveStatus('unsaved');
@@ -91,7 +91,7 @@ const StandardEditorInternal = ({
         }
     }, [currentDocument]);
 
-    const debouncedTitleSave = useDebouncedCallback(handleTitleSave, 2000);
+    const debouncedTitleSave = useDebouncedCallback(handleTitleSave, 5000);
 
     const handleTitleChange = (newTitle: string) => {
         debouncedTitleSave(newTitle);
@@ -258,7 +258,7 @@ const CollaborativeEditorInternal = ({
         }
     }, [currentDocument]);
 
-    const debouncedTitleSave = useDebouncedCallback(handleTitleSave, 2000);
+    const debouncedTitleSave = useDebouncedCallback(handleTitleSave, 5000);
 
     const handleContentChange = () => {
         // Handled by Yjs automatically

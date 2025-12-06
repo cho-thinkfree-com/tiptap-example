@@ -207,6 +207,7 @@ async function startHocuspocus() {
     // 2. Configure Hocuspocus
     const server = new Server({
         port: parseInt(process.env.HOCUSPOCUS_PORT || '9930', 10),
+        debounce: 5000,
         extensions: [
             // Redis extensions for scaling
             (() => {

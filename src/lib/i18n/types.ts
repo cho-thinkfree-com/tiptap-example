@@ -94,6 +94,12 @@ export type EditorStrings = {
   }
   slashHelp: SlashHelpStrings
   shortcuts: ShortcutsStrings
+  close: {
+    saving: string
+    saveComplete: string
+    saveError: string
+    closeNow: string
+  }
 }
 
 export type DashboardStrings = {
@@ -327,4 +333,6 @@ export type WorkspaceStrings = {
   cancel: string
   delete: string
   rename: string
+  adminOnly: string
+  close: string
 }

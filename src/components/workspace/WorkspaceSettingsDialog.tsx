@@ -11,20 +11,18 @@ import {
     Typography,
     TextField,
     Button,
-    FormControl,
-    InputLabel,
-    Select,
+
     CircularProgress,
     Alert,
     useTheme
 } from '@mui/material';
 import { useAuth } from '../../context/AuthContext';
-import { useI18n, type Locale } from '../../lib/i18n';
+import { useI18n } from '../../lib/i18n';
 import {
     getWorkspace,
     getWorkspaceMemberProfile,
     updateWorkspace,
-    updateWorkspaceMemberProfile,
+
     type WorkspaceSummary,
     type MembershipSummary
 } from '../../lib/api';

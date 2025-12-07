@@ -53,7 +53,7 @@ const CreateDocumentDialog = ({ open, onClose, onCreate }: CreateDocumentDialogP
       open={open}
       onClose={handleClose}
       TransitionProps={{ onEntered: focusInput }}
-      PaperProps={{ component: 'form', onSubmit: (e) => { e.preventDefault(); void handleCreate(); } }}
+      PaperProps={{ component: 'form', onSubmit: (e: any) => { e.preventDefault(); void handleCreate(); } }}
     >
       <DialogTitle>Create a new document</DialogTitle>
       <DialogContent>

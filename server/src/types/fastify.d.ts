@@ -3,9 +3,11 @@ import type { DatabaseClient } from '../lib/prismaClient.js'
 
 declare module 'fastify' {
   interface FastifyRequest {
+    db: DatabaseClient
     accountId?: string
     sessionId?: string
-    db?: DatabaseClient
+    membershipId?: string
+    workspaceId?: string
     startTime?: number
   }
 }

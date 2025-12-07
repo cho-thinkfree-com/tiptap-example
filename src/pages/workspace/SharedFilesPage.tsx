@@ -10,7 +10,6 @@ import HomeIcon from '@mui/icons-material/Home';
 import StarIcon from '@mui/icons-material/Star';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import { usePageTitle } from '../../hooks/usePageTitle';
-import { useI18n } from '../../lib/i18n';
 import SelectionToolbar from '../../components/workspace/SelectionToolbar';
 import FileShareIndicator from '../../components/workspace/FileShareIndicator';
 import { useFileEvents } from '../../hooks/useFileEvents';

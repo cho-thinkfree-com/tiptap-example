@@ -102,12 +102,11 @@ const WorkspaceDashboardPage = () => {
       // Default to the first workspace for now, or we could add a dialog to select workspace
       const workspaceId = workspaces[0].id;
 
-      await createDocument(workspaceId, {
-        title: file.name.replace(new RegExp(`\\${ODOCS_EXTENSION}$`), ''),
-        initialRevision: {
-          content,
-        },
-      });
+      await createDocument(
+        workspaceId,
+        file.name.replace(new RegExp(`\\${ODOCS_EXTENSION}$`), ''),
+        content
+      );
 
       fetchRecentDocuments();
       // Reset input

@@ -11,7 +11,7 @@ export class ExportJobRetryNotAllowedError extends Error { }
 
 export interface ExportJobPayload {
   workspaceId: string
-  documentId?: string
+  fileId?: string
   format: 'pdf' | 'md' | 'html'
 }
 
@@ -33,7 +33,7 @@ export class ExportJobService {
     }
     const job = await this.repository.create({
       workspaceId: payload.workspaceId,
-      documentId: payload.documentId,
+      fileId: payload.fileId,
       format: payload.format,
       status: 'pending',
     })

@@ -1,7 +1,7 @@
 import { format, formatDistanceToNow, isAfter, subHours } from 'date-fns';
-import enUS from 'date-fns/locale/en-US';
-import ko from 'date-fns/locale/ko';
-import ja from 'date-fns/locale/ja';
+import { enUS } from 'date-fns/locale/en-US';
+import { ko } from 'date-fns/locale/ko';
+import { ja } from 'date-fns/locale/ja';
 
 const STORAGE_KEY = 'tiptap-locale';
 

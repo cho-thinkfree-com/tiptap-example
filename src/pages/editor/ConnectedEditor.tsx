@@ -13,7 +13,7 @@ import { useFileEvents } from '../../hooks/useFileEvents';
 import { HocuspocusProvider } from '@hocuspocus/provider';
 import Collaboration from '@tiptap/extension-collaboration';
 import * as Y from 'yjs';
-import { useDocumentLock, type LockStatus, type LockHolder } from '../../hooks/useDocumentLock';
+import { useDocumentLock, type LockStatus } from '../../hooks/useDocumentLock';
 import { LockBanner, StealDialog } from '../../components/editor/LockComponents';
 
 // Random color generator for cursors
@@ -262,7 +262,7 @@ const StandardEditorInternal = ({
             <Snackbar
                 open={!!alertMessage && alertMessage.type !== 'warning'} // Hide warning from snackbar
                 autoHideDuration={6000}
-                onClose={(_e, reason) => {
+                onClose={(_e, _reason) => {
                     if (onAlertClose) onAlertClose();
                 }}
                 anchorOrigin={{ vertical: 'top', horizontal: 'center' }}

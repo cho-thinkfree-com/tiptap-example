@@ -20,7 +20,7 @@ interface SelectionToolbarProps {
 
 const SelectionToolbar = ({
     selectedCount,
-    hasDocuments,
+
     onDelete,
     onClearSelection,
     onStar,

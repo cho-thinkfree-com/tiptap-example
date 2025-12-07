@@ -56,7 +56,7 @@ export function useDragAndDrop(options: DragAndDropOptions = {}) {
         e: React.DragEvent,
         targetFolderId: string | null,
         allItems: Array<{ id: string; type: string; parentId: string | null }>,
-        selectedIds: Set<string>
+        _selectedIds: Set<string>
     ) => {
         e.preventDefault();
         e.stopPropagation();

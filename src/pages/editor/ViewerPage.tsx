@@ -28,7 +28,6 @@ const ViewerPage = ({ documentNumber: propDocNum, token: propToken }: ViewerPage
     const [revision, setRevision] = useState<DocumentRevision | null>(null);
     const [accessType, setAccessType] = useState<'private' | 'link' | 'public'>('link');
     const [resolvedContent, setResolvedContent] = useState<any>(null);
-    const [isResolvingContent, setIsResolvingContent] = useState(false);
 
     const editor = useEditorInstance({
         content: resolvedContent,
@@ -40,7 +39,6 @@ const ViewerPage = ({ documentNumber: propDocNum, token: propToken }: ViewerPage
     useEffect(() => {
         const resolveAssets = async () => {
             if (revision?.content && document) {
-                setIsResolvingContent(true);
                 try {
                     const resolved = await processContentForLoad(
                         revision.content,
@@ -52,8 +50,6 @@ const ViewerPage = ({ documentNumber: propDocNum, token: propToken }: ViewerPage
                 } catch (err) {
                     console.error('Failed to resolve assets:', err);
                     setResolvedContent(revision.content); // Fallback to unresolved content
-                } finally {
-                    setIsResolvingContent(false);
                 }
             }
         };

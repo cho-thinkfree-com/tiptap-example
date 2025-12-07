@@ -6,7 +6,6 @@ import { getRecentDocuments, type FileSystemEntry, deleteFileSystemEntry, toggle
 import { formatRelativeDate } from '../../lib/formatDate';
 import HomeIcon from '@mui/icons-material/Home';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
-import FileIcon from '@mui/icons-material/InsertDriveFile';
 import StarIcon from '@mui/icons-material/Star';
 import { usePageTitle } from '../../hooks/usePageTitle';
 import SelectionToolbar from '../../components/workspace/SelectionToolbar';

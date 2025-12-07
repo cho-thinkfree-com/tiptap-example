@@ -128,7 +128,6 @@ const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClos
     const [tocOpen, setTocOpen] = useState(false);
     const [localTitle, setLocalTitle] = useState(document.name);
     const [shareOpen, setShareOpen] = useState(false);
-    const [hasHeadings, setHasHeadings] = useState(false);
     const [showSavedStatus, setShowSavedStatus] = useState(true);
     const [viewerWidth, setViewerWidth] = useState(initialWidth);
     const [viewerTemplate, setViewerTemplate] = useState<ViewerTemplate>('original');
@@ -190,25 +189,8 @@ const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClos
         if (editor) {
             editor.on('update', onContentChange);
 
-            // Check for headings
-            const checkHeadings = () => {
-                let found = false;
-                editor.state.doc.descendants((node) => {
-                    if (node.type.name === 'heading') {
-                        found = true;
-                        return false; // Stop searching
-                    }
-                    return true;
-                });
-                setHasHeadings(found);
-            };
-
-            checkHeadings();
-            editor.on('update', checkHeadings);
-
             return () => {
                 editor.off('update', onContentChange);
-                editor.off('update', checkHeadings);
             };
         }
     }, [editor, onContentChange]);
@@ -433,7 +415,7 @@ const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClos
                         </Box>
                         {!readOnly && (
                             <Box sx={{ mr: 2, display: { xs: 'none', md: 'block' } }}>
-                                <EditorWidthSelector editor={editor} onContentChange={onContentChange} initialWidth={initialWidth} />
+                                <EditorWidthSelector editor={editor} onContentChange={onContentChange as any} initialWidth={initialWidth} />
                             </Box>
                         )}
                         {!readOnly && headerExtra}
@@ -459,7 +441,7 @@ const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClos
                     open={shareOpen}
                     onClose={() => setShareOpen(false)}
                     documentId={document.id}
-                    document={document}
+                    document={document as any}
                 />
                 {!readOnly && (
                     <Box sx={{
@@ -473,7 +455,7 @@ const EditorLayout = ({ editor, document, onContentChange, onTitleChange, onClos
                             showTableOfContentsToggle={false}
                             tableOfContentsOpen={tocOpen}
                             onToggleTableOfContents={() => setTocOpen(!tocOpen)}
-                            document={document}
+                            document={document as any}
                         />
                     </Box>
                 )}

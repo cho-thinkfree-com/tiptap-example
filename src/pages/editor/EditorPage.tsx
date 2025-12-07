@@ -6,7 +6,7 @@ import { getFileSystemEntry, getDocumentContent, type FileSystemEntry } from '..
 import ConnectedEditor from './ConnectedEditor';
 
 const EditorPage = () => {
-  const { workspaceId, fileId } = useParams<{ workspaceId: string; fileId: string }>();
+  const { fileId } = useParams<{ workspaceId: string; fileId: string }>();
   const { isAuthenticated } = useAuth();
   const [document, setDocument] = useState<FileSystemEntry | null>(null);
   const [content, setContent] = useState<any>(null);

@@ -4,7 +4,7 @@ import type { ExportJobStatus } from '@prisma/client'
 export interface ExportJobEntity {
   id: string
   workspaceId: string
-  documentId?: string | null
+  fileId?: string | null
   format: string
   status: ExportJobStatus
   resultUrl?: string | null
@@ -16,7 +16,7 @@ export interface ExportJobEntity {
 
 export interface CreateExportJobInput {
   workspaceId: string
-  documentId?: string | null
+  fileId?: string | null
   format: string
   status: ExportJobStatus
 }
@@ -28,7 +28,7 @@ export class ExportJobRepository {
     const job = await this.prisma.exportJob.create({
       data: {
         workspaceId: input.workspaceId,
-        documentId: input.documentId ?? null,
+        fileId: input.fileId ?? null,
         format: input.format,
         status: input.status,
       },
@@ -61,7 +61,7 @@ export class ExportJobRepository {
 const toEntity = (job: {
   id: string
   workspaceId: string
-  documentId: string | null
+  fileId: string | null
   format: string
   status: ExportJobStatus
   resultUrl: string | null
@@ -72,7 +72,7 @@ const toEntity = (job: {
 }): ExportJobEntity => ({
   id: job.id,
   workspaceId: job.workspaceId,
-  documentId: job.documentId ?? undefined,
+  fileId: job.fileId ?? undefined,
   format: job.format,
   status: job.status,
   resultUrl: job.resultUrl ?? undefined,

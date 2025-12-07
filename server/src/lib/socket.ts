@@ -156,8 +156,7 @@ export class SocketService {
                         accountId,
                         socketId: socket.id,
                         displayName: data.displayName,
-                        workspaceId: data.workspaceId,
-                        updatedAt: Date.now()
+                        workspaceId: data.workspaceId
                     });
 
                     if (result.success) {

@@ -33,8 +33,7 @@ import {
     Edit as EditIcon,
     Delete as DeleteIcon,
     Download as DownloadIcon,
-    CheckCircle as CheckCircleIcon,
-    Error as ErrorIcon,
+
     People as PeopleIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../context/AuthContext';
@@ -52,7 +51,6 @@ import {
     restoreFileSystemEntry,
     getFileAncestors,
     type FileSystemEntry,
-    type WorkspaceSummary,
 } from '../../lib/api';
 import { formatRelativeDate } from '../../lib/formatDate';
 import CreateFolderDialog from '../../components/workspace/CreateFolderDialog';
@@ -311,8 +309,8 @@ const WorkspaceFilesPage = () => {
                         : dateB - dateA;
                 } else if (orderBy === 'size') {
                     return order === 'asc'
-                        ? (a.size || 0) - (b.size || 0)
-                        : (b.size || 0) - (a.size || 0);
+                        ? (Number(a.size) || 0) - (Number(b.size) || 0)
+                        : (Number(b.size) || 0) - (Number(a.size) || 0);
                 }
                 return 0;
             });
@@ -1203,7 +1201,7 @@ const WorkspaceFilesPage = () => {
             <ShareDialog
                 open={shareDialogOpen}
                 onClose={() => setShareDialogOpen(false)}
-                file={selectedItem}
+                file={selectedItem || undefined}
             />
 
 

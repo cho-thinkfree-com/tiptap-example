@@ -21,7 +21,7 @@ export class WorkspaceJoinRequestService {
 
   async requestJoin(accountId: string, workspaceId: string, message?: string) {
     const workspace = await this.workspaceRepository.findByIdIncludingDeleted(workspaceId)
-    if (!workspace || workspace.deletedAt) {
+    if (!workspace) {
       throw new WorkspaceNotFoundError()
     }
     if (workspace.visibility === 'private') {
@@ -36,29 +36,29 @@ export class WorkspaceJoinRequestService {
       throw new MembershipExistsError()
     }
 
-    const domain = account.email.split('@')[1]?.toLowerCase() ?? ''
-    if (domain && workspace.allowedDomains.includes(domain)) {
-      const membership = await this.membershipRepository.create({
-        workspaceId,
-        accountId,
-        role: 'member',
-        status: 'active',
-      })
-      await this.auditLogService.record({
-        workspaceId,
-        actor: { type: 'membership', membershipId: membership.id },
-        action: 'membership.added',
-        entityType: 'membership',
-        entityId: membership.id,
-        metadata: {
-          accountId: membership.accountId,
-          role: membership.role,
-          status: membership.status,
-          source: 'join_request_auto',
-        },
-      })
-      return { autoApproved: true }
-    }
+    // const domain = account.email.split('@')[1]?.toLowerCase() ?? ''
+    // if (domain && workspace.allowedDomains.includes(domain)) {
+    //   const membership = await this.membershipRepository.create({
+    //     workspaceId,
+    //     accountId,
+    //     role: 'member',
+    //     status: 'active',
+    //   })
+    //   await this.auditLogService.record({
+    //     workspaceId,
+    //     actor: { type: 'membership', membershipId: membership.id },
+    //     action: 'membership.added',
+    //     entityType: 'membership',
+    //     entityId: membership.id,
+    //     metadata: {
+    //       accountId: membership.accountId,
+    //       role: membership.role,
+    //       status: membership.status,
+    //       source: 'join_request_auto',
+    //     },
+    //   })
+    //   return { autoApproved: true }
+    // }
 
     const pending = await this.joinRequestRepository.findPending(workspaceId, accountId)
     if (pending) {

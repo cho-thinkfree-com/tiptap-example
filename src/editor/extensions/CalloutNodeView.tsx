@@ -1,14 +1,13 @@
 import React from 'react'
 import { NodeViewWrapper, NodeViewContent, type NodeViewProps } from '@tiptap/react'
-import { Box, IconButton, Tooltip } from '@mui/material'
+import { Box } from '@mui/material'
 import InfoIcon from '@mui/icons-material/Info'
 import WarningIcon from '@mui/icons-material/Warning'
 import ReportIcon from '@mui/icons-material/Report'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import ArticleIcon from '@mui/icons-material/Article'
-import CloseIcon from '@mui/icons-material/Close'
 
-const CalloutNodeView: React.FC<NodeViewProps> = ({ node, getPos, deleteNode, editor }) => {
+const CalloutNodeView: React.FC<NodeViewProps> = ({ node }) => {
   const type = node.attrs.type || 'info'
 
   const getIcon = (calloutType: string) => {
@@ -25,13 +24,6 @@ const CalloutNodeView: React.FC<NodeViewProps> = ({ node, getPos, deleteNode, ed
       default:
         return <InfoIcon fontSize="small" sx={{ color: '#1565c0' }} /> // Darker Blue
     }
-  }
-
-  const handleTypeChange = (newType: string) => {
-    const pos = getPos()
-    if (pos === undefined) return
-    editor.commands.setNodeSelection(pos)
-    editor.commands.updateAttributes('callout', { type: newType })
   }
 
   return (

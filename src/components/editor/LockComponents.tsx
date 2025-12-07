@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, Paper, Typography, Button, LinearProgress, Dialog, DialogTitle, DialogContent, DialogActions, Alert } from '@mui/material';
+import { Box, Typography, Button, LinearProgress, Dialog, DialogTitle, DialogContent, DialogActions, Alert } from '@mui/material';
 import LockIcon from '@mui/icons-material/Lock';
 import TimerIcon from '@mui/icons-material/Timer';
 

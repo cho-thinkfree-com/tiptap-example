@@ -74,7 +74,7 @@ export class WorkspaceInvitationService {
       throw new InvitationAcceptanceError('Email mismatch')
     }
     const workspace = await this.workspaceRepository.findByIdIncludingDeleted(invitation.workspaceId)
-    if (!workspace || workspace.deletedAt) {
+    if (!workspace) {
       throw new WorkspaceNotFoundError()
     }
     const existingMembership = await this.membershipRepository.findByWorkspaceAndAccount(

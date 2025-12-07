@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import {
     Box,
     Container,
@@ -22,7 +22,6 @@ import ThemeSelector from '../../components/blog/ThemeSelector';
 const BlogLandingPage = () => {
     const { workspaceId, profileId, handle } = useParams<{ workspaceId: string; profileId: string; handle: string }>();
     const [searchParams, setSearchParams] = useSearchParams();
-    const navigate = useNavigate();
 
     const [profile, setProfile] = useState<MembershipSummary | null>(null);
     const [documents, setDocuments] = useState<DocumentSummary[]>([]);
@@ -109,7 +108,7 @@ const BlogLandingPage = () => {
         }
     };
 
-    const handlePageChange = (event: React.ChangeEvent<unknown>, value: number) => {
+    const handlePageChange = (_: React.ChangeEvent<unknown>, value: number) => {
         setSearchParams({ page: value.toString() });
         window.scrollTo({ top: 0, behavior: 'smooth' });
     };

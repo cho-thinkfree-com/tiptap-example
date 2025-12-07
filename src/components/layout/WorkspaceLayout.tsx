@@ -52,7 +52,7 @@ const WorkspaceLayout = () => {
             onClick: () => navigate(`/workspace/${workspaceId}/important`)
         },
         {
-            text: strings.workspace.trash || 'Trash',
+            text: (strings.workspace as any).trash || 'Trash',
             icon: <DeleteIcon />,
             path: `/workspace/${workspaceId}/trash`,
             onClick: () => navigate(`/workspace/${workspaceId}/trash`)
@@ -64,7 +64,7 @@ const WorkspaceLayout = () => {
             onClick: () => navigate(`/workspace/${workspaceId}/members`)
         },
         {
-            text: strings.workspace.settingsTitle || 'Settings',
+            text: (strings.workspace as any).settingsTitle || 'Settings',
             icon: <SettingsIcon />,
             path: `/workspace/${workspaceId}/settings`,
             onClick: () => navigate(`/workspace/${workspaceId}/settings`)

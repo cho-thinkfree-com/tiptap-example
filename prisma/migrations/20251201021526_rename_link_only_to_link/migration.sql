@@ -1,23 +1,22 @@
-/*
-  Warnings:
-
-  - The values [link_only] on the enum `ShareLinkAccessType` will be removed. If these variants are still used in the database, this will fail.
-
-*/
-
--- Step 1: Add 'link' to the enum FIRST (before using it)
-ALTER TYPE "ShareLinkAccessType" ADD VALUE IF NOT EXISTS 'link';
-
--- Step 2: Now update existing data from 'link_only' to 'link' (now 'link' exists)
-UPDATE "share_links" SET "access_type" = 'link' WHERE "access_type" = 'link_only';
-
--- Step 3: Remove 'link_only' from enum by recreating the type
-BEGIN;
-CREATE TYPE "ShareLinkAccessType_new" AS ENUM ('private', 'link', 'public');
-ALTER TABLE "share_links" ALTER COLUMN "access_type" DROP DEFAULT;
-ALTER TABLE "share_links" ALTER COLUMN "access_type" TYPE "ShareLinkAccessType_new" USING ("access_type"::text::"ShareLinkAccessType_new");
+-- Step 1: Rename the old enum to free up the name
 ALTER TYPE "ShareLinkAccessType" RENAME TO "ShareLinkAccessType_old";
-ALTER TYPE "ShareLinkAccessType_new" RENAME TO "ShareLinkAccessType";
+
+-- Step 2: Create the new enum with the desired values
+CREATE TYPE "ShareLinkAccessType" AS ENUM ('private', 'link', 'public');
+
+-- Step 3: Update the column to use the new enum, mapping 'link_only' to 'link'
+ALTER TABLE "share_links" ALTER COLUMN "access_type" DROP DEFAULT;
+ALTER TABLE "share_links" 
+  ALTER COLUMN "access_type" TYPE "ShareLinkAccessType" 
+  USING (
+    CASE "access_type"::text
+      WHEN 'link_only' THEN 'link'::"ShareLinkAccessType"
+      ELSE "access_type"::text::"ShareLinkAccessType"
+    END
+  );
+
+-- Step 4: Drop the old enum
 DROP TYPE "ShareLinkAccessType_old";
+
+-- Step 5: Restore default value if needed (setting it to 'link' as per original intent)
 ALTER TABLE "share_links" ALTER COLUMN "access_type" SET DEFAULT 'link';
-COMMIT;

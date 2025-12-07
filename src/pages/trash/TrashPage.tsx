@@ -25,7 +25,6 @@ import {
     CircularProgress,
 } from '@mui/material'
 import FolderIcon from '@mui/icons-material/Folder'
-import ArticleIcon from '@mui/icons-material/Article'
 import HomeIcon from '@mui/icons-material/Home'
 import NavigateNextIcon from '@mui/icons-material/NavigateNext'
 import { useAuth } from '../../context/AuthContext'
@@ -34,23 +33,7 @@ import { useNavigate } from 'react-router-dom'
 import TrashSelectionToolbar from '../../components/trash/TrashSelectionToolbar'
 import { useFileEvents } from '../../hooks/useFileEvents'
 
-interface TrashDocument {
-    id: string
-    title: string
-    deletedAt: string
-    ownerMembershipId: string
-    originalFolderId?: string | null
-    originalFolderName?: string | null
-    contentSize: number
-}
 
-interface TrashFolder {
-    id: string
-    name: string
-    deletedAt: string
-    originalParentId?: string | null
-    originalParentName?: string | null
-}
 
 interface TrashItem {
     id: string
@@ -96,8 +79,7 @@ export default function TrashPage() {
         }
     }
 
-    const isAllSelected = items.length > 0 && selectedItems.size === items.length
-    const isIndeterminate = selectedItems.size > 0 && selectedItems.size < items.length
+
 
     const loadTrash = async () => {
         if (!workspaceId || !isAuthenticated) return
@@ -161,7 +143,7 @@ export default function TrashPage() {
     // Real-time file events via WebSocket - handle delete and restore
     useFileEvents({
         workspaceId,
-        onFileDeleted: (event) => {
+        onFileDeleted: () => {
             // File moved to trash - add to trash list
             loadTrash(); // Refetch to get full item data
         },
@@ -171,35 +153,7 @@ export default function TrashPage() {
         },
     });
 
-    const handleRestore = async (item: TrashItem) => {
-        if (!isAuthenticated) {
-            alert('Please log in to perform this action.')
-            return
-        }
 
-        try {
-            if (item.type === 'document') {
-                await restoreDocument(item.id)
-            } else {
-                await restoreFolder(item.id)
-            }
-            setSnackbarMessage(`"${item.name}" restored successfully`)
-            setSnackbarOpen(true)
-            await loadTrash()
-        } catch (err) {
-            console.error('Failed to restore:', err)
-            alert('Failed to restore item. Please try again.')
-        }
-    }
-
-    const handlePermanentDelete = (item: TrashItem) => {
-        if (!isAuthenticated) {
-            alert('Please log in to perform this action.')
-            return
-        }
-        setItemToDelete(item)
-        setDeleteDialogOpen(true)
-    }
 
     const confirmPermanentDelete = async () => {
         if (!itemToDelete || !isAuthenticated) return

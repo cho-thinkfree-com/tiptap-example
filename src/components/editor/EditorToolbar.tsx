@@ -11,14 +11,11 @@ import FormatListNumberedIcon from '@mui/icons-material/FormatListNumbered'
 import MoreHorizIcon from '@mui/icons-material/MoreHoriz'
 import SubscriptIcon from '@mui/icons-material/Subscript'
 import SuperscriptIcon from '@mui/icons-material/Superscript'
-import TableChartIcon from '@mui/icons-material/TableChart'
-import TableViewIcon from '@mui/icons-material/TableView'
 import { Box, IconButton, Popover, Tooltip, Typography } from '@mui/material'
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import {
   DebounceRender,
   MenuBar,
-  MenuButtonAddTable,
   MenuButtonAlignCenter,
   MenuButtonAlignJustify,
   MenuButtonAlignLeft,
@@ -138,15 +135,18 @@ const EditorToolbar = ({
   const rafRef = useRef<number | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const itemRefs = useRef<(HTMLDivElement | null)[]>([])
-  const toggleRef = useRef<HTMLButtonElement>(null)
+  const toggleRef = useRef<HTMLElement>(null)
   const overflowMeasureRef = useRef<HTMLButtonElement>(null)
-  const toolbarToggleRef = useRef<HTMLButtonElement>(null)
+  const toolbarToggleRef = useRef<HTMLElement>(null)
   const [, forceRender] = useState(0)
 
   const [visibleCount, setVisibleCount] = useState(0)
   const isCompactToolbar = Boolean(showTableOfContentsToggle)
   const hasToolbarToggleControl = Boolean(toolbarToggleControl)
   const [overflowAnchor, setOverflowAnchor] = useState<HTMLElement | null>(null)
+  const [alignAnchor, setAlignAnchor] = useState<HTMLElement | null>(null)
+  const [listAnchor, setListAnchor] = useState<HTMLElement | null>(null)
+  const [scriptAnchor, setScriptAnchor] = useState<HTMLElement | null>(null)
   const editorSelectionJSON = editor?.state.selection.toJSON()
 
   useEffect(() => {

@@ -1,7 +1,7 @@
 import { Box, CircularProgress, Link, List, ListItem, Popover, Tooltip, Typography } from '@mui/material';
 import PublicIcon from '@mui/icons-material/Public';
 import VisibilityIcon from '@mui/icons-material/Visibility';
-import LockIcon from '@mui/icons-material/Lock';
+
 import PersonIcon from '@mui/icons-material/Person';
 import LinkIcon from '@mui/icons-material/Link';
 import { useEffect, useRef, useState } from 'react';
@@ -58,7 +58,7 @@ const AuthorInfoPopover = ({ open, anchorEl, onClose, token, handle, authorName,
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [fetchedHandle, setFetchedHandle] = useState<string | null>(null);
-    const [profileName, setProfileName] = useState<string | null>(null);
+
     const { strings } = useI18n();
 
     const fetchDocuments = async () => {
@@ -75,9 +75,6 @@ const AuthorInfoPopover = ({ open, anchorEl, onClose, token, handle, authorName,
             if (result.profile) {
                 if (result.profile.blogHandle) {
                     setFetchedHandle(result.profile.blogHandle);
-                }
-                if (result.profile.name) {
-                    setProfileName(result.profile.name);
                 }
             }
         } catch (err: any) {

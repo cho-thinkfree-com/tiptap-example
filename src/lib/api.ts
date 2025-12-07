@@ -124,6 +124,8 @@ export interface SignupInput {
   email: string
   password: string
   legalName?: string
+  preferredLocale?: string
+  preferredTimezone?: string
 }
 
 export interface LoginResult {
@@ -151,6 +153,8 @@ export interface FileSystemEntry {
   isStarred: boolean
   description?: string | null
   tags: string[]
+  viewCount?: number
+  summary?: string | null
 
   // Soft delete
   deletedAt?: string | null
@@ -206,7 +210,7 @@ export async function login(input: { email: string; password: string }) {
   })
 }
 
-export async function signup(input: { email: string; password: string; legalName?: string }) {
+export async function signup(input: SignupInput) {
   return requestJSON<{ account: AccountResponse; session: any }>('/api/v1/auth/signup', {
     method: 'POST',
     body: input,
@@ -598,7 +602,7 @@ export async function getAuthorPublicDocuments(identifier: string, type: 'handle
   })
 }
 
-export async function getWorkspaceMemberPublicDocuments(workspaceIdOrHandle: string, membershipIdOrPage?: string | number, pageOrLimit: number = 1, limit: number = 10) {
+export async function getWorkspaceMemberPublicDocuments(workspaceIdOrHandle: string, membershipIdOrPage?: string | number, pageOrLimit: number = 1, _limit: number = 10) {
   // Handle overload: (handle, page, limit) vs (workspaceId, membershipId)
   // Since page is number and membershipId is string (UUID), we can distinguish.
 

@@ -53,7 +53,7 @@ const CreateFolderDialog = ({ open, onClose, onCreate }: CreateFolderDialogProps
       open={open}
       onClose={handleClose}
       TransitionProps={{ onEntered: focusInput }}
-      PaperProps={{ component: 'form', onSubmit: (e) => { e.preventDefault(); void handleCreate(); } }}
+      PaperProps={{ component: 'form', onSubmit: (e: any) => { e.preventDefault(); void handleCreate(); } }}
     >
       <DialogTitle>Create a new folder</DialogTitle>
       <DialogContent>

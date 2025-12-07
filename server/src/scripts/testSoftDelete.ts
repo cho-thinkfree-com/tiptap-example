@@ -4,15 +4,16 @@ const prisma = new PrismaClient()
 
 async function main() {
     // Find a document in a folder
-    const doc = await prisma.document.findFirst({
+    const doc = await prisma.fileSystemEntry.findFirst({
         where: {
-            folderId: { not: null },
-            deletedAt: null
+            parentId: { not: null },
+            deletedAt: null,
+            type: 'file'
         },
         select: {
             id: true,
-            title: true,
-            folderId: true,
+            name: true,
+            parentId: true,
             workspaceId: true
         }
     })
@@ -22,9 +23,9 @@ async function main() {
         return
     }
 
-    console.log(`📄 Found document: "${doc.title}"`)
+    console.log(`📄 Found document: "${doc.name}"`)
     console.log(`   ID: ${doc.id}`)
-    console.log(`   Current folderId: ${doc.folderId}`)
+    console.log(`   Current parentId: ${doc.parentId}`)
 
     // Find a membership for this workspace
     const membership = await prisma.workspaceMembership.findFirst({
@@ -41,40 +42,40 @@ async function main() {
 
     console.log(`\n📝 Testing softDelete with:`)
     console.log(`   membershipId: ${membership.id}`)
-    console.log(`   folderId to save: ${doc.folderId}`)
+    console.log(`   folderId to save: ${doc.parentId}`)
 
     // Perform soft delete
-    await prisma.document.update({
+    await prisma.fileSystemEntry.update({
         where: { id: doc.id },
         data: {
             deletedAt: new Date(),
             deletedBy: membership.id,
-            originalFolderId: doc.folderId
+            originalParentId: doc.parentId
         }
     })
 
     console.log(`\n✅ Soft delete executed`)
 
     // Verify the result
-    const updated = await prisma.document.findUnique({
+    const updated = await prisma.fileSystemEntry.findUnique({
         where: { id: doc.id },
         select: {
             id: true,
-            title: true,
-            folderId: true,
+            name: true,
+            parentId: true,
             deletedAt: true,
             deletedBy: true,
-            originalFolderId: true
+            originalParentId: true
         }
     })
 
     console.log(`\n📊 Result:`)
     console.log(`   deletedAt: ${updated?.deletedAt}`)
     console.log(`   deletedBy: ${updated?.deletedBy}`)
-    console.log(`   originalFolderId: ${updated?.originalFolderId}`)
+    console.log(`   originalParentId: ${updated?.originalParentId}`)
 
-    if (updated?.deletedBy && updated?.originalFolderId) {
-        console.log(`\n✅ SUCCESS: Both deletedBy and originalFolderId are saved!`)
+    if (updated?.deletedBy && updated?.originalParentId) {
+        console.log(`\n✅ SUCCESS: Both deletedBy and originalParentId are saved!`)
     } else {
         console.log(`\n❌ FAILED: Fields are still null`)
     }

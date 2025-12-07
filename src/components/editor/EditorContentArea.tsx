@@ -119,7 +119,7 @@ const EditorContentArea = ({ readOnly, initialWidth = '950px', overrideWidth, vi
               backgroundColor: 'rgba(0, 0, 0, 0.2)',
             },
           },
-        }}
+        } as any}
         sx={{
           flex: 1,
           minHeight: 0,

@@ -158,7 +158,7 @@ const EditorTableOfContents = ({ onNavigate, onClose, readOnly = false }: Editor
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <Typography variant='h6' sx={{ fontWeight: 600 }}>
-          {strings.editor.toc.title || 'Table of Contents'}
+          {(strings.editor.toc as any).title || 'Table of Contents'}
         </Typography>
         {onClose && (
           <IconButton onClick={onClose} size='small' aria-label='Close table of contents'>

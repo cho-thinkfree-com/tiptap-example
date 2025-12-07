@@ -12,7 +12,6 @@ import { useFloatingToolbarBoundary } from '../../hooks/useFloatingToolbarVisibi
 const CalloutFloatingToolbar = () => {
     const editor = useRichTextEditorContext()
     const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null)
-    const [calloutType, setCalloutType] = useState<string>('info')
     const rafRef = useRef<number | null>(null)
 
     useEffect(() => {
@@ -31,7 +30,6 @@ const CalloutFloatingToolbar = () => {
 
             // Check if selection is inside a callout
             let calloutNode: HTMLElement | null = null
-            let type = 'info'
 
             // Use Tiptap's isActive to check context
             if (editor.isActive('callout')) {
@@ -43,16 +41,10 @@ const CalloutFloatingToolbar = () => {
                 }
 
                 calloutNode = (node as HTMLElement | null)?.closest('.callout-block') ?? null
-
-                if (calloutNode) {
-                    // Try to get type from attribute
-                    type = calloutNode.getAttribute('data-callout-type') || 'info'
-                }
             }
 
             if (calloutNode) {
                 setAnchorEl((prev) => (prev === calloutNode ? prev : calloutNode))
-                setCalloutType(type)
             } else {
                 setAnchorEl((prev) => (prev !== null ? null : prev))
             }

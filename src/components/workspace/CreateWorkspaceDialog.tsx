@@ -53,7 +53,7 @@ const CreateWorkspaceDialog = ({ open, onClose, onCreate }: CreateWorkspaceDialo
       open={open}
       onClose={handleClose}
       TransitionProps={{ onEntered: focusInput }}
-      PaperProps={{ component: 'form', onSubmit: (e) => { e.preventDefault(); void handleCreate(); } }}
+      PaperProps={{ component: 'form', onSubmit: (e: any) => { e.preventDefault(); void handleCreate(); } }}
     >
       <DialogTitle>{strings.dashboard.createWorkspaceDialogTitle}</DialogTitle>
       <DialogContent>

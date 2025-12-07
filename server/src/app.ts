@@ -40,16 +40,7 @@ const __filename = fileURLToPath(import.meta.url)
   }
 const __dirname = path.dirname(__filename)
 
-declare module 'fastify' {
-  interface FastifyRequest {
-    db: DatabaseClient
-    accountId?: string
-    sessionId?: string
-    membershipId?: string  // Added for file system operations
-    workspaceId?: string   // Added for convenience in middleware
-    startTime?: number
-  }
-}
+
 
 async function buildServer() {
   const app = Fastify({

@@ -50,7 +50,7 @@ export const DocumentLayout = Extension.create<DocumentLayoutOptions>({
     addCommands() {
         return {
             setLayoutWidth:
-                (width: string) =>
+                () =>
                     () => {
                         // Deprecated: Use setContent to update doc attributes safely
                         return true

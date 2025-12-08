@@ -11,7 +11,7 @@ services:
     volumes:
       - ${HOME}/volumes/ododocs/postgres:/var/lib/postgresql/data
     ports:
-      - "127.0.0.1:${POSTGRES_PORT}:${POSTGRES_PORT}"
+      - "127.0.0.1:${POSTGRES_PORT}:5432"
     networks:
       - ododocs-network
 

@@ -1,0 +1,138 @@
+services:
+  # 1. Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: ododocs-nginx
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx-proxy.conf:/etc/nginx/nginx.conf:ro
+      - ${HOME}/volumes/ododocs/certs:/etc/letsencrypt # Share certs
+      - ${HOME}/volumes/ododocs/nginx_logs:/var/log/nginx
+    depends_on:
+      - frontend
+      - backend
+      - hopo
+    networks:
+      - ododocs-network
+
+  # 2. SSL Manager (Certbot)
+  certbot:
+    image: certbot/dns-cloudflare
+    container_name: ododocs-certbot
+    volumes:
+      - ${HOME}/volumes/ododocs/certs:/etc/letsencrypt
+      - /var/run/docker.sock:/var/run/docker.sock # Allow reloading sibling nginx container
+      - ./cloudflare.ini:/etc/letsencrypt/cloudflare.ini:ro # We need to create this via script or manual
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; docker exec ododocs-nginx nginx -s reload; sleep 12h & wait $${!}; done;'"
+    networks:
+      - ododocs-network
+
+  # 3. Application Services
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.fe
+      args:
+        VITE_API_BASE_URL: ${BUILD_VITE_API_BASE_URL}
+        VITE_HOCUSPOCUS_URL: ${BUILD_VITE_HOCUSPOCUS_URL}
+    container_name: ododocs-frontend
+    restart: always
+    expose:
+      - "9910"
+    networks:
+      - ododocs-network
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.be
+    container_name: ododocs-backend
+    restart: always
+    expose:
+      - "9920"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      REDIS_HOST: redis
+      REDIS_PORT: ${REDIS_PORT}
+      # Minio config needed here too if used by backend
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - ododocs-network
+
+  hopo:
+    build:
+      context: .
+      dockerfile: Dockerfile.hopo
+    container_name: ododocs-hopo
+    restart: always
+    expose:
+      - "9930"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      REDIS_HOST: redis
+      REDIS_PORT: ${REDIS_PORT}
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - ododocs-network
+
+  # 4. Infrastructure Services
+  postgres:
+    image: postgres:15-alpine
+    container_name: ododocs-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    volumes:
+      - ${HOME}/volumes/ododocs/postgres:/var/lib/postgresql/data
+    expose:
+      - "${POSTGRES_PORT}"
+    networks:
+      - ododocs-network
+
+  redis:
+    image: redis:alpine
+    container_name: ododocs-redis
+    restart: always
+    volumes:
+      - ${HOME}/volumes/ododocs/redis:/data
+    expose:
+      - "${REDIS_PORT}"
+    networks:
+      - ododocs-network
+
+  minio:
+    image: minio/minio
+    container_name: ododocs-minio
+    restart: always
+    command: server /data --console-address ":9001" --address ":9000"
+    environment:
+      MINIO_ROOT_USER: ${OBJECT_STORAGE_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${OBJECT_STORAGE_SECRET_KEY}
+    volumes:
+      - ${HOME}/volumes/ododocs/minio:/data
+    expose:
+      - "${MINIO_PORT_API}"
+      - "${MINIO_PORT_CONSOLE}"
+    networks:
+      - ododocs-network
+
+networks:
+  ododocs-network:
+    driver: bridge

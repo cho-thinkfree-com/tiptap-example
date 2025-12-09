@@ -75,6 +75,12 @@ services:
       POSTGRES_PORT: ${POSTGRES_PORT}
       REDIS_HOST: host.docker.internal
       REDIS_PORT: ${REDIS_PORT}
+      # CORS & Auth
+      FRONTEND_URL: ${FRONTEND_URL}
+      COOKIE_SECRET: ${COOKIE_SECRET}
+      COOKIE_DOMAIN: ${COOKIE_DOMAIN}
+      COOKIE_SECURE: ${COOKIE_SECURE}
+      COOKIE_SAME_SITE: ${COOKIE_SAME_SITE}
     networks:
       - ododocs-app-network
 

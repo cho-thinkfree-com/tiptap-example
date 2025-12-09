@@ -11,9 +11,9 @@ services:
     volumes:
       - ${HOME}/volumes/ododocs/postgres:/var/lib/postgresql/data
     ports:
-      - "127.0.0.1:${POSTGRES_PORT}:5432"
+      - "${POSTGRES_PORT}:5432"
     networks:
-      - ododocs-network
+      - ododocs-infra-network
 
   redis:
     image: redis:alpine
@@ -22,9 +22,9 @@ services:
     volumes:
       - ${HOME}/volumes/ododocs/redis:/data
     ports:
-      - "127.0.0.1:${REDIS_PORT}:6379"
+      - "${REDIS_PORT}:6379"
     networks:
-      - ododocs-network
+      - ododocs-infra-network
 
   minio:
     image: minio/minio
@@ -37,12 +37,12 @@ services:
     volumes:
       - ${HOME}/volumes/ododocs/minio:/data
     ports:
-      - "127.0.0.1:${MINIO_PORT_API}:9000"
-      - "127.0.0.1:${MINIO_PORT_CONSOLE}:9001"
+      - "${MINIO_PORT_API}:9000"
+      - "${MINIO_PORT_CONSOLE}:9001"
     networks:
-      - ododocs-network
+      - ododocs-infra-network
 
 networks:
-  ododocs-network:
-    name: ododocs-network
+  ododocs-infra-network:
+    name: ododocs-infra-network
     driver: bridge

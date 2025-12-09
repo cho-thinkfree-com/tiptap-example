@@ -286,6 +286,13 @@ reload_nginx() {
     log "Nginx Reloaded."
 }
 
+run_migrations() {
+    check_env
+    log "Running Database Migrations..."
+    docker compose --env-file "$ENV_FILE" -f "$PROD_FILE" exec backend npx prisma migrate deploy
+    log "Migrations completed."
+}
+
 setup_firewall() {
     log "Setting up UFW Firewall..."
     
@@ -343,6 +350,7 @@ menu() {
         echo "12. Logs: Application"
         echo "13. Logs: ALL"
         echo "14. Reload Nginx"
+        echo "15. Run DB Migrations"
         echo ""
         echo "99. Exit (or q/quit/exit)"
         echo ""
@@ -363,6 +371,7 @@ menu() {
             12) logs_app ;;
             13) logs_all ;;
             14) reload_nginx ;;
+            15) run_migrations ;;
             99|q|quit|exit) exit 0 ;;
             *) echo "Invalid option." ;;
         esac
@@ -397,6 +406,7 @@ else
         logs) logs_all ;;
         
         reload-nginx) reload_nginx ;;
+        run-migrations) run_migrations ;;
         *)
             echo "Usage: ./manage.sh [command]"
             echo "Commands:"

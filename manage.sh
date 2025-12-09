@@ -32,7 +32,7 @@ logo() {
     echo " | (_) | (_) | (_) | (_) | (_) | (__\__ \\"
     echo "  \___/ \___/ \___/ \___/ \___/ \___|___/"
     echo -e "${NC}"
-    echo -e "      ${GREEN}Infrastructure Manager v2.0${NC}"
+    echo -e "      ${GREEN}Infrastructure Manager v2.1${NC}"
     echo ""
 }
 
@@ -45,8 +45,7 @@ info() { echo -e "${BLUE}[INFO]${NC} $1"; }
 
 check_root() {
     if [ "$EUID" -ne 0 ]; then
-        warn "Some operations (apt install, certbot) require root privileges."
-        warn "If this script fails, try running with 'sudo'."
+        warn "Some operations require root privileges. If this script fails, try running with 'sudo'."
     fi
 }
 
@@ -89,7 +88,7 @@ check_env() {
     fi
     source "$ENV_FILE"
     check_env_vars
-    log ".env file is valid."
+    # Log valid only if we are interactive or verbose
 }
 
 # --- Functions ---
@@ -126,13 +125,13 @@ init() {
         if ! command -v certbot &> /dev/null; then
             warn "Certbot not found. Installing..."
             sudo apt-get update
-            sudo apt-get install -y certbot python3-certbot-dns-cloudflare
+            sudo apt-get install -y certbot python3-certbot-dns-cloudflare ufw
         else
             log "Certbot is installed."
         fi
     else
         warn "Not a Debian/Ubuntu system or cannot install packages automatically."
-        warn "Please ensure 'certbot' and 'python3-certbot-dns-cloudflare' are installed manually."
+        warn "Please ensure 'certbot', 'python3-certbot-dns-cloudflare', and 'ufw' are installed manually."
     fi
 
     # 4. Setup Cloudflare Credentials
@@ -142,18 +141,16 @@ init() {
 }
 
 generate_cloudflare_ini() {
-    check_env
+    # Don't check full env vars here, just token
+    if [ ! -f "$ENV_FILE" ]; then return; fi
+    source "$ENV_FILE"
     
-    # Try to get from env if not set
     if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
         warn "CLOUDFLARE_API_TOKEN is not set in .env."
         read -p "Enter Cloudflare API Token (input will be saved to .env): " INPUT_TOKEN
-        
-        # Trim input
         INPUT_TOKEN=$(echo "$INPUT_TOKEN" | xargs)
         
         if [ -n "$INPUT_TOKEN" ]; then
-            # Append to .env if not exists, or replace? Simple append for now if missing
             if grep -q "CLOUDFLARE_API_TOKEN=" "$ENV_FILE"; then
                 sed -i "s|CLOUDFLARE_API_TOKEN=.*|CLOUDFLARE_API_TOKEN=$INPUT_TOKEN|" "$ENV_FILE"
             else
@@ -167,23 +164,17 @@ generate_cloudflare_ini() {
         fi
     fi
 
-    # Trim token from env
     local TRIMMED_TOKEN=$(echo "$CLOUDFLARE_API_TOKEN" | xargs)
-
     if [ -n "$TRIMMED_TOKEN" ]; then
         echo "dns_cloudflare_api_token = $TRIMMED_TOKEN" > "$CLOUDFLARE_INI"
         chmod 600 "$CLOUDFLARE_INI"
-        log "Regenerated $CLOUDFLARE_INI (token: ${TRIMMED_TOKEN:0:4}...)"
-    else
-        error "CLOUDFLARE_API_TOKEN is empty."
-        exit 1
+        log "Regenerated $CLOUDFLARE_INI"
     fi
 }
 
 cert_issue() {
     check_env
-    generate_cloudflare_ini # Ensure INI is fresh from ENV
-    
+    generate_cloudflare_ini
     log "Issuing Certificate for *.ododocs.com..."
 
     if [ ! -f "$CLOUDFLARE_INI" ]; then
@@ -213,10 +204,8 @@ cert_renew() {
 
 setup_cron() {
     log "Setting up Cron for auto-renewal..."
-    # Add a cron job to renew certs and reload nginx
     CRON_CMD="0 3 * * * certbot renew --quiet --deploy-hook 'docker exec ododocs-nginx nginx -s reload'"
     
-    # Check if already exists
     if crontab -l 2>/dev/null | grep -q "certbot renew"; then
         log "Cron job already exists."
     else
@@ -225,40 +214,62 @@ setup_cron() {
     fi
 }
 
-deploy() {
+# --- Deployment Functions ---
+
+deploy_infra() {
     check_env
-    log "Deploying Services..."
-    
-    # 1. Start Infrastructure
     log "Starting Infrastructure (Postgres, Redis, Minio)..."
     docker compose --env-file "$ENV_FILE" -f "$INFRA_FILE" up -d
-    
-    log "Waiting for infrastructure to be ready..."
-    sleep 5
-    
-    # 2. Start Application
+    log "Infrastructure deployed."
+    docker ps | grep ododocs-postgres || true
+}
+
+deploy_app() {
+    check_env
     log "Starting Applications (Frontend, Backend, Nginx)..."
     docker compose --env-file "$ENV_FILE" -f "$PROD_FILE" up -d
-    
-    log "Deployment Complete."
-    docker ps | grep ododocs
+    log "Applications deployed."
+    docker ps | grep ododocs-frontend || true
 }
 
-down() {
-    log "Stopping Services..."
-    
-    # Stop App first
-    docker compose --env-file "$ENV_FILE" -f "$PROD_FILE" down
-    
-    # Stop Infra
+deploy_all() {
+    deploy_infra
+    log "Waiting for infrastructure to be ready..."
+    sleep 5
+    deploy_app
+}
+
+down_infra() {
+    log "Stopping Infrastructure..."
     docker compose --env-file "$ENV_FILE" -f "$INFRA_FILE" down
-    
-    log "All services stopped."
+    log "Infrastructure stopped."
 }
 
-logs() {
-    log "Streaming Logs (Ctrl+C to exit)..."
-    
+down_app() {
+    log "Stopping Applications..."
+    docker compose --env-file "$ENV_FILE" -f "$PROD_FILE" down
+    log "Applications stopped."
+}
+
+down_all() {
+    down_app
+    down_infra
+}
+
+# --- Log Functions ---
+
+logs_infra() {
+    log "Streaming Infrastructure Logs (Ctrl+C to exit)..."
+    docker compose --env-file "$ENV_FILE" -f "$INFRA_FILE" logs -f
+}
+
+logs_app() {
+    log "Streaming Application Logs (Ctrl+C to exit)..."
+    docker compose --env-file "$ENV_FILE" -f "$PROD_FILE" logs -f
+}
+
+logs_all() {
+    log "Streaming All Logs (Ctrl+C to exit)..."
     trap 'kill $PID_INFRA $PID_PROD; exit' SIGINT SIGTERM
     
     docker compose --env-file "$ENV_FILE" -f "$INFRA_FILE" logs -f &
@@ -278,7 +289,6 @@ reload_nginx() {
 setup_firewall() {
     log "Setting up UFW Firewall..."
     
-    # Install UFW if missing
     if ! command -v ufw &> /dev/null; then
         warn "UFW is not installed. Installing..."
         sudo apt-get update
@@ -289,26 +299,21 @@ setup_firewall() {
     sudo ufw default deny incoming
     sudo ufw default allow outgoing
 
-    # SSH
     read -p "Enter your SSH port [Default: 22]: " SSH_PORT
     SSH_PORT=${SSH_PORT:-22}
     sudo ufw allow "$SSH_PORT/tcp"
     log "Allowed SSH port $SSH_PORT"
 
-    # HTTP/HTTPS
     sudo ufw allow 80/tcp
     sudo ufw allow 443/tcp
     log "Allowed HTTP (80) & HTTPS (443)"
 
     log "Enabling Firewall..."
-    # 'yes' to confirm potentially disrupting ssh connections
     echo "y" | sudo ufw enable
     
-    log "Firewall setup complete. Status:"
+    log "Firewall setup complete."
     sudo ufw status verbose
-    
-    warn "IMPORTANT: Docker published ports (0.0.0.0:xxxx) often bypass UFW via iptables."
-    warn "For maximum security, please configure Vultr VPC Firewall to block ports 9700/9720/etc from public access."
+    warn "IMPORTANT: Docker ports may bypass UFW. Configure Vultr VPC Firewall for max security."
 }
 
 # --- Interactive Menu ---
@@ -317,28 +322,48 @@ menu() {
     while true; do
         clear
         logo
-        echo "1. Initialize (Install dependencies, create dirs)"
-        echo "2. Issue Certificate (Certbot)"
-        echo "3. Setup Auto-Renewal (Cron)"
-        echo "4. Deploy All/Update"
-        echo "5. Stop All"
-        echo "6. View Logs"
-        echo "7. Reload Nginx"
-        echo "8. Setup Firewall (UFW)"
-        echo "9. Exit"
+        echo "--- Setup ---"
+        echo "1. Initialize (Install deps, dirs)"
+        echo "2. Issue Certificate"
+        echo "3. Setup Auto-Renewal"
+        echo "4. Setup Firewall (UFW)"
         echo ""
-        read -p "Select an option [1-9]: " choice
+        echo "--- Deploy ---"
+        echo "5. Deploy Infrastructure"
+        echo "6. Deploy Application"
+        echo "7. Deploy ALL"
+        echo ""
+        echo "--- Stop ---"
+        echo "8. Stop Application"
+        echo "9. Stop Infrastructure"
+        echo "10. Stop ALL"
+        echo ""
+        echo "--- Monitor ---"
+        echo "11. Logs: Infrastructure"
+        echo "12. Logs: Application"
+        echo "13. Logs: ALL"
+        echo "14. Reload Nginx"
+        echo ""
+        echo "99. Exit (or q/quit/exit)"
+        echo ""
+        read -p "Select an option: " choice
 
         case $choice in
             1) init ;;
             2) cert_issue ;;
             3) setup_cron ;;
-            4) deploy ;;
-            5) down ;;
-            6) logs ;;
-            7) reload_nginx ;;
-            8) setup_firewall ;;
-            9) exit 0 ;;
+            4) setup_firewall ;;
+            5) deploy_infra ;;
+            6) deploy_app ;;
+            7) deploy_all ;;
+            8) down_app ;;
+            9) down_infra ;;
+            10) down_all ;;
+            11) logs_infra ;;
+            12) logs_app ;;
+            13) logs_all ;;
+            14) reload_nginx ;;
+            99|q|quit|exit) exit 0 ;;
             *) echo "Invalid option." ;;
         esac
         
@@ -357,14 +382,29 @@ else
         cert-issue) cert_issue ;;
         cert-renew) cert_renew ;;
         setup-cron) setup_cron ;;
-        deploy) deploy ;;
-        down) down ;;
-        logs) logs ;;
-        reload-nginx) reload_nginx ;;
         setup-firewall) setup_firewall ;;
+        
+        deploy-infra) deploy_infra ;;
+        deploy-app) deploy_app ;;
+        deploy) deploy_all ;;
+        
+        down-infra) down_infra ;;
+        down-app) down_app ;;
+        down) down_all ;;
+        
+        logs-infra) logs_infra ;;
+        logs-app) logs_app ;;
+        logs) logs_all ;;
+        
+        reload-nginx) reload_nginx ;;
         *)
             echo "Usage: ./manage.sh [command]"
-            echo "Commands: init, cert-issue, cert-renew, setup-cron, deploy, down, logs, reload-nginx, setup-firewall"
+            echo "Commands:"
+            echo "  init, cert-issue, cert-renew, setup-cron, setup-firewall"
+            echo "  deploy-infra, deploy-app, deploy (all)"
+            echo "  down-infra, down-app, down (all)"
+            echo "  logs-infra, logs-app, logs (all)"
+            echo "  reload-nginx"
             exit 1
             ;;
     esac

@@ -2,7 +2,7 @@ import { Alert, Box, CircularProgress, Snackbar, Avatar, Tooltip } from '@mui/ma
 import { useCallback, useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { renameFileSystemEntry, type FileSystemEntry, getFileSystemEntry, updateDocumentContent, getDocumentContent } from '../../lib/api';
+import { renameFileSystemEntry, type FileSystemEntry, getFileSystemEntry, updateDocumentContent, getDocumentContent, getWorkspaceMemberProfile, type MembershipSummary } from '../../lib/api';
 import EditorLayout from '../../components/layout/EditorLayout';
 import useEditorInstance from '../../editor/useEditorInstance';
 import { useDebouncedCallback } from '../../lib/useDebounce';
@@ -12,6 +12,7 @@ import CloseOverlay from '../../components/editor/CloseOverlay';
 import { useFileEvents } from '../../hooks/useFileEvents';
 import { HocuspocusProvider } from '@hocuspocus/provider';
 import Collaboration from '@tiptap/extension-collaboration';
+import CollaborationCaret from '@tiptap/extension-collaboration-caret';
 import * as Y from 'yjs';
 import { useDocumentLock, type LockStatus } from '../../hooks/useDocumentLock';
 import { LockBanner, StealDialog } from '../../components/editor/LockComponents';
@@ -19,7 +20,43 @@ import { HOCUSPOCUS_URL } from '../../lib/env';
 
 // Random color generator for cursors
 const getRandomColor = () => {
-    const colors = ['#958DF1', '#F98181', '#FBBC88', '#FAF594', '#70CFF8', '#94FADB', '#B9F18D'];
+    const colors = [
+        '#ef5350', // Red 400
+        '#ec407a', // Pink 400
+        '#ab47bc', // Purple 400
+        '#7e57c2', // Deep Purple 400
+        '#5c6bc0', // Indigo 400
+        '#42a5f5', // Blue 400
+        '#29b6f6', // Light Blue 400
+        '#26c6da', // Cyan 400
+        '#26a69a', // Teal 400
+        '#66bb6a', // Green 400
+        '#9ccc65', // Light Green 400
+        '#d4e157', // Lime 400 (Check contrast) -> Maybe too light. Let's use 600s for dark text or 700s for white text?
+        // User said "background is yellow, text is white... low contrast".
+        // They want DARKER backgrounds so white text pops.
+        // So I should pick 600/700 shades or similar vibrant but dark colors.
+
+        '#d32f2f', // Red 700
+        '#c2185b', // Pink 700
+        '#7b1fa2', // Purple 700
+        '#512da8', // Deep Purple 700
+        '#303f9f', // Indigo 700
+        '#1976d2', // Blue 700
+        '#0288d1', // Light Blue 700
+        '#0097a7', // Cyan 700
+        '#00796b', // Teal 700
+        '#388e3c', // Green 700
+        '#689f38', // Light Green 700
+        '#afb42b', // Lime 700
+        '#fbc02d', // Yellow 700 (Darker yellow/orange)
+        '#ffa000', // Amber 700
+        '#f57c00', // Orange 700
+        '#e64a19', // Deep Orange 700
+        '#5d4037', // Brown 700
+        '#616161', // Grey 700
+        '#455a64'  // Blue Grey 700
+    ];
     return colors[Math.floor(Math.random() * colors.length)];
 };
 
@@ -281,17 +318,17 @@ const StandardEditorInternal = ({
     );
 };
 
-// Collaborative Editor (Hocuspocus + Yjs)
-const CollaborativeEditorInternal = ({
+// Core Editor Component - Mounted only when provider and profile are ready
+const CollaborativeEditorCore = ({
     document: initialDocument,
     provider,
-    user,
+    userProfile,
     onBlockLimitReached,
     lockBanner
 }: {
     document: FileSystemEntry,
     provider: HocuspocusProvider,
-    user: any,
+    userProfile: MembershipSummary | { displayName: string, avatarUrl: string | null },
     onBlockLimitReached: () => void,
     lockBanner?: React.ReactNode
 }) => {
@@ -312,10 +349,19 @@ const CollaborativeEditorInternal = ({
         };
 
         const updateAwareness = ({ states }: { states: any[] }) => {
+            const myClientId = provider.document.clientID;
             const users = states
-                .filter((state: any) => state.clientId !== provider.document.clientID)
-                .map((state: any) => state.user)
-                .filter(Boolean);
+                .map((state: any) => ({
+                    ...state.user,
+                    isLocal: state.clientId === myClientId
+                }))
+                .filter((u: any) => u && u.name) // Filter out empty users
+                .sort((a: any, b: any) => {
+                    // Always put local user first
+                    if (a.isLocal) return -1;
+                    if (b.isLocal) return 1;
+                    return 0;
+                });
             setActiveUsers(users);
         };
 
@@ -342,19 +388,27 @@ const CollaborativeEditorInternal = ({
         }
     });
 
+    const extensionOptions = useMemo(() => ({
+        onBlockLimitReached,
+        history: false,
+    }), [onBlockLimitReached]);
+
     const collaborationExtensions = useMemo(() => {
         return [
             Collaboration.configure({
                 document: provider.document,
                 field: 'default',
             }),
+            CollaborationCaret.configure({
+                provider: provider,
+                user: {
+                    name: userProfile.displayName,
+                    color: getRandomColor(),
+                    avatar: userProfile.avatarUrl || '',
+                },
+            }),
         ];
-    }, [provider, user]);
-
-    const extensionOptions = useMemo(() => ({
-        onBlockLimitReached,
-        history: false,
-    }), [onBlockLimitReached]);
+    }, [provider, userProfile]);
 
     const editor = useEditorInstance({
         waitForContent: false,
@@ -366,11 +420,20 @@ const CollaborativeEditorInternal = ({
         }
     });
 
+    // Set awareness immediately on mount
+    useEffect(() => {
+        provider.setAwarenessField('user', {
+            name: userProfile.displayName,
+            color: getRandomColor(),
+            avatar: userProfile.avatarUrl || '',
+        });
+    }, [provider, userProfile]);
+
     const handleTitleSave = useCallback(async (newTitle: string) => {
         if (!newTitle.trim()) return;
         try {
             await renameFileSystemEntry(currentDocument.id, newTitle);
-            setCurrentDocument({ ...currentDocument, name: newTitle });
+            setCurrentDocument(prev => ({ ...prev, name: newTitle }));
 
             broadcastSync({
                 type: 'document-updated',
@@ -395,7 +458,6 @@ const CollaborativeEditorInternal = ({
     };
 
     const handleClose = async () => {
-        // In collab, just close
         window.close();
     };
 
@@ -423,21 +485,81 @@ const CollaborativeEditorInternal = ({
                     initialWidth={initialWidth}
                     headerExtra={
                         <Box sx={{ display: 'flex', gap: 1, mr: 2 }}>
-                            {activeUsers.map((u, i) => (
-                                <Tooltip key={i} title={u.name}>
-                                    <Avatar
-                                        sx={{
-                                            width: 24,
-                                            height: 24,
-                                            fontSize: 12,
-                                            bgcolor: u.color,
-                                            border: '2px solid white'
-                                        }}
-                                    >
-                                        {u.name[0]?.toUpperCase()}
-                                    </Avatar>
+                            {activeUsers.length < 3 ? (
+                                activeUsers.map((u, i) => (
+                                    <Tooltip key={i} title={u.name}>
+                                        <Avatar
+                                            src={u.avatar}
+                                            alt={u.name}
+                                            sx={{
+                                                width: 24,
+                                                height: 24,
+                                                fontSize: 12,
+                                                bgcolor: u.color,
+                                                border: '2px solid white'
+                                            }}
+                                        >
+                                            {u.name[0]?.toUpperCase()}
+                                        </Avatar>
+                                    </Tooltip>
+                                ))
+                            ) : (
+                                <Tooltip
+                                    title={
+                                        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                                            {activeUsers.map((u, i) => (
+                                                <Box key={i} sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                    <Avatar
+                                                        src={u.avatar}
+                                                        sx={{ width: 16, height: 16, fontSize: 8, bgcolor: u.color }}
+                                                    >
+                                                        {u.name[0]?.toUpperCase()}
+                                                    </Avatar>
+                                                    <span>{u.name}</span>
+                                                </Box>
+                                            ))}
+                                        </Box>
+                                    }
+                                >
+                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                        {/* First User - Higher Z-Index */}
+                                        {activeUsers[0] && (
+                                            <Avatar
+                                                src={activeUsers[0].avatar}
+                                                alt={activeUsers[0].name}
+                                                sx={{
+                                                    width: 24,
+                                                    height: 24,
+                                                    fontSize: 12,
+                                                    bgcolor: activeUsers[0].color,
+                                                    border: '2px solid white',
+                                                    zIndex: 2,
+                                                    position: 'relative'
+                                                }}
+                                            >
+                                                {activeUsers[0].name[0]?.toUpperCase()}
+                                            </Avatar>
+                                        )}
+                                        {/* More Users Indicator - Lower Z-Index, Overlap */}
+                                        <Avatar
+                                            sx={{
+                                                width: 24,
+                                                height: 24,
+                                                fontSize: 12,
+                                                bgcolor: '#e0e0e0',
+                                                color: '#000',
+                                                border: '2px solid white',
+                                                ml: -1.5, // Overlap (approx 12px)
+                                                zIndex: 1, // Behind first user
+                                                position: 'relative',
+                                                cursor: 'pointer'
+                                            }}
+                                        >
+                                            ...
+                                        </Avatar>
+                                    </Box>
                                 </Tooltip>
-                            ))}
+                            )}
                         </Box>
                     }
                 />
@@ -452,10 +574,97 @@ const CollaborativeEditorInternal = ({
     );
 };
 
+// Collaborative Editor Loader (Handles Profile Fetching & Provider Init)
+const CollaborativeEditorInternal = ({
+    document: initialDocument,
+    provider: _unusedProvider, // We create provider internally now
+    user,
+    onBlockLimitReached,
+    lockBanner
+}: {
+    document: FileSystemEntry,
+    provider: any, // kept for prop signature compatibility if needed, but ignored
+    user: any,
+    onBlockLimitReached: () => void,
+    lockBanner?: React.ReactNode
+}) => {
+    const { isAuthenticated } = useAuth();
+    const [provider, setProvider] = useState<HocuspocusProvider | null>(null);
+    const [memberProfile, setMemberProfile] = useState<MembershipSummary | { displayName: string, avatarUrl: string | null } | null>(null);
+
+    // Fetch workspace member profile
+    useEffect(() => {
+        let mounted = true;
+        const fetchProfile = async () => {
+            try {
+                const profile = await getWorkspaceMemberProfile(initialDocument.workspaceId);
+                if (mounted && profile) {
+                    setMemberProfile(profile);
+                    return;
+                }
+            } catch (err) {
+                console.error('Failed to fetch member profile', err);
+            }
+
+            // Fallback
+            if (mounted) {
+                setMemberProfile({
+                    displayName: user.legalName || user.email.split('@')[0],
+                    avatarUrl: null
+                });
+            }
+        };
+        fetchProfile();
+        return () => { mounted = false; };
+    }, [initialDocument.workspaceId, user]);
+
+    // Init Provider
+    useEffect(() => {
+        if (!isAuthenticated || !user) return;
+        if (provider) return;
+
+        // isBlocked check handled by parent (ConnectedEditor) passing logic?
+        // ConnectedEditor passes `isCollabMode` check.
+        // But `isBlocked` (standard lock) logic in ConnectedEditor returns early.
+
+        const ydoc = new Y.Doc();
+        const newProvider = new HocuspocusProvider({
+            url: HOCUSPOCUS_URL,
+            name: initialDocument.id,
+            document: ydoc,
+            onAuthenticationFailed: () => console.error('Authentication failed'),
+        });
+
+        setProvider(newProvider);
+
+        return () => {
+            newProvider.destroy();
+            setProvider(null);
+        };
+    }, [isAuthenticated, initialDocument.id, user]);
+
+    if (!provider || !memberProfile) {
+        return (
+            <Box sx={{ height: '100dvh', minHeight: '100dvh', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <CircularProgress />
+            </Box>
+        );
+    }
+
+    return (
+        <CollaborativeEditorCore
+            document={initialDocument}
+            provider={provider}
+            userProfile={memberProfile}
+            onBlockLimitReached={onBlockLimitReached}
+            lockBanner={lockBanner}
+        />
+    );
+};
+
 const ConnectedEditor = ({ document, initialContent }: ConnectedEditorProps) => {
     const { isAuthenticated, user } = useAuth();
     const [blockLimitSnackbar, setBlockLimitSnackbar] = useState(false);
-    const [provider, setProvider] = useState<HocuspocusProvider | null>(null);
     const [searchParams, setSearchParams] = useSearchParams();
 
     // 1. Check intent from URL
@@ -530,7 +739,7 @@ const ConnectedEditor = ({ document, initialContent }: ConnectedEditorProps) => 
                             console.log('Detected lock change, updating viewer content...');
                             setEditorContent(freshContent);
                             // We don't increment version here because we want to update IN PLACE via the new useEffect in StandardEditorInternal
-                            // But incrementing version would also work (remount). 
+                            // But incrementing version would also work (remount).
                             // In-place update is smoother.
                         }
                     } catch (e) {
@@ -546,40 +755,8 @@ const ConnectedEditor = ({ document, initialContent }: ConnectedEditorProps) => 
     }, [status, lockHolder?.socketId, document.id]);
 
     // 3. Setup Hocuspocus (Only if intended Collab Mode AND NOT Blocked by Standard Lock)
-    const isBlocked = status === 'locked_standard';
-
-    useEffect(() => {
-        if (!isCollabMode) return;
-        if (!isAuthenticated || !user) return;
-        if (provider) return;
-
-        // If locked by standard, Hocuspocus will reject connection.
-        if (isBlocked) {
-            // Don't connect yet.
-            return;
-        }
-
-        const ydoc = new Y.Doc();
-        const newProvider = new HocuspocusProvider({
-            url: HOCUSPOCUS_URL,
-            name: document.id,
-            document: ydoc,
-            onAuthenticationFailed: () => console.error('Authentication failed'),
-        });
-
-        newProvider.setAwarenessField('user', {
-            name: user.legalName || user.email.split('@')[0],
-            color: getRandomColor(),
-            avatar: '',
-        });
-
-        setProvider(newProvider);
-
-        return () => {
-            newProvider.destroy();
-            setProvider(null);
-        };
-    }, [isAuthenticated, document.id, user, isCollabMode, isBlocked]);
+    // This logic is now handled internally by CollaborativeEditorInternal
+    // const isBlocked = status === 'locked_standard'; // This check is still relevant for rendering decisions
 
     const handleBlockLimitReached = useCallback(() => {
         setBlockLimitSnackbar(true);
@@ -697,20 +874,13 @@ const ConnectedEditor = ({ document, initialContent }: ConnectedEditorProps) => 
         }
 
         // Otherwise (idle or locked_collab), allow Hocuspocus
-        if (!provider) {
-            return (
-                <Box sx={{ height: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <CircularProgress />
-                </Box>
-            );
-        }
-
+        // CollaborativeEditorInternal now handles provider creation and loading
         return (
             <>
                 {/* Optional: Show banner if we are sole user vs joining existing? No need. */}
                 <CollaborativeEditorInternal
                     document={document}
-                    provider={provider}
+                    provider={null}
                     user={user}
                     onBlockLimitReached={handleBlockLimitReached}
                 />

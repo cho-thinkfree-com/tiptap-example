@@ -20,9 +20,7 @@ services:
 
   # 2. Application Services
   frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile.fe
+    image: cszero/ododocs-frontend:latest
     container_name: ododocs-frontend
     restart: always
     environment:

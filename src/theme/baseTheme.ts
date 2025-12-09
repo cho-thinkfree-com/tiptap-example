@@ -20,7 +20,7 @@ const violet = {
     600: '#4f46e5',
 };
 
-export const premiumTheme = createTheme({
+export const baseTheme = createTheme({
     palette: {
         mode: 'light',
         primary: {
@@ -60,7 +60,7 @@ export const premiumTheme = createTheme({
             color: slate[900],
         },
         h2: {
-            fontSize: '2rem',
+            fontSize: '2.25rem',
             fontWeight: 700,
             letterSpacing: '-0.025em',
             color: slate[900],

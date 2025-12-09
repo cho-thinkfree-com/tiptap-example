@@ -7,7 +7,15 @@ import type { SxProps, Theme } from '@mui/material';
  * Currently, this is minimal to match the default Editor behavior (MUI body1 + User Agent defaults).
  * Centralizing it here allows for easy global style updates.
  */
-export const baseDocumentStyles: SxProps<Theme> = {
+/**
+ * Base styles for the document content (Editor and Viewer).
+ * These styles are applied to the ProseMirror content area.
+ * 
+ * We now pull typography settings directly from the active MUI Theme
+ * to ensure consistency across the application.
+ * Editor-specific layout (like margins) are applied here.
+ */
+export const getBaseDocumentStyles = (theme: Theme): SxProps<Theme> => ({
     // Typography defaults
     // We explicitly set these to ensure consistency between Editor and Viewer
     // even if the Viewer is rendered in a different context.
@@ -20,9 +28,36 @@ export const baseDocumentStyles: SxProps<Theme> = {
     },
 
     // Default heading styles
-    '& h1, & h2, & h3, & h4, & h5, & h6': {
-        // marginTop: '1em',
-        // marginBottom: '0.5em',
+    '& h1': {
+        ...theme.typography.h1,
+        marginTop: '1.2em',
+        marginBottom: '0.6em',
+    },
+    '& h2': {
+        ...theme.typography.h2,
+        marginTop: '1.2em',
+        marginBottom: '0.6em',
+        // fontSize is now inherited from theme.typography.h2
+    },
+    '& h3': {
+        ...theme.typography.h3,
+        marginTop: '1.2em',
+        marginBottom: '0.6em',
+    },
+    '& h4': {
+        ...theme.typography.h4,
+        marginTop: '1em',
+        marginBottom: '0.5em',
+    },
+    '& h5': {
+        ...theme.typography.h5,
+        marginTop: '1em',
+        marginBottom: '0.5em',
+    },
+    '& h6': {
+        ...theme.typography.h6,
+        marginTop: '1em',
+        marginBottom: '0.5em',
     },
 
     // List styles
@@ -83,4 +118,4 @@ export const baseDocumentStyles: SxProps<Theme> = {
     '& .image-resizer.resizing .resize-trigger': {
         opacity: 1,
     },
-};
+});

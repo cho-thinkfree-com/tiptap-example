@@ -1,5 +1,6 @@
 import { Box } from '@mui/material'
 import { RichTextField, useRichTextEditorContext } from 'mui-tiptap'
+import { useTheme } from '@mui/material/styles'
 import BlockDragHandle from './BlockDragHandle'
 import TableFloatingToolbar from './TableFloatingToolbar'
 import ImageFloatingToolbar from './ImageFloatingToolbar'
@@ -9,7 +10,7 @@ import YouTubeFloatingToolbar from './YouTubeFloatingToolbar'
 import { memo, useEffect, useState } from 'react'
 import type { ViewerTemplate } from '../../lib/viewerTemplates'
 import { getTemplateStyles } from '../../lib/viewerTemplates'
-import { baseDocumentStyles } from '../../lib/baseDocumentStyles'
+import { getBaseDocumentStyles } from '../../lib/baseDocumentStyles'
 import ErrorBoundary from '../common/ErrorBoundary'
 
 interface EditorContentAreaProps {
@@ -21,6 +22,7 @@ interface EditorContentAreaProps {
 
 const EditorContentArea = ({ readOnly, initialWidth = '950px', overrideWidth, viewerTemplate }: EditorContentAreaProps) => {
   const editor = useRichTextEditorContext()
+  const theme = useTheme()
   const [layoutWidth, setLayoutWidth] = useState(initialWidth)
 
   useEffect(() => {
@@ -102,9 +104,9 @@ const EditorContentArea = ({ readOnly, initialWidth = '950px', overrideWidth, vi
                 marginRight: 0,
               },
               // Apply base document styles
-              ...baseDocumentStyles,
+              ...getBaseDocumentStyles(theme),
               // Apply template styles in viewer mode (overrides base styles)
-              ...(readOnly && viewerTemplate ? getTemplateStyles(viewerTemplate) : {}),
+              ...(readOnly && viewerTemplate ? getTemplateStyles(viewerTemplate, theme) : {}),
             },
             // Custom scrollbar styling for "floating" look
             '&::-webkit-scrollbar': {

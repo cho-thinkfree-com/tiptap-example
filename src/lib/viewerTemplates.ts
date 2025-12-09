@@ -36,17 +36,20 @@ export const VIEWER_TEMPLATES: Record<ViewerTemplate, TemplateConfig> = {
     },
 };
 
-import { baseDocumentStyles } from './baseDocumentStyles';
+import type { Theme } from '@mui/material';
+import { getBaseDocumentStyles } from './baseDocumentStyles';
 
-export const getTemplateStyles = (template: ViewerTemplate) => {
+export const getTemplateStyles = (template: ViewerTemplate, theme: Theme) => {
+    const baseStyles = getBaseDocumentStyles(theme);
+
     if (template === 'original') {
-        return baseDocumentStyles;
+        return baseStyles;
     }
 
     const config = VIEWER_TEMPLATES[template];
 
     return {
-        ...baseDocumentStyles, // Inherit base styles
+        ...baseStyles, // Inherit base styles
         fontFamily: config.fontFamily,
         fontSize: config.fontSize,
         lineHeight: config.lineHeight,

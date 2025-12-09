@@ -36,6 +36,7 @@ services:
       MINIO_ROOT_PASSWORD: ${OBJECT_STORAGE_SECRET_KEY}
       MINIO_API_CORS_ALLOW_ORIGIN: "*"
       MINIO_SERVER_URL: ${OBJECT_STORAGE_PUBLIC_ENDPOINT}
+      MINIO_SITE_REGION: ${OBJECT_STORAGE_REGION}
     volumes:
       - ${HOME}/volumes/ododocs/minio:/data
     ports:

@@ -30,34 +30,34 @@ export const getBaseDocumentStyles = (theme: Theme): SxProps<Theme> => ({
     // Default heading styles
     '& h1': {
         ...theme.typography.h1,
-        marginTop: '1.2em',
-        marginBottom: '0.6em',
+        marginTop: '0.6em',
+        marginBottom: '0.3em',
     },
     '& h2': {
         ...theme.typography.h2,
-        marginTop: '1.2em',
-        marginBottom: '0.6em',
+        marginTop: '0.6em',
+        marginBottom: '0.3em',
         // fontSize is now inherited from theme.typography.h2
     },
     '& h3': {
         ...theme.typography.h3,
-        marginTop: '1.2em',
-        marginBottom: '0.6em',
+        marginTop: '0.6em',
+        marginBottom: '0.3em',
     },
     '& h4': {
         ...theme.typography.h4,
-        marginTop: '1em',
-        marginBottom: '0.5em',
+        marginTop: '0.5em',
+        marginBottom: '0.25em',
     },
     '& h5': {
         ...theme.typography.h5,
-        marginTop: '1em',
-        marginBottom: '0.5em',
+        marginTop: '0.4em',
+        marginBottom: '0.2em',
     },
     '& h6': {
         ...theme.typography.h6,
-        marginTop: '1em',
-        marginBottom: '0.5em',
+        marginTop: '0.4em',
+        marginBottom: '0.2em',
     },
 
     // List styles

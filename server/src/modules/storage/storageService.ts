@@ -4,7 +4,7 @@ import { env } from 'process'
 
 export class StorageService {
     private readonly s3: S3Client
-    private readonly publicS3: S3Client
+
     private readonly bucket: string
     private readonly region: string
 
@@ -12,24 +12,11 @@ export class StorageService {
         this.region = process.env.OBJECT_STORAGE_REGION || 'us-east-1'
         this.bucket = process.env.OBJECT_STORAGE_BUCKET || 'ododocs'
 
-        // Internal S3 Client (for direct operations like uploadObject, deleteObject)
-        // Uses internal Docker network address
+        // S3 Client (for both direct operations and presigned URLs)
+        // Uses OBJECT_STORAGE_ENDPOINT directly
         this.s3 = new S3Client({
             region: this.region,
             endpoint: process.env.OBJECT_STORAGE_ENDPOINT || 'http://localhost:9000',
-            credentials: {
-                accessKeyId: process.env.OBJECT_STORAGE_ACCESS_KEY || 'minioadmin',
-                secretAccessKey: process.env.OBJECT_STORAGE_SECRET_KEY || 'minioadmin',
-            },
-            forcePathStyle: true,
-        })
-
-        // Public S3 Client (for generating presigned URLs)
-        // Uses public-facing address (e.g. https://assets.ododocs.com) if defined
-        // Falls back to internal endpoint if not defined (dev mode)
-        this.publicS3 = new S3Client({
-            region: this.region,
-            endpoint: process.env.OBJECT_STORAGE_PUBLIC_ENDPOINT || process.env.OBJECT_STORAGE_ENDPOINT || 'http://localhost:9000',
             credentials: {
                 accessKeyId: process.env.OBJECT_STORAGE_ACCESS_KEY || 'minioadmin',
                 secretAccessKey: process.env.OBJECT_STORAGE_SECRET_KEY || 'minioadmin',
@@ -50,8 +37,8 @@ export class StorageService {
             Key: key,
             ContentType: mimeType,
         })
-        // Use public client for signing
-        return getSignedUrl(this.publicS3, command, { expiresIn: expiresInSeconds })
+        // Use standard client for signing
+        return getSignedUrl(this.s3, command, { expiresIn: expiresInSeconds })
     }
 
     /**
@@ -74,8 +61,8 @@ export class StorageService {
                 ResponseContentType: 'application/octet-stream', // Force download
             }),
         })
-        // Use public client for signing
-        return getSignedUrl(this.publicS3, command, { expiresIn: expiresInSeconds })
+        // Use standard client for signing
+        return getSignedUrl(this.s3, command, { expiresIn: expiresInSeconds })
     }
 
     /**

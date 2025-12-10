@@ -288,6 +288,7 @@ const ResizableImageView = ({ node, updateAttributes, selected }: NodeViewProps)
                         src={viewSrc}
                         alt={alt || ''}
                         title={title || ''}
+                        crossOrigin="anonymous"
                         style={{
                             ...getImageStyle(),
                             opacity: isLoaded ? 1 : 0,

@@ -58,6 +58,7 @@ import {
   addColumnAfterWithAttrs
 } from './tableCommands'
 import { filesToImageAttributes } from '../../lib/imageUpload'
+import { DOMSerializer } from '@tiptap/pm/model'
 
 const lowlight = createLowlight()
 lowlight.register('javascript', javascript)
@@ -347,44 +348,212 @@ export const createBaseExtensions = (strings: AppStrings, options?: BaseExtensio
 
         return [
           new Plugin({
-            key: new PluginKey('image-paste-handler'),
+            key: new PluginKey('image-handler'),
             props: {
+              handleDOMEvents: {
+                copy: (view, event) => {
+                  const selection = view.state.selection
+                  if (selection.empty) return false
+
+                  // Check if there are any images in the selection
+                  let hasImages = false
+                  view.state.doc.nodesBetween(selection.from, selection.to, (node) => {
+                    if (node.type.name === 'image') {
+                      hasImages = true
+                      return false // Stop descending
+                    }
+                    return true
+                  })
+
+                  if (!hasImages) return false
+
+                  event.preventDefault()
+
+                  // Map to store base64 data for each image source
+                  const imageBase64Map = new Map<string, string>()
+                  const promises: Promise<void>[] = []
+
+                  // Iterate through selected nodes to find images and convert them
+                  view.state.doc.nodesBetween(selection.from, selection.to, (node, pos) => {
+                    if (node.type.name === 'image') {
+                      const src = node.attrs.src
+                      promises.push(new Promise<void>((resolve) => {
+                        // Find the rendered DOM node for this image
+                        const domNode = view.nodeDOM(pos) as HTMLElement
+                        if (!domNode) {
+                          resolve()
+                          return
+                        }
+
+                        // The DOM node is likely the NodeViewWrapper, so find the img inside
+                        const imgElement = domNode.querySelector('img')
+
+                        if (imgElement && imgElement.complete && imgElement.naturalWidth > 0) {
+                          try {
+                            const canvas = document.createElement('canvas')
+                            canvas.width = imgElement.naturalWidth
+                            canvas.height = imgElement.naturalHeight
+                            const ctx = canvas.getContext('2d')
+                            if (ctx) {
+                              // Draw the images using the rendered element (which has the resolved URL)
+                              ctx.drawImage(imgElement, 0, 0)
+
+                              // Check for transparency
+                              let isTransparent = false
+                              try {
+                                // Optimization: Check corners and center first, or small sample?
+                                // Robust way: check all pixels (can be slow for huge images but safe for copy)
+                                // Let's check a small version 50x50 to speed up? No, transparency might be small.
+                                // For copy operation, we can afford some ms.
+                                // However, we can just check the image data.
+                                const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+                                const data = imageData.data
+                                for (let i = 3; i < data.length; i += 4) {
+                                  if (data[i] < 255) {
+                                    isTransparent = true
+                                    break
+                                  }
+                                }
+                              } catch (e) {
+                                console.warn('Could not check transparency, defaulting to PNG', e)
+                                isTransparent = true // Default to PNG if we can't read pixels (e.g. some CORS edge case)
+                              }
+
+                              const base64 = canvas.toDataURL(isTransparent ? 'image/png' : 'image/jpeg')
+                              imageBase64Map.set(src, base64)
+                            }
+                          } catch (e) {
+                            console.error('Failed to convert image to base64', e)
+                          }
+                        }
+                        resolve()
+                      }))
+                      return false
+                    }
+                    return true
+                  })
+
+                  Promise.all(promises).then(() => {
+                    // Serialize the selection to HTML
+                    const slice = selection.content()
+                    const serializer = view.someProp('clipboardSerializer') || DOMSerializer.fromSchema(view.state.schema)
+
+                    // @ts-ignore
+                    const fragment = serializer.serializeFragment(slice.content)
+                    const div = document.createElement('div')
+                    div.appendChild(fragment)
+
+                    // Replace src with base64 in the serialized DOM
+                    const images = div.querySelectorAll('img')
+                    images.forEach(img => {
+                      const originalSrc = img.getAttribute('src') // getAttribute to avoid browser resolving/erroring
+                      if (originalSrc && imageBase64Map.has(originalSrc)) {
+                        const base64 = imageBase64Map.get(originalSrc)
+                        if (base64) {
+                          img.src = base64
+                          img.removeAttribute('data-odocs-url')
+                        }
+                      }
+                    })
+
+                    if (event.clipboardData) {
+                      event.clipboardData.setData('text/html', div.innerHTML)
+                      // Also set text representation
+                      event.clipboardData.setData('text/plain', div.textContent || '')
+                    }
+                  })
+
+                  return true
+                }
+              },
               handlePaste: (view, event) => {
                 const files = Array.from(event.clipboardData?.files || [])
                 const imageFiles = files.filter(file => file.type.startsWith('image/'))
 
-                if (imageFiles.length === 0) return false
+                // Case 1: Direct file paste (already handled)
+                if (imageFiles.length > 0) {
+                  if (!uploadContext) {
+                    console.warn('Image paste detected but no upload context provided')
+                    return false
+                  }
+                  event.preventDefault()
+                  filesToImageAttributes(imageFiles, uploadContext).then(attributesList => {
+                    const { state, dispatch } = view
+                    if (attributesList.length === 0) return
 
-                event.preventDefault()
+                    const nodes = attributesList.map(attrs =>
+                      state.schema.nodes.image.create(attrs)
+                    )
 
-                if (!uploadContext) {
-                  console.warn('Image paste detected but no upload context provided')
-                  return false
+                    const tr = state.tr
+                    const { selection } = state
+                    tr.replaceSelectionWith(nodes[0])
+                    for (let i = 1; i < nodes.length; i++) {
+                      tr.insert(tr.mapping.map(selection.to) + i, nodes[i])
+                    }
+                    dispatch(tr)
+                  })
+                  return true
                 }
 
-                filesToImageAttributes(imageFiles, uploadContext).then(attributesList => {
-                  const { state, dispatch } = view
-                  if (attributesList.length === 0) return
+                // Case 2: HTML paste containing Base64 images
+                const html = event.clipboardData?.getData('text/html')
+                if (html && html.includes('data:image/')) {
+                  if (!uploadContext) return false // Let default handler take over if we can't upload, or maybe block?
 
-                  const nodes = attributesList.map(attrs =>
-                    state.schema.nodes.image.create(attrs)
-                  )
+                  // We want to process this.
+                  // 1. Let default parser parse HTML to Slice
+                  // 2. Walk Slice, find images with data: src
+                  // 3. Convert data: to File
+                  // 4. Upload
+                  // 5. Replace in Slice
+                  // 6. Insert Slice
 
-                  const tr = state.tr
-                  const { selection } = state
+                  // Actually, implementing custom HTML parse and replace is complex. 
+                  // An easier way: intercept transformPasted? Or just handle here.
 
-                  // Insert all images at the current selection
-                  tr.replaceSelectionWith(nodes[0]) // Insert first one to replace selection
+                  // Let's parse manually.
+                  const parser = new DOMParser()
+                  const doc = parser.parseFromString(html, 'text/html')
+                  const images = Array.from(doc.querySelectorAll('img'))
+                  const base64Images = images.filter(img => img.src.startsWith('data:image/'))
 
-                  // Insert remaining images after
-                  for (let i = 1; i < nodes.length; i++) {
-                    tr.insert(tr.mapping.map(selection.to) + i, nodes[i])
-                  }
+                  if (base64Images.length === 0) return false
 
-                  dispatch(tr)
-                })
+                  event.preventDefault()
 
-                return true
+                  const replaceMap = new Map<string, string>()
+
+                  const uploadPromises = base64Images.map(async (img) => {
+                    try {
+                      const response = await fetch(img.src)
+                      const blob = await response.blob()
+                      const extension = blob.type.split('/')[1] || 'png'
+                      const filename = `pasted-image-${Date.now()}.${extension}`
+                      const file = new File([blob], filename, { type: blob.type })
+
+                      const [attrs] = await filesToImageAttributes([file], uploadContext)
+                      const imageAttrs = attrs as any // Cast to any to access custom attributes safely
+                      if (imageAttrs && imageAttrs['data-odocs-url']) {
+                        replaceMap.set(img.src, imageAttrs['data-odocs-url'])
+                        img.src = imageAttrs['data-odocs-url']
+                        img.setAttribute('data-odocs-url', imageAttrs['data-odocs-url'])
+                      }
+                    } catch (e) {
+                      console.error('Failed to upload pasted base64 image', e)
+                    }
+                  })
+
+                  Promise.all(uploadPromises).then(() => {
+                    // Now insert the modified HTML
+                    const modifiedHtml = doc.body.innerHTML
+                    view.pasteHTML(modifiedHtml)
+                  })
+
+                  return true
+                }
+
+                return false
               }
             }
           })

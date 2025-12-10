@@ -2,14 +2,13 @@ import { Alert, Box, CircularProgress } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { getFileSystemEntry, getDocumentContent, type FileSystemEntry } from '../../lib/api';
+import { getFileSystemEntry, type FileSystemEntry } from '../../lib/api';
 import ConnectedEditor from './ConnectedEditor';
 
 const EditorPage = () => {
   const { fileId } = useParams<{ workspaceId: string; fileId: string }>();
   const { isAuthenticated } = useAuth();
   const [document, setDocument] = useState<FileSystemEntry | null>(null);
-  const [content, setContent] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,13 +31,9 @@ const EditorPage = () => {
   useEffect(() => {
     if (isAuthenticated && fileId) {
       setLoading(true);
-      Promise.all([
-        getFileSystemEntry(fileId),
-        getDocumentContent(fileId),
-      ])
-        .then(([docData, contentData]) => {
+      getFileSystemEntry(fileId)
+        .then((docData) => {
           setDocument(docData);
-          setContent(contentData);
         })
         .catch((err) => {
           setError((err as Error).message);
@@ -71,7 +66,7 @@ const EditorPage = () => {
     <Box sx={{ height: '100dvh', minHeight: '100dvh', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       <ConnectedEditor
         document={document}
-        initialContent={content}
+        initialContent={null}
       />
     </Box>
   );

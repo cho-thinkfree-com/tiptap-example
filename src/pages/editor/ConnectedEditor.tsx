@@ -797,6 +797,7 @@ const ConnectedEditor = ({ document, initialContent }: ConnectedEditorProps) => 
     // State for forcing editor remount/refresh when content changes (e.g. after steal)
     const [editorVersion, setEditorVersion] = useState(0);
     const [editorContent, setEditorContent] = useState(initialContent);
+    const [loadError, setLoadError] = useState(false);
 
     const handleLockAcquired = useCallback(async () => {
         // Fetch fresh content from server
@@ -816,8 +817,9 @@ const ConnectedEditor = ({ document, initialContent }: ConnectedEditorProps) => 
             }
         } catch (e) {
             console.error('Failed to fetch fresh content after lock acquisition', e);
+            if (!editorContent) setLoadError(true);
         }
-    }, [document.id]);
+    }, [document.id, editorContent]);
 
     // 2. Setup Lock Hook
     // If IS collab mode, we still want to 'join' status but NOT auto-acquire 'standard' lock.
@@ -868,6 +870,7 @@ const ConnectedEditor = ({ document, initialContent }: ConnectedEditorProps) => 
                         }
                     } catch (e) {
                         console.error('Failed to update viewer content', e);
+                        if (!editorContent) setLoadError(true);
                     }
                 }
             }
@@ -914,7 +917,15 @@ const ConnectedEditor = ({ document, initialContent }: ConnectedEditorProps) => 
         const isLoading = status === 'loading';
         const isLocked = isLockedByStandard || isLockedByCollab || isLoading;
 
-        if (isLoading && !editorContent) {
+        if (loadError) {
+            return (
+                <Box sx={{ height: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Alert severity="error">문서 내용을 불러올 수 없습니다. 다시 시도해주세요.</Alert>
+                </Box>
+            );
+        }
+
+        if (!editorContent) {
             return (
                 <Box sx={{ height: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                     <CircularProgress />
@@ -931,7 +942,7 @@ const ConnectedEditor = ({ document, initialContent }: ConnectedEditorProps) => 
                     onBlockLimitReached={handleBlockLimitReached}
                     readOnly={isLocked}
                     lockBanner={
-                        isLocked ? (
+                        (isLockedByStandard || isLockedByCollab) ? ( // Hide banner when just loading
                             <LockBanner
                                 holderName={lockHolder?.displayName || 'Unknown'}
                                 mode={isLockedByCollab ? 'collab' : 'standard'}

@@ -1,5 +1,5 @@
 import type { ImageNodeAttributes } from 'mui-tiptap'
-import { getAssetUploadUrl, uploadAssetToS3 } from './api'
+import { getAssetUploadUrl, uploadAssetToS3, resolveAssetUrls } from './api'
 
 const readFileAsDataUrl = (file: File) =>
   new Promise<string>((resolve, reject) => {
@@ -68,11 +68,17 @@ export const filesToImageAttributes = async (
         // 2. Upload
         await uploadAssetToS3(uploadUrl, file)
 
-        // 3. Use Blob URL for immediate display, but store odocsUrl for saving
-        // Note: We could also use the S3 URL if we had a way to get it immediately, 
-        // but for drafts, we might need a separate view URL. 
-        // For now, let's use the blob URL for the session.
-        const src = URL.createObjectURL(file)
+        // 3. Resolve to Presigned URL for display
+        // Use the remote URL immediately so it works for collaborators too
+        let src = URL.createObjectURL(file) // Fallback
+        try {
+          const resolvedMap = await resolveAssetUrls(context.workspaceId, context.documentId, [odocsUrl])
+          if (resolvedMap[odocsUrl]) {
+            src = resolvedMap[odocsUrl]
+          }
+        } catch (e) {
+          console.warn('Failed to resolve uploaded asset URL immediately', e)
+        }
 
         return {
           src,
